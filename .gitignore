@@ -1,4 +1,6 @@
 *zip
 *twitter-datasets*
 *__pycache__*
-*._checkpoints*
+*.*checkpoints*
+*.vscode*
+*activate*
