@@ -9,6 +9,7 @@ verify_ssl = true
 requests = "*"
 nltk = "*"
 jupyter = "*"
+scipy = "*"
 
 [requires]
 python_version = "3.7"
