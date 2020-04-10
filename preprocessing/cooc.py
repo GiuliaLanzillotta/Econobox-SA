@@ -30,7 +30,7 @@ def build_cooc(vocab_location, window_size=None, weighting="None", output_locati
   counter = 1
   # opening each file
   for fn in [train_positive_location,train_negative_location]:
-      with open(os.path.join(abs_path, fn)) as f:
+      with open(os.path.join(abs_path, fn), encoding="utf8") as f:
         print("Working on ",fn)
         # looking at each line
         for line in f:

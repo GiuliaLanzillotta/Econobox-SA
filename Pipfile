@@ -10,6 +10,7 @@ requests = "*"
 nltk = "*"
 jupyter = "*"
 scipy = "*"
+glove-python = "*"
 
 [requires]
 python_version = "3.7"
