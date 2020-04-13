@@ -1,5 +1,6 @@
 {
-    "glove_beta": 0.05,
-    "glove_alpha": 0.75,
-    "embedding_dim":100
+    "glove": {
+        "beta": 0.05,
+        "alpha": 0.75
+    }
 }

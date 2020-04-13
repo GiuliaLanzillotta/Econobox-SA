@@ -1,7 +1,7 @@
 # All necessary tools to train a glove embedding 
-from __init__ import cooc_location, settings_location, \
-    vocab_location, glove_embedding_location
-from preprocessing.tokenizer import tokenize_text
+from embedding import cooc_location, settings_location, \
+    vocab_location, glove_embedding_location, embedding_dim
+from preprocessing import sample_dimension
 import numpy as np 
 import pickle
 import json
@@ -25,8 +25,9 @@ def load_glove(text, vocab, embedding_matrix):
 
 
 
-def train_glove(nrows,n_emb=1,embedding_location=glove_embedding_location,\
-    epochs=10,eta=e-3):
+def train_glove(nrows=sample_dimension, n_emb=1,
+                embedding_location=glove_embedding_location,
+                epochs=10,eta=1e-3):
     """
     Training GloVe embeddings on nrows tweets.
     @param nrows: int 
@@ -49,10 +50,12 @@ def train_glove(nrows,n_emb=1,embedding_location=glove_embedding_location,\
     abs_path = os.path.abspath(os.path.dirname(__file__))
     # read glove hyperparameters from settings
     print("Loading hyperparameters")
-    settings = json.loads(os.path.join(abs_path,settings_location))
-    BETA = settings["glove_beta"]
-    ALPHA = settings["glove_alpha"]
-    EMBEDDING_DIM = settings["embedding_dim"]
+    with open(os.path.join(abs_path,settings_location), "r") as f:
+        settings = json.load(f)
+        glove_settings = settings["glove"]
+    BETA = glove_settings["beta"]
+    ALPHA = glove_settings["alpha"]
+    EMBEDDING_DIM = embedding_dim
     MAX = BETA*nrows
     # read co-occurrence matrix 
     print("Opening co-occurrence matrix")

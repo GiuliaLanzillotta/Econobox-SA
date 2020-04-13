@@ -4,3 +4,5 @@
 *.*checkpoints*
 *.vscode*
 *activate*
+*.idea/
+train_matrix.npz

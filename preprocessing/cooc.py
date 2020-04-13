@@ -1,5 +1,6 @@
 # Tools to build the co-occurrence matrix from the input files and the vocabulary
-from __init__ import train_positive_location, train_negative_location
+from __init__ import train_positive_location, train_negative_location, \
+  train_positive_sample_location, train_negative_sample_location
 from tokenizer import tokenize_text
 from scipy.sparse import *
 import numpy as np
@@ -29,7 +30,7 @@ def build_cooc(vocab_location, window_size=None, weighting="None", output_locati
   data, row, col = [], [], []
   counter = 1
   # opening each file
-  for fn in [train_positive_location,train_negative_location]:
+  for fn in [train_positive_sample_location,train_negative_sample_location]:
       with open(os.path.join(abs_path, fn), encoding="utf8") as f:
         print("Working on ",fn)
         # looking at each line
