@@ -20,3 +20,4 @@ def build_sentence_embedding(sentence, emb_matrix, vocab):
     for word in sentence: 
         sentence_emb += emb_matrix[vocab.get(word)]
     return sentence_emb
+

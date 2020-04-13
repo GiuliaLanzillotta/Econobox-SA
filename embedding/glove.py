@@ -1,6 +1,7 @@
 # All necessary tools to train a glove embedding 
 from __init__ import cooc_location, settings_location, \
     vocab_location, glove_embedding_location
+from preprocessing.tokenizer import tokenize_text
 import numpy as np 
 import pickle
 import json
@@ -8,7 +9,7 @@ import os
 
 #TODO: build a class Embedder and a class GloVe that extends the Embedder.
 
-def load_glove(text, vocab, embedding_location=glove_embedding_location):
+def load_glove(text, vocab, embedding_matrix):
     """
     Loading glove embedding. 
     This function transforms the given text in a sequence of 
@@ -17,10 +18,10 @@ def load_glove(text, vocab, embedding_location=glove_embedding_location):
         The list of indices of the words in the vocabulary.
     @param vocab: dict
         The vocabulary in use. 
-    @param embedding_location: str
-        The path to the glove embedding file to use.
+    @param embedding_matrix: np.ndarray
+        The trained glove embedding to use.
     """
-    abs_path = os.path.abspath(os.path.dirname(__file__))
+    return None
 
 
 
