@@ -39,7 +39,7 @@ class vanilla_NN(tf.keras.Model):
                             validation_split=self.BATCH_SIZE, shuffle=True)
 
     def plot_history(self):
-        #TODO:fix this model
+        #TODO:fix this method
 
         # summarize history for accuracy
         plt.plot(self.history.history['acc'])
