@@ -50,3 +50,11 @@ def build_vocab(frequency_treshold, file_name = vocab_location):
     with open(file_name, 'wb') as f: 
         pickle.dump(vocab, f, pickle.HIGHEST_PROTOCOL)
     return vocab
+
+def load_vocab(file_name = vocab_location):
+    """
+    Loads the vocabulary at the given location.
+    """
+    with open(file_name, 'rb') as f:
+        vocab = pickle.load(f)
+    return vocab

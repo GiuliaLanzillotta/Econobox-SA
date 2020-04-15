@@ -29,7 +29,7 @@ class EmbeddingBase(object):
         self.vocabulary_dimension = len(vocabulary.keys())
         self.vocabulary = vocabulary
         if load: self.embedding_matrix = self.load_embedding()
-        else: self.embedding_matrix =  np.random.normal(size=(vocabulary_dimension,
+        else: self.embedding_matrix =  np.random.normal(size=(self.vocabulary_dimension,
                                                         embedding_dimension))
 
 
