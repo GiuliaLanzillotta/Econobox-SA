@@ -1,4 +1,4 @@
-#Functions to lemmatize/remove stopwords to either the dictionary or the txt input file.
+#Functions to lemmatize/remove stopwords from either the dictionary or the txt input file.
 from preprocessing.tokenizer import tokenize_text,build_vocab
 import pickle,os
 import numpy as np
