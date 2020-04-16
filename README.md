@@ -1,9 +1,8 @@
+# Econobox 
+
 <p align="center">
   <img src="https://github.com/GiuliaLanzillotta/Econobox-SA/blob/master/chevrolet_render.jpg" width="350" title="An econobox">
 </p>
-
-
-# Econobox 
 
 ### First things first.  
 #### Dependencies
