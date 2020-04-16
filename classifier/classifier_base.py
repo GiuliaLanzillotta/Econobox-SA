@@ -6,16 +6,12 @@ from abc import abstractmethod
 
 class ClassifierBase(object):
 
-    def __init__(self,
-                 embedding_dimension,
-                 name):
+    def __init__(self,embedding_dimension,name):
         """
         :param embedding_dimension: this will be the input dimension
         :param name: the model will be saved as name+"_classifier"
         """
-        super(ClassifierBase, self).__init__()
         self.input_dim = embedding_dimension
-        self.model = self.build()
         self.name = name
 
     @abstractmethod
@@ -37,4 +33,11 @@ class ClassifierBase(object):
 
     @abstractmethod
     def save(self, overwrite=True, **kwargs):
+        pass
+
+    @abstractmethod
+    def load(self, **kwargs):
+        """
+        Loads the model from file.
+        """
         pass

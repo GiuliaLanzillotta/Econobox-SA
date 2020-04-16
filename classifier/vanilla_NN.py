@@ -9,24 +9,30 @@ from keras.models import Sequential
 from keras.layers import Dense
 
 
-class vanilla_NN(tf.keras.Model, ClassifierBase):
+class vanilla_NN(ClassifierBase):
     """Vanilla NN classifier"""
     def __init__(self,
                  embedding_dimension,
                  name="VanillaNN"):
-        super(vanilla_NN, self).__init__()
-        super(ClassifierBase, self).__init__(embedding_dimension, name)
+        super().__init__(embedding_dimension, name=name)
         self.history = None
+        self.model = None
 
 
-    def build(self,
-              activation='relu',
-              optimizer='adam',
-              loss="binary_crossentropy",
-              metrics=None):
+    def build(self, **kwargs):
         print("Building model.")
-        if metrics is None:
-            metrics = ['accuracy']
+
+        activation = kwargs.get("activation")
+        loss = kwargs.get("loss")
+        optimizer = kwargs.get("optimizer")
+        metrics = kwargs.get("metrics")
+
+        if not activation: activation = "relu"
+        if not loss: loss = "binary_crossentropy"
+        if not optimizer: optimizer = "adam"
+        if not metrics : metrics = ['accuracy']
+
+
         self.model = Sequential()
         self.model.add(Dense(units=64, activation=activation,
                              input_dim=self.input_dim, name="Dense1"))
@@ -38,27 +44,34 @@ class vanilla_NN(tf.keras.Model, ClassifierBase):
                            metrics=metrics)
         print(self.model.summary())
 
-    def train(self,
-              x, y,
-              epochs=10,
-              batch_size=32,
-              validation_split=0.2):
+    def train(self, x, y, **kwargs):
         """
         Training the model and saving the history of training.
         """
         print("Training model.")
+        epochs = kwargs.get("epochs")
+        batch_size = kwargs.get("batch_size")
+        validation_split = kwargs.get("validation_split")
+
+        if not epochs: epochs = 10
+        if not batch_size: batch_size=32
+        if not validation_split: validation_split=0.20
+
         y_train = to_categorical(y)
         self.history = self.model.fit(x, y_train,
                                       epochs=epochs,
                                       batch_size=batch_size,
-                                      validation_split=batch_size,
+                                      validation_split=validation_split,
                                       shuffle=True)
         self.plot_history()
 
-    def test(self, x, y,
-             batch_size=32,
-             verbose=1):
+    def test(self, x, y,**kwargs):
         print("Testing model")
+        batch_size = kwargs.get("batch_size")
+        verbose = kwargs.get("verbose")
+        if not batch_size: batch_size = 32
+        if not verbose: verbose=1
+
         y_test = to_categorical(y)
         self.model.evaluate(x, y_test,
                             batch_size=batch_size,
@@ -88,5 +101,11 @@ class vanilla_NN(tf.keras.Model, ClassifierBase):
         print("Saving model")
         path = models_store_path+self.name
         self.model.save_weights(path,overwrite=overwrite)
+
+    def load(self, **kwargs):
+        print("Loading model")
+        path = models_store_path+self.name
+        self.model.load_weights(path)
+
 
 

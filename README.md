@@ -85,6 +85,6 @@ of ```ClassifierBase``` class (IN-FIERI).
 > #### What is still in-fieri? 
 - [ ] Define pipeline for **Preprocessing**
 - [x] Define pipeline for **Embedding**
-- [ ] Define pipeline for **Classifier**
+- [x] Define pipeline for **Classifier**
 - [x] Define **EmbeddingBase** class
 - [x] Define **ClassifierBase** class
