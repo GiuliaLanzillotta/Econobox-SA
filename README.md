@@ -3,7 +3,7 @@
 </p>
 
 
-# Econobox-SA
+# Econobox 
 
 ### First things first.  
 #### Dependencies
