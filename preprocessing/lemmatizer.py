@@ -71,11 +71,12 @@ def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lem
     """
     lemmatizer = WordNetLemmatizer()
     replacer = RepeatReplacer()
-    with open(os.getcwd() + "\\data\\" + file_name,"r") as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
+    with open(os.getcwd() + "\\data\\" + file_name) as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
         file_new = []
         for i,sentence in enumerate(f):
             if i % 10000 == 0:
                 print(i)
+            sentence = tokenize_text(sentence)
             sentence_temporal = []
             for words in sentence:
                 words = lemmatizer.lemmatize(words)
@@ -84,9 +85,9 @@ def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lem
             if(stopword == 1):
                 print("Starting deleting stopwords from sentence " , i, "\n")
                 sentence_temporal = [word for word in sentence_temporal if not word in stopwords.words()]
-            string = ""
+            string = " "
             string_1 = string.join(sentence_temporal)
-            file_new.append(string_1)
+            file_new.append(string_1 + " \n")
     with open(output_file, "w") as f:
         f.writelines(file_new)
     return file_new
