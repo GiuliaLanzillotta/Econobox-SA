@@ -6,6 +6,8 @@ from preprocessing import train_positive_sample_location, train_negative_sample_
 from nltk.corpus import stopwords
 import re
 from nltk.corpus import wordnet
+from nltk import  WordNetLemmatizer
+from collections import Counter
 
 
 
@@ -31,7 +33,7 @@ class RepeatReplacer(object):
 
 
 
-def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemmed"):
+def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemmed.pkl"):
     """
     Takes as input a dictionary and stems it according to Word Net Lemmatizer
     @param dictionary: dict
@@ -44,6 +46,7 @@ def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemme
     """
     dictionary_stemmed = []
     replacer = RepeatReplacer()
+    lemmatizer = WordNetLemmatizer()
     for word in dictionary.keys():
         word = lemmatizer.lemmatize(word) 
         word = replacer.replace(word)        
@@ -66,6 +69,8 @@ def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lem
        @param stopword: if 1 then it deletes also the stop words: very very slow
     
     """
+    lemmatizer = WordNetLemmatizer()
+    replacer = RepeatReplacer()
     with open(os.getcwd() + "\\data\\" + file_name,"r") as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
         file_new = []
         for i,sentence in enumerate(f):
@@ -74,6 +79,7 @@ def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lem
             sentence_temporal = []
             for words in sentence:
                 words = lemmatizer.lemmatize(words)
+                words = replacer.replace(words)
                 sentence_temporal.append(words)
             if(stopword == 1):
                 print("Starting deleting stopwords from sentence " , i, "\n")
