@@ -1,0 +1,1 @@
+models_store_path = "../classifier/" # base path to saving the models

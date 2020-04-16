@@ -4,6 +4,23 @@ from embedding import matrix_train_location, embedding_dim
 import numpy as np
 import os
 
+def get_vanilla_model(train_data=None,
+                      load_model=False,
+                      train_model=False,
+                      test_data=None,
+                      validation_split=0.2):
+    """
+    Creates a new instance of Vanilla_NN
+    :param train_data:
+    :param load_model:
+    :param train_model:
+    :param test_data:
+    :param validation_split:
+    :return:
+    """
+
+
+
 def train_model():
     """ Trains a model on train matrix"""
     print("Loading data")
