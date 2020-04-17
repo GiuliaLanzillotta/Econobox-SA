@@ -82,5 +82,36 @@ def get_cooc_matrix(matrix_name,
 
 
 def run_preprocessing(vocab_name,
-                      ):
-    pass
+                      cooc_name,
+                      to_build_vocab=True,
+                      to_build_cooc=True,
+                      to_lemmatize_input=False,
+                      vocab_build_params=None,
+                      cooc_build_params=None,
+                      input_files=None):
+    """
+    Runs the preprocessing steps using the pipeline functions
+    :param vocab_name: (str) name of the vocabulary file (extension included)
+    :param cooc_name: (str) name of the co-occurrence file ( // )
+    :param to_build_vocab: (bool) whether to build the vocabulary from the @:param input_files
+            or to load it from the @:param vocab_name file.
+    :param to_build_cooc: (bool) whether to build the cooc matrix from the @:param input_files
+            or to load it from the @:param cooc_name file.
+    :param to_lemmatize_input: (bool) whether to lemmatize the input or not
+    :param vocab_build_params: (dict) the parameters to be used by the  'build_vocab' function
+    :param cooc_build_params: (dict) the parameters to be used by the   'build_cooc' function
+    :param input_files:  (list(str)) the list of input files, if not provided the sample files will be used.
+    :return: vocabulary and co-occurrence matrix
+    """
+
+    vocab = get_vocabulary(vocab_name,
+                           load_from_file=not to_build_vocab,
+                           input_files = input_files,
+                           lemmatize_first=to_lemmatize_input,
+                           vocab_params=vocab_build_params)
+    cooc = get_cooc_matrix(cooc_name,
+                           vocab_name,
+                           load_from_file= not to_build_cooc,
+                           input_files = input_files,
+                           cooc_params=cooc_build_params)
+    return vocab, cooc
