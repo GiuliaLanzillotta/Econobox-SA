@@ -1,5 +1,11 @@
 ### Vocabularies Info
 
+I thought it would be interesting for you to look at this graph, maybe can give us some insight on where to make the cut. 
+
+<p align="center">
+  <img src="https://github.com/GiuliaLanzillotta/Econobox-SA/tree/master/vocabularies/plot_words_png.png" width="350">
+</p>
+
 All these vocabularies, if not specified differently, are obtained from "train_pos.txt","train_neg.txt".
 
 1) ##### dictionary_full_21175.pkl:
