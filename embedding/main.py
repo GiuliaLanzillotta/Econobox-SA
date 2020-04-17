@@ -1,13 +1,11 @@
 # Main of the embedding module
-from embedding import glove_embedding_location, settings_location, embedding_dim
-from embedding.pipeline import run_embedding_pipeline
-from embedding.pipeline import get_glove_embedding
-from preprocessing import sample_dimension
-import numpy as np
-import json
+import sys
 import os
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ROOT_DIR)
 
-#TODO: add embedding test
+from embedding.pipeline import run_embedding_pipeline
+
 
 if __name__ == "__main__":
     run_embedding_pipeline()

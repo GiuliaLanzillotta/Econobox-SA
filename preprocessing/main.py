@@ -1,8 +1,13 @@
-from tokenizer import build_vocab
-from cooc import build_cooc
+import sys
+import os
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ROOT_DIR)
+
+from preprocessing.pipeline import run_preprocessing
 
 if __name__ == "__main__":
-    print("Building vocabulary")
-    build_vocab(frequency_treshold=10)
-    print("Building cooc")
-    build_cooc(vocab_location="../vocab.pkl")
+    vocab, cooc = run_preprocessing(vocab_name="vocab.pkl",
+                                   cooc_name="cooc.pkl",
+                                   to_build_vocab=False,
+                                   to_build_cooc=False)
+    exit(0)
