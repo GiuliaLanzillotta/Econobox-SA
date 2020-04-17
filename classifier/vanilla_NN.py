@@ -2,7 +2,6 @@
 # a sentence and prints as output the class of the tweet
 from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
-import tensorflow as tf
 from classifier import models_store_path
 from keras.utils import to_categorical
 from keras.models import Sequential
