@@ -1,11 +1,10 @@
 # All necessary tools to train a glove embedding
 from abc import abstractmethod, ABC
 
-from embedding import cooc_location, settings_location, \
-    vocab_location, glove_embedding_location, embedding_dim,  \
+from embedding import settings_location, glove_embedding_location, embedding_dim, \
     stanford_embedding_location
 from embedding.embedding_base import EmbeddingBase
-from preprocessing import sample_dimension
+from preprocessing import sample_dimension, cooc_folder, vocabularies_folder
 import numpy as np 
 import pickle
 import json
@@ -19,11 +18,13 @@ class GloVeEmbedding(EmbeddingBase):
                  embedding_location,
                  embedding_dimension,
                  vocabulary,
+                 cooc,
                  input_dimension = sample_dimension,
                  load = False):
         super(GloVeEmbedding, self).__init__(embedding_location,
                                              embedding_dimension,
                                              vocabulary,
+                                             cooc,
                                              load)
         abs_path = os.path.abspath(os.path.dirname(__file__))
         # read glove hyperparameters from settings
@@ -45,7 +46,7 @@ class GloVeEmbedding(EmbeddingBase):
         """
         # read co-occurrence matrix
         print("Opening co-occurrence matrix")
-        with open(cooc_location, 'rb') as f:
+        with open(cooc_folder+self.cooc, 'rb') as f:
             cooc = pickle.load(f)
         # start glove training
         xs = self.embedding_matrix

@@ -1,6 +1,6 @@
 # Here we implement all functions/classes relative to tokenizing 
 from preprocessing import train_positive_location, train_negative_location, \
-  train_positive_sample_location, train_negative_sample_location, vocab_location
+  train_positive_sample_location, train_negative_sample_location, vocabularies_folder
 from nltk.tokenize.casual import TweetTokenizer
 from collections import Counter
 import os
@@ -20,7 +20,7 @@ def tokenize_text(text):
     words = [w.lower() for w in tokens]
     return words
 
-def build_vocab(frequency_treshold, file_name = vocab_location):
+def build_vocab(frequency_treshold, file_name):
     """
     Builds a vocabulary from the 2 training files. 
     @param frequency_treshold: int
@@ -51,10 +51,10 @@ def build_vocab(frequency_treshold, file_name = vocab_location):
         pickle.dump(vocab, f, pickle.HIGHEST_PROTOCOL)
     return vocab
 
-def load_vocab(file_name = vocab_location):
+def load_vocab(file_name):
     """
     Loads the vocabulary at the given location.
     """
-    with open(file_name, 'rb') as f:
+    with open(vocabularies_folder+file_name, 'rb') as f:
         vocab = pickle.load(f)
     return vocab

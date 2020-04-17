@@ -1,5 +1,8 @@
 #pipeline methods for preprocessing
 
+def get_lemmatization():
+    pass
+
 def get_vocabulary(vocabulary_name,
                    load_from_file=True,
                    original_texts=None,
@@ -16,9 +19,6 @@ def get_vocabulary(vocabulary_name,
     :param lemmatize_first: (bool) whether to lemmatize the file before building the vocabulary
     :return: (dict) the vocabulary loaded/created
     """
-    pass
-
-def get_lemmatization():
     pass
 
 def get_cooc_matrix():

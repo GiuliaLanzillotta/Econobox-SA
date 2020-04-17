@@ -14,12 +14,14 @@ class EmbeddingBase(object):
     def __init__(self, embedding_location,
                  embedding_dimension,
                  vocabulary,
+                 cooc,
                  load = False):
         """
 
         :param embedding_location: the file where the embedding will be stored
         :param embedding_dimension: pre-defined dimension for the embedding space
-        :param vocabulary: the vocabulary to use fot the embedding
+        :param vocabulary: (dict) the vocabulary to use fot the embedding
+        :param cooc: (str) the name of the cooc matrix to use for the embedding
         :param load: whether to load the matrix from file using the load method.
                 If False, the matrix will be randomly initialized.
         """
@@ -28,6 +30,7 @@ class EmbeddingBase(object):
         self.embedding_dimension = embedding_dimension
         self.vocabulary_dimension = len(vocabulary.keys())
         self.vocabulary = vocabulary
+        self.cooc = cooc
         if load: self.embedding_matrix = self.load_embedding()
         else: self.embedding_matrix =  np.random.normal(size=(self.vocabulary_dimension,
                                                         embedding_dimension))

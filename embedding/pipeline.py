@@ -2,9 +2,10 @@
 from embedding import embedding_dim, glove_embedding_location, matrix_train_location
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
-from embedding.embedding_base import EmbeddingBase
-from preprocessing.tokenizer import load_vocab, tokenize_text
-from preprocessing import sample_dimension, train_negative_sample_location, train_positive_sample_location
+from preprocessing.tokenizer import load_vocab
+from preprocessing.cooc import load_cooc
+from preprocessing import sample_dimension, \
+    train_negative_sample_location, train_positive_sample_location
 import numpy as np
 
 def build_embedding_matrix(label,
@@ -58,6 +59,7 @@ def build_embedding_matrix(label,
     return output
 
 def get_glove_embedding(vocabulary_file=None,
+                        cooc_file="cooc.pkl",
                         load_from_file=False,
                         file_name = None,
                         load_Stanford=False,
@@ -68,7 +70,8 @@ def get_glove_embedding(vocabulary_file=None,
     """
     Creates a GloveEmbedding class.
     By default it will leave the embedding matrix randomly initialized.
-    :param vocabulary_file: the path to the vocavulary in use
+    :param vocabulary_file: the name of the vocavulary in use
+    :param cooc_file: (str) the name of the cooc matrix to use
     :param load_from_file: whether to load the embedding from file
     :param file_name: file from which to load the embedding
     :param load_Stanford: whether to load the Stanford pre-trained embedding
@@ -78,12 +81,14 @@ def get_glove_embedding(vocabulary_file=None,
     :param train_eta: training learning rate
     :return:
     """
-    if vocabulary_file is None: vocab = load_vocab()
+    if vocabulary_file is None: vocab = load_vocab(vocabulary_file)
     else: vocab = load_vocab(vocabulary_file)
     if file_name is None: file_name = glove_embedding_location
+    cooc = load_cooc(cooc_file)
     gloVe_embedding = GloVeEmbedding(file_name,
                                      embedding_dim,
                                      vocab,
+                                     cooc,
                                      load=load_from_file)
     if load_Stanford: gloVe_embedding.load_stanford_embedding()
     if train: gloVe_embedding.train_embedding(epochs=train_epochs,
