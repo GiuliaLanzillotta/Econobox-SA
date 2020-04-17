@@ -1,6 +1,6 @@
 ### Vocabularies Info
 
-All these vocabularies, if not specified, refer to the sample txts.
+All these vocabularies, if not specified differently, are obtained from "train_pos.txt","train_neg.txt".
 
 1) ##### dictionary_full_21175.pkl:
    dictionary with 21175 words, where each word occurs at least 5 times in the corpora.
