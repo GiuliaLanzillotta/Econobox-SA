@@ -3,7 +3,7 @@
 I thought it would be interesting for you to look at this graph, maybe can give us some insight on where to make the cut. It is about how the number of words in a dictionary decreases with the minimum occurances per word increasing.
 
 <p align="center">
-  <img src="https://github.com/GiuliaLanzillotta/Econobox-SA/blob/master/plot_words.jpg" width="350">
+  <img src="https://github.com/GiuliaLanzillotta/Econobox-SA/blob/master/plot_words.jpg" width="350" title = "what u looking at?">
 </p>
 
 All these vocabularies, if not specified differently, are obtained from "train_pos.txt","train_neg.txt".
