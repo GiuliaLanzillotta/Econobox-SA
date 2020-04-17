@@ -20,21 +20,29 @@ def tokenize_text(text):
     words = [w.lower() for w in tokens]
     return words
 
-def build_vocab(frequency_treshold, file_name):
+def build_vocab(frequency_treshold=10,
+                file_name="vocab.pkl",
+                input_files=None):
     """
     Builds a vocabulary from the 2 training files. 
-    @param frequency_treshold: int
+    @:param frequency_treshold: int
         Treshold that will be used to filter the vocabulary. 
         All the words that appear with a frequency lower or equal
         to the treshold will be deleted from the vocabulary. 
-    @param file_name: str
+    @:param file_name: str
         Name of the file to which the vocabulary will be saved.
-    @returns dict
+    @:param input_files: list(str)
+        Name of the files from which to build the vocabulary
+    @:returns dict
         The vocabulary.
     """
+
+    if input_files is None:
+        input_files = [train_positive_sample_location, train_negative_sample_location]
+
     abs_path = os.path.abspath(os.path.dirname(__file__))
     words = []
-    for f in [train_positive_sample_location,train_negative_sample_location]:
+    for f in input_files:
         print("Reading ",f)
         raw = open(os.path.join(abs_path, f),  "r").read()
         more_words = tokenize_text(raw)

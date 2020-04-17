@@ -1,5 +1,6 @@
 #pipeline methods for preprocessing
 from preprocessing.cooc import build_cooc, load_cooc
+from preprocessing.tokenizer import build_vocab, load_vocab
 from preprocessing import cooc_folder
 
 def get_lemmatization():
@@ -8,7 +9,8 @@ def get_lemmatization():
 def get_vocabulary(vocabulary_name,
                    load_from_file=True,
                    input_files=None,
-                   lemmatize_first=False):
+                   lemmatize_first=False,
+                   vocab_params=None):
     """
     Returns a word vocabulary.
     :param vocabulary_name: (str) the name of the vocabulary file.
@@ -19,11 +21,29 @@ def get_vocabulary(vocabulary_name,
     :param input_files: (list (str) ) Paths to the original files from which to extract
             the new vocabulary.
     :param lemmatize_first: (bool) whether to lemmatize the file before building the vocabulary
+    :param vocab_params: (dict) dictionary of parameters to use in the `build_vocab` function
+            NOTA BENE: it is a good practice to leave all the specific params of a function
+            in a general dict because it makes it easier in the future to modify them.
     :return: (dict) the vocabulary loaded/created
     """
 
+    if vocab_params is None:
+        vocab_params = {}
+    frequency_treshold = vocab_params.get("frequency_treshold")
 
-    pass
+    if lemmatize_first:
+        # do some lemmatization of input files here @Fra
+        pass
+
+    if load_from_file: vocab = load_vocab(vocabulary_name)
+    else: vocab = build_vocab(frequency_treshold,
+                              vocabulary_name,
+                              input_files)
+
+    return vocab
+
+
+
 
 def get_cooc_matrix(matrix_name,
                     vocab_name,
@@ -61,5 +81,6 @@ def get_cooc_matrix(matrix_name,
     return cooc
 
 
-def run_preprocessing():
+def run_preprocessing(vocab_name,
+                      ):
     pass
