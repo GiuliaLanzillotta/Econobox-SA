@@ -6,5 +6,5 @@
 *activate*
 *.idea/
 train_matrix.npz
-embedding/glove.twitter.27B.zip
-embedding/glove.twitter.27B.200d.txt
+embeddings/glove.twitter.27B.zip
+embeddings/glove.twitter.27B.200d.txt
