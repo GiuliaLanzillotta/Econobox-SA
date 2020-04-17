@@ -63,7 +63,6 @@ This repo is oganised in **4 modules** :
 > The goal of the re-factoring is to give each module a 
 > simple (and hence easily extensible) internal structure. <br>
 
-I am carrently still re-factoring the repo.
 <br>Ideally each 
  module is defined by a **main**, an **init**, a **pipeline** and other
  **helper** scripts. The main should have little if no code, the init should
@@ -82,8 +81,9 @@ method.
 of ```ClassifierBase``` class (IN-FIERI).
 
 > #### What is still in-fieri? 
-- [ ] Define pipeline for **Preprocessing**
+- [x] Define pipeline for **Preprocessing**
 - [x] Define pipeline for **Embedding**
 - [x] Define pipeline for **Classifier**
 - [x] Define **EmbeddingBase** class
 - [x] Define **ClassifierBase** class
+>The preprocessing is officially done!
