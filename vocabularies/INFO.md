@@ -1,6 +1,6 @@
 ### Vocabularies Info
 
-I thought it would be interesting for you to look at this graph, maybe can give us some insight on where to make the cut. 
+I thought it would be interesting for you to look at this graph, maybe can give us some insight on where to make the cut. It is about how the number of words in a dictionary decreases with the minimum occurances per word increasing.
 
 <p align="center">
   <img src="https://github.com/GiuliaLanzillotta/Econobox-SA/blob/master/plot_words.jpg" width="350">
