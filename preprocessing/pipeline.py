@@ -5,8 +5,7 @@ from preprocessing import cooc_folder
 from preprocessing import lemmatizer as lemma
 import os
 
-
-def get_lemmatization():
+def get_lemmatization(dictionary, stopwords = 0, output = "vocab_stemmed.pkl"):
     """
     Gives as output a dictionary that has been lemmatized, id believes -> belief and
     that has abbreviated words i.d. loove -> love.
@@ -23,6 +22,8 @@ def get_lemmatization():
     return voc_lemm
     
     
+    
+
 def get_vocabulary(vocabulary_name,
                    load_from_file=True,
                    input_files=None,
@@ -55,7 +56,7 @@ def get_vocabulary(vocabulary_name,
             print("the argument input_files should not be None \n")
             print("Replacement will not be executed \n")
         else:
-            print("starting replacement (i.d don't -> do not ) \n")
+            print("fucntion get_vocabulary: starting replacement (i.d don't -> do not ) \n")
             lemm_rep = lemma.RegexpReplacer()
             for i,input_file in enumerate(input_files):
                 with open(input_file) as f:
@@ -76,6 +77,7 @@ def get_vocabulary(vocabulary_name,
     return vocab
 
 
+
 def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"]):
     """
     function that produces a lemmatized text.
@@ -85,7 +87,7 @@ def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile 
     :outputfile: list containing the names of the two output files
     """
     if replacement == 1:
-        print("starting replacement (i.d don't -> do not ) \n")
+        print("function getTxtLemmatization: starting replacement (i.d don't -> do not ) \n")
         lemm_rep = lemma.RegexpReplacer()
         for i,input_file in enumerate(input_files):
             with open(input_file) as f:
@@ -102,6 +104,8 @@ def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile 
     os.remove("tobedeleted_1.txt")
     os.remove("tobedeleted_2.txt")
     return (file_1, file_2)
+        
+
 
 
 
@@ -170,7 +174,7 @@ def run_preprocessing(vocab_name,
     vocab = get_vocabulary(vocab_name,
                            load_from_file=not to_build_vocab,
                            input_files = input_files,
-                           replacement_first=to_lemmatize_input, #replacement takes into account only of the change don't -> do not
+                           replacement_first=0, #it's already carried out in the function above
                            vocab_params=vocab_build_params)
     if(to_lemmatize_input ==  True):
         vocab = get_lemmatization(vocab, stopwords = 0, output = "dict_tmp.pkl") #get lemmatization continues with all other kinds of lemmatization
