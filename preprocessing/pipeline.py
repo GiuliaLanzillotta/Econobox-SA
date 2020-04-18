@@ -61,9 +61,9 @@ def get_vocabulary(vocabulary_name,
             for i,input_file in enumerate(input_files):
                 with open(input_file) as f:
                     file_lemmatized = lemm_rep.replace(f.read())
-                with open("tobedeleted_"+str(i + 1)+".txt", "w") as f:
+                with open("tobe_deleted_"+str(i + 1)+".txt", "w") as f:
                     f.write(file_lemmatized)
-            input_files = ["tobedeleted_1.txt","tobedeleted_2.txt"]
+            input_files = ["tobe_deleted_1.txt","tobe_deleted_2.txt"]
             print("replacement done. \n")
             
             
@@ -72,8 +72,9 @@ def get_vocabulary(vocabulary_name,
     else: vocab = build_vocab(frequency_treshold,
                               vocabulary_name,
                               input_files)
-    os.remove("tobedeleted_1.txt")
-    os.remove("tobedeleted_2.txt")
+    if replacement_first:    
+        os.remove("tobe_deleted_1.txt")
+        os.remove("tobe_deleted_2.txt")
     return vocab
 
 
@@ -170,7 +171,7 @@ def run_preprocessing(vocab_name,
     if(to_lemmatize_input == True):
         files = getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"])
         input_files =  ["lemm_pos.txt", "lemm_neg.txt"]
-        
+    print("I am here \n")
     vocab = get_vocabulary(vocab_name,
                            load_from_file=not to_build_vocab,
                            input_files = input_files,
