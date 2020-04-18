@@ -14,7 +14,8 @@ from collections import Counter
 
 class RepeatReplacer(object):
     """
-    It is a class that allows to abbreviate words such as "loove" and "greaat" into their correspondent "love" and "great" while still retaining words like
+    It is a class that allows to abbreviate words such as "loove" and "greaat" into their correspondent 
+    "love" and "great" while still retaining words like
     "goose" from being transformed into "gose".
     """
     def __init__(self):
@@ -40,7 +41,8 @@ def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemme
         Input dictionary to have words as keys.
     @param file_name: str
         name of the file
-    @param stopwords: either to to include stop words or not. 0 includes stopwords, 1 deletes them. The process of deleting stopwords takes time.
+    @param stopwords: either to to include stop words or not. 0 includes stopwords, 1 deletes them.
+        The process of deleting stopwords takes time.
     @returns: list(str)
        New dictionary lemmatized.
     """
@@ -63,7 +65,8 @@ def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemme
     
     
 def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lemm_pos.txt"):
-    """Function that lemmatizes the input file. To be used for example when creating the glove embedding with a dictionary that has been lemmatized.
+    """Function that lemmatizes the input file. To be used for example when creating the glove
+       embeddings with a dictionary that has been lemmatized.
        @param file_name: str 
        name of the file
        @param stopword: if 1 then it deletes also the stop words: very very slow
@@ -71,7 +74,7 @@ def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lem
     """
     lemmatizer = WordNetLemmatizer()
     replacer = RepeatReplacer()
-    with open(os.getcwd() + "\\data\\" + file_name) as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
+    with open(os.getcwd() +"\\" + file_name) as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
         file_new = []
         for i,sentence in enumerate(f):
             if i % 10000 == 0:
