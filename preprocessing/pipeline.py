@@ -2,14 +2,31 @@
 from preprocessing.cooc import build_cooc, load_cooc
 from preprocessing.tokenizer import build_vocab, load_vocab
 from preprocessing import cooc_folder
+from preprocessing import lemmatizer as lemma
+import os
+
 
 def get_lemmatization():
-    pass
-
+    """
+    Gives as output a dictionary that has been lemmatized, id believes -> belief and
+    that has abbreviated words i.d. loove -> love.
+    :param dictionary: (str) or (dict), either a dictionary or a file pkl containing a dictionary.
+    :param stopwords: (bool) whether you want your dictionary to contain stopwords or not (0 to contain them) (1 to delete them)    
+    :output: (str) ouput name
+    
+    """
+    if(type(dictionary) != dict):
+        with open(dictionary, "rb") as f:
+            dictionary = pickle.load(f)
+            
+    voc_lemm =  lemma.DictionaryLemmatizer(dictionary = dictionary,stopword= stopwords,file_name = output)
+    return voc_lemm
+    
+    
 def get_vocabulary(vocabulary_name,
                    load_from_file=True,
                    input_files=None,
-                   lemmatize_first=False,
+                   replacement_first=False,
                    vocab_params=None):
     """
     Returns a word vocabulary.
@@ -20,7 +37,9 @@ def get_vocabulary(vocabulary_name,
     :param load_from_file: (bool) Whether to load the vocabulary from file or build a new one.
     :param input_files: (list (str) ) Paths to the original files from which to extract
             the new vocabulary.
-    :param lemmatize_first: (bool) whether to lemmatize the file before building the vocabulary
+    :param replacement_first: (bool) whether to obtain a vocabulary with words in short formed prolonged, such as
+            "won't"->"will not", "don't"->"do not". For other lemmatizations, refer to the function get_lemmatization.
+            lemmatize_first can be equal to True only if input_files is different from None.
     :param vocab_params: (dict) dictionary of parameters to use in the `build_vocab` function
             NOTA BENE: it is a good practice to leave all the specific params of a function
             in a general dict because it makes it easier in the future to modify them.
@@ -31,17 +50,58 @@ def get_vocabulary(vocabulary_name,
         vocab_params = {}
     frequency_treshold = vocab_params.get("frequency_treshold")
 
-    if lemmatize_first:
-        # do some lemmatization of input files here @Fra
-        pass
-
+    if replacement_first:
+        if(input_files == None):
+            print("the argument input_files should not be None \n")
+            print("Replacement will not be executed \n")
+        else:
+            print("starting replacement (i.d don't -> do not ) \n")
+            lemm_rep = lemma.RegexpReplacer()
+            for i,input_file in enumerate(input_files):
+                with open(input_file) as f:
+                    file_lemmatized = lemm_rep.replace(f.read())
+                with open("tobedeleted_"+str(i + 1)+".txt", "w") as f:
+                    f.write(file_lemmatized)
+            input_files = ["tobedeleted_1.txt","tobedeleted_2.txt"]
+            print("replacement done. \n")
+            
+            
+        
     if load_from_file: vocab = load_vocab(vocabulary_name)
     else: vocab = build_vocab(frequency_treshold,
                               vocabulary_name,
                               input_files)
-
+    os.remove("tobedeleted_1.txt")
+    os.remove("tobedeleted_2.txt")
     return vocab
 
+
+def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"]):
+    """
+    function that produces a lemmatized text.
+    :param input_files: a list containing the path to the two files.
+    :stopwords : (bool) either you want to have stopwords or not.
+    :replacement : (bool) either you want to have replacement id. don't -> do not
+    :outputfile: list containing the names of the two output files
+    """
+    if replacement == 1:
+        print("starting replacement (i.d don't -> do not ) \n")
+        lemm_rep = lemma.RegexpReplacer()
+        for i,input_file in enumerate(input_files):
+            with open(input_file) as f:
+                file_replaced = lemm_rep.replace(f.read())
+            with open("tobedeleted_"+str(i + 1)+".txt", "w") as f:
+                f.write(file_replaced)
+        input_files = ["tobedeleted_1.txt","tobedeleted_2.txt"]
+        print("replacement done. \n")
+    print("Starting lemmatizing on first file:  i.d( loove -> love, believes -> belief) \n")
+    file_1 = lemma.TxtLemmatized(file_name = input_files[0], stopword = stopwords, output_file = outputfile[0])
+    print("Starting lemmatizing on second file:  i.d( loove -> love, believes -> belief) \n")
+    file_2 = lemma.TxtLemmatized(file_name = input_files[1], stopword = stopwords, output_file = outputfile[1])
+    print("Done \n")
+    os.remove("tobedeleted_1.txt")
+    os.remove("tobedeleted_2.txt")
+    return (file_1, file_2)
 
 
 
@@ -85,7 +145,7 @@ def run_preprocessing(vocab_name,
                       cooc_name,
                       to_build_vocab=True,
                       to_build_cooc=True,
-                      to_lemmatize_input=False,
+                      to_lemmatize_input=False, #if True we would lemmatize with stopwords = 0 and replacement = 1
                       vocab_build_params=None,
                       cooc_build_params=None,
                       input_files=None):
@@ -103,12 +163,18 @@ def run_preprocessing(vocab_name,
     :param input_files:  (list(str)) the list of input files, if not provided the sample files will be used.
     :return: vocabulary and co-occurrence matrix
     """
-
+    if(to_lemmatize_input == True):
+        files = getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"])
+        input_files =  ["lemm_pos.txt", "lemm_neg.txt"]
+        
     vocab = get_vocabulary(vocab_name,
                            load_from_file=not to_build_vocab,
                            input_files = input_files,
-                           lemmatize_first=to_lemmatize_input,
+                           replacement_first=to_lemmatize_input, #replacement takes into account only of the change don't -> do not
                            vocab_params=vocab_build_params)
+    if(to_lemmatize_input ==  True):
+        vocab = get_lemmatization(vocab, stopwords = 0, output = "dict_tmp.pkl") #get lemmatization continues with all other kinds of lemmatization
+    
     cooc = get_cooc_matrix(cooc_name,
                            vocab_name,
                            load_from_file= not to_build_cooc,
