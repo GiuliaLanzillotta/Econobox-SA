@@ -1,11 +1,15 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
 from classifier.recurrent_NN import recurrent_NN
+from classifier.SVM_classi import SVM_classi
+from classifier.LR_classi import LR_classi
 from classifier.classifier_base import ClassifierBase
 from embedding import matrix_train_location
 import embedding
 import numpy as np
 import os
+from sklearn.model_selection import KFold
+from classifier import K_FOLD_SPLITS
 
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 
@@ -114,11 +118,122 @@ def get_recurrent_model(model_name,
     if save_model: recurrent.save()
     return recurrent
 
+def get_LR_model(model_name,
+                 embedding_dim=embedding.embedding_dim,
+                 train_data=None,
+                 load_model=False,
+                 train_model=True,
+                 save_model=True,
+                 test_data=None,
+                 build_params=None,
+                 train_params=None):
+    """
+          Creates a new instance of LR_classi
+          Parameters:
+          :param model_name: (str) the name of the model to create, or the name of the model to load.
+          :param embedding_dim: (int) dimension of the embedding space
+          :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+                  the embedding.pipeline.build_embedding_matrix method
+          :param load_model: (bool) whether to load the model from file.
+          :param train_model: (bool) whether to train the model.
+          :param save_model: (bool) whether to save the model
+          :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+          :param build_params: (dict) dictionary of parameters to pass to build the model
+                  Example : {c:1,
+                            solver:'lbfgs',
+                            }
+          :param train_params: (dict) dictionary of parameters to pass to build the model
+                  Example : {validation_split:0.2}
+          :return: an instance of LR_classi class
+          """
+    ourLR = LR_classi(embedding_dim, model_name)
+    ourLR.build(**build_params)
+    if load_model: ourLR.load()
+    if train_model:
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        ourLR.train(x_train, y_train)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        oursvm.test(x_test, y_test)
+    if save_model: ourLR.save()
+    return ourLR
 
 
-def cross_validation():
-    # TODO: implement cross_validation
-    pass
+
+def get_SVM_model(model_name,
+                  embedding_dim=embedding.embedding_dim,
+                  train_data=None,
+                  load_model=False,
+                  train_model=True,
+                  save_model=True,
+                  test_data=None,
+                  build_params=None,
+                  train_params=None):
+    """
+       Creates a new instance of SVM_classi
+       Parameters:
+       :param model_name: (str) the name of the model to create, or the name of the model to load.
+       :param embedding_dim: (int) dimension of the embedding space
+       :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+               the embedding.pipeline.build_embedding_matrix method
+       :param load_model: (bool) whether to load the model from file.
+       :param train_model: (bool) whether to train the model.
+       :param save_model: (bool) whether to save the model
+       :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+       :param build_params: (dict) dictionary of parameters to pass to build the model
+               Example : {c:1,
+                         kernel:'rbf',
+                         }
+       :param train_params: (dict) dictionary of parameters to pass to build the model
+               Example : {validation_split:0.2}
+       :return: an instance of SVM_classi class
+       """
+    oursvm = SVM_classi(embedding_dim, model_name)
+    oursvm.build(**build_params)
+    if load_model: oursvm.load()
+    if train_model:
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        oursvm.train(x_train, y_train)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        oursvm.test(x_test, y_test)
+    if save_model: oursvm.save()
+    return oursvm
+
+
+def cross_validation(train_data, typemodel, embedding_dim, model_name):
+
+    typemodeldict = {
+        "vanilla_NN": vanilla_NN(embedding_dim, model_name),
+        "SVM_classi": SVM_classi(embedding_dim, model_name),
+        "LR_classi": LR_classi(embedding_dim, model_name),
+        "recurrent_NN": recurrent_NN(embedding_dim,model_name),
+        "_": lambda: None  # empty function
+    }
+
+    ourmodel = typemodeldict[typemodel]
+
+    build_params = None
+    train_params = None
+    x_t = train_data[:, 0:-1]
+    y_t = train_data[:, -1]
+    kf = KFold(n_splits=K_FOLD_SPLITS, shuffle=True)
+    mses = []
+    ourmodel.build()
+
+    for train_index, test_index in kf.split(x_t):
+        print(test_index)
+        X_train, X_test, y_train, y_test = x_t[train_index], x_t[test_index], y_t[train_index], y_t[test_index]
+        ourmodel.train(X_train, y_train)
+        score = ourmodel.test(X_test,y_test)
+        mses.append(score)
+        print(score)
+
+    return np.mean(mses), np.std(mses)
 
 def grid_search():
     # TODO: implement grid_search
@@ -172,6 +287,7 @@ def run_train_pipeline(model_type,
                      test_data=test_matrix,
                      build_params=build_params,
                      train_params=train_params)
+    #cross_validation(train_data=train_matrix, typemodel='LR_classi', embedding_dim=embedding.embedding_dim, model_name='ourLR')
     return model
 
 
