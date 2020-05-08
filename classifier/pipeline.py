@@ -62,6 +62,8 @@ def get_vanilla_model(model_name,
     if save_model: vanilla.save()
     return vanilla
 
+#TODO @Giulia: add no_embeddings training matrix
+#TODO @Giulia: complete configuration of recurrent NN
 def get_recurrent_model(model_name,
                         embedding_dim=embedding.embedding_dim,
                         train_data=None,
@@ -159,7 +161,6 @@ def get_LR_model(model_name,
         oursvm.test(x_test, y_test)
     if save_model: ourLR.save()
     return ourLR
-
 
 
 def get_SVM_model(model_name,

@@ -96,12 +96,15 @@ def get_glove_embedding(vocabulary_file=None,
     if save: gloVe_embedding.save_embedding()
     return gloVe_embedding
 
-def run_embedding_pipeline(glove=True):
+def run_embedding_pipeline(glove=True, no_embedding=False):
     # Get the embedding
     print("Embedding pipeline")
     glove = get_glove_embedding(load_from_file=True)
+    if no_embedding: embedding_function = sentence_embedding.no_embeddings
+    else : embedding_function = None
     build_embedding_matrix(label=True,
-                           embedding=glove)
+                           embedding=glove,
+                           aggregation_fun=embedding_function)
 
 
 

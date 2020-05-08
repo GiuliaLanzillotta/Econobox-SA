@@ -26,11 +26,15 @@ class recurrent_NN(ClassifierBase):
     """
     def __init__(self,
                  embedding_dimension,
+                 vocabulary_dimension,
+                 embedding_matrix=None, # initializer of embedding
                  name="RecurrentNN"):
         super().__init__(embedding_dimension, name=name)
         self.possible_cell_values = ["GRU","LSTM"]
         self.history = None
         self.model = None
+        self.embedding_matrix = embedding_matrix
+        self.vocabulary_dim = vocabulary_dimension
 
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
@@ -43,7 +47,8 @@ class recurrent_NN(ClassifierBase):
                                                   + " ".join(self.possible_cell_values)  # printing the admissible cell values
         num_layers = kwargs.get("num_layers")  # number of recurrent layers
         hidden_size = kwargs.get("hidden_size")  # size of hidden representation
-        train_embedding = kwargs.get("train_embedding")  # whether to add an Embedding layer to the model
+        train_embedding = kwargs.get("train_embedding")  # whether to train the Embedding layer to the model
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding")
         use_attention = kwargs.get("use_attention")
         activation = kwargs.get("activation")
         loss = kwargs.get("loss")
@@ -55,6 +60,7 @@ class recurrent_NN(ClassifierBase):
         if not num_layers: num_layers = 1
         if not hidden_size: hidden_size = 64
         if not train_embedding: train_embedding = False
+        if not use_pretrained_embedding: use_pretrained_embedding = False
         if not use_attention: use_attention = False
         if not activation: activation = "relu"
         if not loss: loss = "binary_crossentropy"
@@ -67,6 +73,12 @@ class recurrent_NN(ClassifierBase):
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
         model.add(tf.keras.layers.Input(shape=(None,self.input_dim)))
+        weights = None
+        if use_pretrained_embedding: weights = [self.embedding_matrix]
+        model.add(tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
+                                            output_dim=self.input_dim,
+                                            weights=weights,
+                                            trainable=train_embedding))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
         if cell_type == "GRU":

@@ -9,6 +9,28 @@ NOTA BENE: every embedding function to use in the pipeline method as *aggregatio
 should take as input the *sentence* and the *embedding* (in this order) and should *tokenize*
 the text, *filter* the sentence and finally *aggregate* the embeddings. 
 """
+def no_embeddings(sentence, embedding):
+    """
+    Simply computes the mapping from word to vocabulary index
+    for each word in the sentence and returns the index-version of
+    the sentence
+    :param sentence: list(str)
+        A sentence is represented as a list of words.
+    :param embedding: implements EmbeddingBase class
+    :return: np.array
+        The embedding for the sentence.
+    """
+    assert issubclass(embedding.__class__, EmbeddingBase), "embedding should be an instance of EmbeddingBase"
+    vocabulary = embedding.vocabulary
+
+    # Here we filter out the words that are not in the vocabulary
+    sentence = tokenize_text(sentence)
+    sentence_filtered = [t for t in sentence if t in vocabulary.keys()]
+    sentence_emb = np.zeros(len(sentence))
+    for i,word in enumerate(sentence_filtered):
+        sentence_emb[i] = vocabulary.get(word)
+    return sentence_emb
+
 def sum_embeddings(sentence, embedding):
     """
     Computes the embedding for a sentence given the single words

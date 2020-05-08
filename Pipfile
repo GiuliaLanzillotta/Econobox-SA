@@ -64,6 +64,7 @@ Send2Trash = "==1.5.0"
 tensorflow = "*"
 matplotlib = "*"
 keras = "*"
+scikit-learn = "*"
 
 [requires]
 python_version = "3.7"
