@@ -20,60 +20,71 @@ class recurrent_NN(ClassifierBase):
     Addons:
     - embedding layer
     - attention mechanism
+    ------------
+    # TODO: incorporate embedding
+    # TODO: incorporate attention mechanism
     """
     def __init__(self,
                  embedding_dimension,
-                 name="RecurrentNN",
-                 cell_type="LSTM", # either LSTM or GRU
-                 num_layers=1, # number of recurrent layers
-                 hidden_size=64, # size of hidden representation
-                 train_embedding=False, # whether to add an Embedding layer to the model
-                 use_attention= False):  # whether to add an attention mechanism to the model
+                 name="RecurrentNN"):
         super().__init__(embedding_dimension, name=name)
-        possible_cell_values = ["GRU","LSTM"]
+        self.possible_cell_values = ["GRU","LSTM"]
         self.history = None
         self.model = None
-        assert cell_type in possible_cell_values, "The cell type must be one of the following values : " \
-                                                  + " ".join(possible_cell_values) # printing the admissible cell values
-        self.cell_type = cell_type
-        self.num_layers = num_layers
-        self.hidden_size = hidden_size
-        # TODO: incorporate embedding
-        # TODO: incorporate attention mechanism
-
 
     def build(self, **kwargs):
+        #TODO: add support for list of hidden sizes
         print("Building model.")
 
+        ## --------------------
+        ## Extracting model parameters from arguments
+        cell_type = kwargs.get("cell_type")  # either LSTM or GRU
+        assert cell_type in self.possible_cell_values, "The cell type must be one of the following values : " \
+                                                  + " ".join(self.possible_cell_values)  # printing the admissible cell values
+        num_layers = kwargs.get("num_layers")  # number of recurrent layers
+        hidden_size = kwargs.get("hidden_size")  # size of hidden representation
+        train_embedding = kwargs.get("train_embedding")  # whether to add an Embedding layer to the model
+        use_attention = kwargs.get("use_attention")
         activation = kwargs.get("activation")
         loss = kwargs.get("loss")
         optimizer = kwargs.get("optimizer")
         metrics = kwargs.get("metrics")
 
+
+        if not cell_type: cell_type = "LSTM"
+        if not num_layers: num_layers = 1
+        if not hidden_size: hidden_size = 64
+        if not train_embedding: train_embedding = False
+        if not use_attention: use_attention = False
         if not activation: activation = "relu"
         if not loss: loss = "binary_crossentropy"
         if not optimizer: optimizer = "adam"
         if not metrics : metrics = ['accuracy']
+        ## ---------------------
 
 
         model = tf.keras.models.Sequential()
+        # Note the shape parameter must not include the batch size
+        # Here None stands for the timesteps
+        model.add(tf.keras.layers.Input(shape=(None,self.input_dim)))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
-        if self.cell_type == "GRU":
+        if cell_type == "GRU":
             recurrent = tf.keras.layers.GRU
-        if self.cell_type == "LSTM":
+        if cell_type == "LSTM":
             recurrent = tf.keras.layers.LSTM
         # Stacking num_layers recurrent layers
-        for l in range(self.num_layers-1):
+        for l in range(num_layers-1):
             # Note: forcing the recurrent layer to be Bidirectional
-            model.add(tf.keras.layers.Bidirectional(recurrent(self.hidden_size), return_sequences=True,
+            model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size),
+                                                    return_sequences=True,
                                                     name="Recurrent"+str(l)))
-        model.add(tf.keras.layers.Bidirectional(recurrent, name="Recurrent"+str(self.num_layers-1)))
+        model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size), name="Recurrent"+str(num_layers-1)))
         ## Dense head --------
         ## This last part of the model is responsible for mapping
         ## back the output of the recurrent layer to a binary value,
         ## which will indeed be our prediction
-        model.add(tf.keras.layers.Dense(self.hidden_size, activation=activation, name="Dense1"))
+        model.add(tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1"))
         model.add(tf.keras.layers.Dense(1, name="Dense2"))
         self.model = model
         self.model.compile(loss=loss,
@@ -115,7 +126,6 @@ class recurrent_NN(ClassifierBase):
                             verbose=verbose)
 
     def plot_history(self):
-
         # summarize history for accuracy
         plt.plot(self.history.history['accuracy'])
         plt.plot(self.history.history['val_accuracy'])

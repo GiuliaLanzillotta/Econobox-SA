@@ -1,5 +1,6 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
+from classifier.recurrent_NN import recurrent_NN
 from classifier.classifier_base import ClassifierBase
 from embedding import matrix_train_location
 import embedding
@@ -57,6 +58,63 @@ def get_vanilla_model(model_name,
     if save_model: vanilla.save()
     return vanilla
 
+def get_recurrent_model(model_name,
+                        embedding_dim=embedding.embedding_dim,
+                        train_data=None,
+                        load_model=False,
+                        train_model=False,
+                        save_model=False,
+                        test_data=None,
+                        model_params=None,
+                        build_params=None,
+                        train_params=None):
+    """
+    Creates a new instance of Vanilla_NN
+    Parameters:
+    :param model_name: (str) the name of the model to create, or the name of the model to load.
+    :param embedding_dim: (int) dimension of the embedding space
+    :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+            the embedding.pipeline.build_embedding_matrix method
+    :param load_model: (bool) whether to load the model from file.
+    :param train_model: (bool) whether to train the model.
+    :param save_model: (bool) whether to save the model
+    :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+    :param model_params: (dict) dictionary of parameters to pass to build the model
+            Example:
+    :param build_params: (dict) dictionary of parameters to pass to build the model
+            ```
+            >>> Example : build_params = {"activation":'relu', \
+                                            "optimizer":'adam',\
+                                            "loss":"binary_crossentropy",\
+                                            "metrics":None,\
+                                            "cell_type":"LSTM",\
+                                            "num_layers":3,\
+                                            "hidden_size":64,\
+                                            "train_embedding":False,\
+                                            "use_attention":False}
+            ```
+    :param train_params: (dict) dictionary of parameters to pass to build the model
+            Example : {epochs:10,
+                        batch_size:32,
+                        validation_split:0.2}
+    :return: an instance of Vanilla_NN class
+    """
+
+    recurrent = recurrent_NN(embedding_dim,model_name)
+    recurrent.build(**build_params)
+    if load_model: recurrent.load()
+    if train_model:
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        recurrent.train(x_train, y_train, **train_params)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        recurrent.test(x_test,y_test, **train_params)
+    if save_model: recurrent.save()
+    return recurrent
+
+
 
 def cross_validation():
     # TODO: implement cross_validation
@@ -94,6 +152,7 @@ def run_train_pipeline(model_type,
 
     model_pipeline_fun = {
         "vanilla_NN": get_vanilla_model,
+        "recurrent_NN":get_recurrent_model,
         "_": lambda : None # empty function
     }
 
