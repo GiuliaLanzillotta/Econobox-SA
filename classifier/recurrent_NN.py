@@ -1,21 +1,45 @@
-# Here we should implement a vanilla NN that takes as input the embedding for 
-# a sentence and prints as output the class of the tweet
+# Here we should implement a recurrent NN that takes as input
+# a sequence of embeddings (one for each word) and
+# outputs the class of the tweet
 from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
 from classifier import models_store_path
-from keras.utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Dense
+import tensorflow as tf
 
 
-class vanilla_NN(ClassifierBase):
-    """Vanilla NN classifier"""
+class recurrent_NN(ClassifierBase):
+    """
+    Recurrent NN classifier
+    This class implements a recurrent NN.
+    -------------
+    Parameters :
+    - cell type (LSTM, GRU, ...)
+    - number of recurrent layers to use
+    - size of hidden representation
+    ------------
+    Addons:
+    - embedding layer
+    - attention mechanism
+    """
     def __init__(self,
                  embedding_dimension,
-                 name="VanillaNN"):
+                 name="RecurrentNN",
+                 cell_type="LSTM", # either LSTM or GRU
+                 num_layers=1, # number of recurrent layers
+                 hidden_size=64, # size of hidden representation
+                 train_embedding=False, # whether to add an Embedding layer to the model
+                 use_attention= False):  # whether to add an attention mechanism to the model
         super().__init__(embedding_dimension, name=name)
+        possible_cell_values = ["GRU","LSTM"]
         self.history = None
         self.model = None
+        assert cell_type in possible_cell_values, "The cell type must be one of the following values : " \
+                                                  + " ".join(possible_cell_values) # printing the admissible cell values
+        self.cell_type = cell_type
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        # TODO: incorporate embedding
+        # TODO: incorporate attention mechanism
 
 
     def build(self, **kwargs):
@@ -32,12 +56,26 @@ class vanilla_NN(ClassifierBase):
         if not metrics : metrics = ['accuracy']
 
 
-        self.model = Sequential()
-        self.model.add(Dense(units=64, activation=activation,
-                             input_dim=self.input_dim, name="Dense1"))
-        self.model.add(Dense(units=64, activation=activation,
-                             input_dim=64, name="Dense2"))
-        self.model.add(Dense(units=2, activation='softmax', name="Dense3"))
+        model = tf.keras.models.Sequential()
+        ## Recurrent layer -------
+        ## This part of the model is responsible for processing the sequence
+        if self.cell_type == "GRU":
+            recurrent = tf.keras.layers.GRU
+        if self.cell_type == "LSTM":
+            recurrent = tf.keras.layers.LSTM
+        # Stacking num_layers recurrent layers
+        for l in range(self.num_layers-1):
+            # Note: forcing the recurrent layer to be Bidirectional
+            model.add(tf.keras.layers.Bidirectional(recurrent(self.hidden_size), return_sequences=True,
+                                                    name="Recurrent"+str(l)))
+        model.add(tf.keras.layers.Bidirectional(recurrent, name="Recurrent"+str(self.num_layers-1)))
+        ## Dense head --------
+        ## This last part of the model is responsible for mapping
+        ## back the output of the recurrent layer to a binary value,
+        ## which will indeed be our prediction
+        model.add(tf.keras.layers.Dense(self.hidden_size, activation=activation, name="Dense1"))
+        model.add(tf.keras.layers.Dense(1, name="Dense2"))
+        self.model = model
         self.model.compile(loss=loss,
                            optimizer=optimizer,
                            metrics=metrics)
@@ -56,7 +94,7 @@ class vanilla_NN(ClassifierBase):
         if not batch_size: batch_size=32
         if not validation_split: validation_split=0.20
 
-        y_train = to_categorical(y)
+        y_train = tf.keras.utils.to_categorical(y)
         self.history = self.model.fit(x, y_train,
                                       epochs=epochs,
                                       batch_size=batch_size,
@@ -71,7 +109,7 @@ class vanilla_NN(ClassifierBase):
         if not batch_size: batch_size = 32
         if not verbose: verbose=1
 
-        y_test = to_categorical(y)
+        y_test = tf.keras.utils.to_categorical(y)
         self.model.evaluate(x, y_test,
                             batch_size=batch_size,
                             verbose=verbose)
