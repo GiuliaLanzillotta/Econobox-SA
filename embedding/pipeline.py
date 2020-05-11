@@ -58,7 +58,7 @@ def build_embedding_matrix(label,
     np.savez(output_location, output)
     return output
 
-def get_glove_embedding(vocabulary_file=None,
+def get_glove_embedding(vocabulary_file="vocab.pkl",
                         cooc_file="cooc.pkl",
                         load_from_file=False,
                         file_name = None,
@@ -81,14 +81,12 @@ def get_glove_embedding(vocabulary_file=None,
     :param train_eta: training learning rate
     :return:
     """
-    if vocabulary_file is None: vocab = load_vocab(vocabulary_file)
-    else: vocab = load_vocab(vocabulary_file)
+    vocab = load_vocab(vocabulary_file)
     if file_name is None: file_name = glove_embedding_location
-    cooc = load_cooc(cooc_file)
     gloVe_embedding = GloVeEmbedding(file_name,
                                      embedding_dim,
                                      vocab,
-                                     cooc,
+                                     cooc_file,
                                      load=load_from_file)
     if load_Stanford: gloVe_embedding.load_stanford_embedding()
     if train: gloVe_embedding.train_embedding(epochs=train_epochs,

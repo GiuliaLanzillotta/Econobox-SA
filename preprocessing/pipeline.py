@@ -52,7 +52,7 @@ def get_vocabulary(vocabulary_name,
     frequency_treshold = vocab_params.get("frequency_treshold")
 
     if replacement_first:
-        if(input_files == None):
+        if(input_files is None):
             print("the argument input_files should not be None \n")
             print("Replacement will not be executed \n")
         else:
