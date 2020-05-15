@@ -1,5 +1,5 @@
 # Offers the embedding pipeline methods
-from embedding import embedding_dim, glove_embedding_location, matrix_train_location
+from embedding import embedding_dim, matrix_train_location
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
@@ -89,7 +89,7 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
     :return:
     """
     vocab = load_vocab(vocabulary_file)
-    if file_name is None: file_name = glove_embedding_location
+    if file_name is None: file_name = "glove_emb.npz"
     gloVe_embedding = GloVeEmbedding(file_name,
                                      embedding_dim,
                                      vocab,
@@ -109,7 +109,11 @@ def run_embedding_pipeline(no_embedding=False,
     this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
-    glove = get_glove_embedding(load_from_file=True)
+    glove = get_glove_embedding(load_from_file=True,
+                                load_Stanford=False,
+                                file_name="glove+stanford.npz",
+                                train=False,
+                                save=False)
     embedding_function = None # default parameter will be used
     train_dimension = None # //          //
     if no_embedding:

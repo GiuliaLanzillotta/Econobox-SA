@@ -1,7 +1,7 @@
 # All necessary tools to train a glove embedding
 from abc import abstractmethod, ABC
 
-from embedding import settings_location, glove_embedding_location, embedding_dim, \
+from embedding import settings_location, embedding_dim, \
     stanford_embedding_location
 from embedding.embedding_base import EmbeddingBase
 from preprocessing import sample_dimension, cooc_folder, vocabularies_folder
@@ -15,13 +15,13 @@ class GloVeEmbedding(EmbeddingBase):
     """Implements GloVe version of Embedding"""
 
     def __init__(self,
-                 embedding_location,
+                 embedding_name,
                  embedding_dimension,
                  vocabulary,
                  cooc,
                  input_dimension = sample_dimension,
                  load = False):
-        super(GloVeEmbedding, self).__init__(embedding_location,
+        super(GloVeEmbedding, self).__init__(embedding_name,
                                              embedding_dimension,
                                              vocabulary,
                                              cooc,
@@ -54,6 +54,11 @@ class GloVeEmbedding(EmbeddingBase):
         for epoch in range(epochs):
             print("epoch {}".format(epoch))
             for ix, jy, n in zip(cooc.row, cooc.col, cooc.data):
+                # the indices in the embedding matrix equal the
+                # indices in the vocabulary + 1
+                # because we want to leave the 0 position free
+                ix +=1
+                jy +=1
                 logn = np.log(n)
                 fn = min(1.0, (n / self.max) ** self.alpha)
                 x, y = xs[ix, :], xs[jy, :]
@@ -80,8 +85,9 @@ class GloVeEmbedding(EmbeddingBase):
             embeddings_index[word] = coefs
         f.close()
 
-        emb_matrix = np.zeros((self.vocabulary_dimension, self.embedding_dimension))
-        for idx, word in enumerate(self.vocabulary.keys()):
+        emb_matrix = np.zeros((self.vocabulary_dimension +1 , self.embedding_dimension))
+        for word in self.vocabulary.keys():
+            idx = self.vocabulary.get(word)
             embedding_vector = embeddings_index.get(word)
             if embedding_vector is not None:
                 emb_matrix[idx + 1] = embedding_vector

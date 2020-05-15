@@ -46,7 +46,7 @@ def no_embeddings(sentence, embedding, **kwargs):
             global count
             count += 1
             break # we're not going to add any more words to the sentence --> cutting it off
-        sentence_emb[i] = vocabulary.get(word)
+        sentence_emb[i] = vocabulary.get(word) + 1
     return sentence_emb
 
 def sum_embeddings(sentence, embedding, **kwargs):
@@ -71,7 +71,7 @@ def sum_embeddings(sentence, embedding, **kwargs):
     emb_dim = embedding_matrix.shape[1]
     sentence_emb = np.zeros(emb_dim)
     for word in sentence_filtered:
-        sentence_emb += embedding_matrix[vocabulary.get(word)]
+        sentence_emb += embedding_matrix[vocabulary.get(word) + 1]
     return sentence_emb
 
 

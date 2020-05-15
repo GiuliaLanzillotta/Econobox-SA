@@ -35,7 +35,7 @@ class recurrent_NN(ClassifierBase):
         self.history = None
         self.model = None
         self.embedding_matrix = embedding_matrix
-        self.vocabulary_dim = vocabulary_dimension
+        self.vocabulary_dim = vocabulary_dimension + 1
 
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
@@ -77,8 +77,8 @@ class recurrent_NN(ClassifierBase):
         model.add(tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
                                             output_dim=self.input_dim,
                                             weights=weights,
-                                            trainable=train_embedding,
-                                            mask_zero=True))
+                                            mask_zero=True,
+                                            trainable=train_embedding))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
         if cell_type == "GRU":
@@ -160,8 +160,9 @@ class recurrent_NN(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+"/"+self.name
-        os.makedirs(path)
+        path = models_store_path+self.name+"/"
+        try: os.makedirs(path)
+        except Exception as e: print(e)
         self.model.save_weights(path,overwrite=overwrite)
 
     def load(self, **kwargs):

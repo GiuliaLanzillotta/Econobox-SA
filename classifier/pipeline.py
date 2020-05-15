@@ -5,7 +5,7 @@ from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension
-from embedding import matrix_train_location, glove_embedding_location
+from embedding import matrix_train_location, embeddings_folder
 import embedding
 import numpy as np
 import os
@@ -119,12 +119,13 @@ def get_recurrent_model(model_name,
     # --------------------
     # Opening pre-trained embedding matrix
     load_embedding = kwargs.get("load_embedding")
-    embedding_location = kwargs.get("embedding_location")
-    if not embedding_location: embedding_location = glove_embedding_location
+    embedding_name = kwargs.get("embedding_location")
+    if not embedding_name: embedding_name = "glove_emb.npz"
     embedding_matrix = None
     if load_embedding:
         abs_path = os.path.abspath(os.path.dirname(__file__))
-        embedding_matrix = np.load(os.path.join(abs_path, embedding_location))['arr_0']
+        embedding_matrix = np.load(os.path.join(abs_path,
+                                                embeddings_folder+embedding_name))['arr_0']
     # -------------------
     # Building the model
     recurrent = recurrent_NN(embedding_dimension=embedding_dim,
@@ -276,8 +277,7 @@ def run_train_pipeline(model_type,
                        train_data_location=matrix_train_location,
                        test_data_location=None,
                        build_params=None,
-                       train_params=None,
-                       train_embedding=False):
+                       train_params=None):
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
@@ -324,7 +324,7 @@ def run_train_pipeline(model_type,
                      # if you're not using the recurrent net :
                      # they will be automatically ignored by all other functions
                      load_embedding=True,
-                     embedding_location = glove_embedding_location)
+                     embedding_name = "glove+stanford.npz")
     #cross_validation(train_data=train_matrix, typemodel='LR_classi', embedding_dim=embedding.embedding_dim, model_name='ourLR')
     return model
 

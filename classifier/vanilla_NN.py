@@ -98,13 +98,14 @@ class vanilla_NN(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+self.name
+        path = models_store_path+self.name+"/"
+        try: os.makedirs(path)
+        except Exception as e: print(e)
         self.model.save_weights(path,overwrite=overwrite)
 
     def load(self, **kwargs):
         print("Loading model")
-        path = models_store_path+"/"+self.name
-        os.makedirs(path)
+        path = models_store_path+self.name+"/"
         self.model.load_weights(path)
 
 

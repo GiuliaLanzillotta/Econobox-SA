@@ -1,0 +1,2 @@
+model_checkpoint_path: "Recurrent_2L_GRU"
+all_model_checkpoint_paths: "Recurrent_2L_GRU"
