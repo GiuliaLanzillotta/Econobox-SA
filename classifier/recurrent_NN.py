@@ -3,8 +3,9 @@
 # outputs the class of the tweet
 from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
-from classifier import models_store_path
+from classifier import models_store_path, predictions_folder
 import tensorflow as tf
+import numpy as np
 import os
 
 
@@ -25,6 +26,8 @@ class recurrent_NN(ClassifierBase):
 
     # TODO: incorporate attention mechanism
     """
+
+
     def __init__(self,
                  embedding_dimension,
                  vocabulary_dimension,
@@ -37,6 +40,21 @@ class recurrent_NN(ClassifierBase):
         self.embedding_matrix = embedding_matrix
         self.vocabulary_dim = vocabulary_dimension + 1
 
+    @staticmethod
+    def get_optimizer(optim_name):
+        """
+        Simply a routine to switch to the right optimizer
+        :param optim_name: name of the optimizer to use
+        """
+        learning_rate = 0.001
+        momentum = 0.09
+        optimizer = None
+        if optim_name == "sgd": optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=momentum)
+        if optim_name == "adam": optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        if optim_name == "rmsprop": optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate,
+                                                                            momentum=momentum)
+        return optimizer
+
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
         print("Building model.")
@@ -46,32 +64,21 @@ class recurrent_NN(ClassifierBase):
         cell_type = kwargs.get("cell_type")  # either LSTM or GRU
         assert cell_type in self.possible_cell_values, "The cell type must be one of the following values : " \
                                                   + " ".join(self.possible_cell_values)  # printing the admissible cell values
-        num_layers = kwargs.get("num_layers")  # number of recurrent layers
-        hidden_size = kwargs.get("hidden_size")  # size of hidden representation
-        train_embedding = kwargs.get("train_embedding")  # whether to train the Embedding layer to the model
-        use_pretrained_embedding = kwargs.get("use_pretrained_embedding")
-        use_attention = kwargs.get("use_attention")
-        activation = kwargs.get("activation")
-        loss = kwargs.get("loss")
-        metrics = kwargs.get("metrics")
-
-
-        if not cell_type: cell_type = "LSTM"
-        if not num_layers: num_layers = 1
-        if not hidden_size: hidden_size = 64
-        if not train_embedding: train_embedding = False
-        if not use_pretrained_embedding: use_pretrained_embedding = False
-        if not use_attention: use_attention = False
-        if not activation: activation = "relu"
-        if not loss: loss = "binary_crossentropy"
-        if not metrics : metrics = ['accuracy']
+        num_layers = kwargs.get("num_layers",1)  # number of recurrent layers
+        hidden_size = kwargs.get("hidden_size",64)  # size of hidden representation
+        train_embedding = kwargs.get("train_embedding",False)  # whether to train the Embedding layer to the model
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding",False)
+        use_attention = kwargs.get("use_attention",False)
+        activation = kwargs.get("activation","relu")
+        metrics = kwargs.get("metrics",['accuracy'])
+        optim = kwargs.get("optimizer","sgd")
         ## ---------------------
 
 
         model = tf.keras.models.Sequential()
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
-        model.add(tf.keras.layers.Input(shape=(None,)))
+        model.add(tf.keras.layers.Input(shape=(None,), dtype='int32'))
         weights = None
         if use_pretrained_embedding: weights = [self.embedding_matrix]
         model.add(tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
@@ -79,6 +86,7 @@ class recurrent_NN(ClassifierBase):
                                             weights=weights,
                                             mask_zero=True,
                                             trainable=train_embedding))
+        model.add(tf.keras.layers.Masking(mask_value=0))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
         if cell_type == "GRU":
@@ -98,10 +106,10 @@ class recurrent_NN(ClassifierBase):
         ## back the output of the recurrent layer to a binary value,
         ## which will indeed be our prediction
         model.add(tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1"))
-        model.add(tf.keras.layers.Dense(1, name="Dense2"))
+        model.add(tf.keras.layers.Dense(2, name="Dense2"))
         self.model = model
-        optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
-                                            momentum=0.09)
+        optimizer = self.get_optimizer(optim)
+        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         self.model.compile(loss=loss,
                            optimizer=optimizer,
                            metrics=metrics)
@@ -112,13 +120,9 @@ class recurrent_NN(ClassifierBase):
         Training the model and saving the history of training.
         """
         print("Training model.")
-        epochs = kwargs.get("epochs")
-        batch_size = kwargs.get("batch_size")
-        validation_split = kwargs.get("validation_split")
-
-        if not epochs: epochs = 10
-        if not batch_size: batch_size=32
-        if not validation_split: validation_split=0.20
+        epochs = kwargs.get("epochs",10)
+        batch_size = kwargs.get("batch_size",32)
+        validation_split = kwargs.get("validation_split",0.2)
 
         y_train = tf.keras.utils.to_categorical(y)
         self.history = self.model.fit(x, y_train,
@@ -127,6 +131,14 @@ class recurrent_NN(ClassifierBase):
                                       validation_split=validation_split,
                                       shuffle=True)
         self.plot_history()
+
+    def make_predictions(self, x, save=True, **kwargs):
+        print("Making predictions")
+        preds = self.model.predict(x)
+        preds_classes = np.argmax(preds, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
+        if save: self.save_predictions(preds_classes)
+
 
     def test(self, x, y,**kwargs):
         print("Testing model")
@@ -167,7 +179,7 @@ class recurrent_NN(ClassifierBase):
 
     def load(self, **kwargs):
         print("Loading model")
-        path = models_store_path+self.name
+        path = models_store_path+self.name+"/"
         self.model.load_weights(path)
 
 

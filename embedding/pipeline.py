@@ -3,9 +3,10 @@ from embedding import embedding_dim, matrix_train_location
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
-from preprocessing import sample_dimension, \
-    train_negative_sample_location, train_positive_sample_location
+from data import sample_dimension, \
+    train_negative_sample_location, train_positive_sample_location, test_location
 import numpy as np
+
 
 def build_training_matrix(label,
                           embedding,
@@ -36,7 +37,8 @@ def build_training_matrix(label,
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
     # INITIALIZE ----------
-    if label: out_dim1 = sentence_dimesion + 1
+    if label:
+        out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
     output = np.zeros((input_entries, out_dim1))
 
@@ -103,8 +105,12 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
 
 def run_embedding_pipeline(no_embedding=False,
                            output_location=matrix_train_location,
+                           prediction_mode=False,
                            glove=True):
-    """ Note: the glove parameter is not used now, because no other
+    """
+    :param prediction_mode : (bool) whether the system is in prediction mode (i.e. loading
+            the test data)
+    Note: the glove parameter is not used now, because no other
     embedding is implemented. When a new embedding will be at disposal
     this parameter can be used to switch btw the two."""
     # Get the embedding
@@ -115,15 +121,21 @@ def run_embedding_pipeline(no_embedding=False,
                                 train=False,
                                 save=False)
     embedding_function = None # default parameter will be used
-    train_dimension = None # //          //
+    max_len = None # //          //
     if no_embedding:
         embedding_function = sentence_embedding.no_embeddings
-        train_dimension = 50
-    build_training_matrix(label=True,
+        max_len = 50
+
+    input_files = None
+    if prediction_mode: input_files = [test_location]
+
+    build_training_matrix(label=not prediction_mode,
                           embedding=glove,
                           aggregation_fun=embedding_function,
-                          sentence_dimesion=train_dimension,
-                          output_location=output_location)
+                          sentence_dimesion=max_len,
+                          output_location=output_location,
+                          input_files=input_files)
+
     if no_embedding: print("Number of sentence cut-offs: ",sentence_embedding.count)
 
 

@@ -1,6 +1,7 @@
 # Here we implement all functions/classes relative to tokenizing 
-from preprocessing import train_positive_location, train_negative_location, \
-  train_positive_sample_location, train_negative_sample_location, vocabularies_folder
+from data import train_positive_location, train_negative_location, \
+  train_positive_sample_location, train_negative_sample_location
+from preprocessing import vocabularies_folder
 from nltk.tokenize.casual import TweetTokenizer
 from collections import Counter
 import os

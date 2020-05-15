@@ -6,6 +6,8 @@ from classifier import models_store_path
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense
+from classifier import predictions_folder
+import numpy as np
 import os
 
 
@@ -76,6 +78,14 @@ class vanilla_NN(ClassifierBase):
         self.model.evaluate(x, y_test,
                             batch_size=batch_size,
                             verbose=verbose)
+
+    def make_predictions(self, x, save=True, **kwargs):
+        print("Making predictions")
+        preds = self.model.predict(x)
+        preds_classes = np.argmax(preds, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
+        if save: self.save_predictions(preds_classes)
+
 
     def plot_history(self):
 

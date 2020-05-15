@@ -5,7 +5,7 @@ from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension
-from embedding import matrix_train_location, embeddings_folder
+from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 import embedding
 import numpy as np
 import os
@@ -89,14 +89,14 @@ def get_recurrent_model(model_name,
     :param build_params: (dict) dictionary of parameters to pass to build the model
             ```
             >>> Example : build_params = {"activation":'relu', \
-                                            "optimizer":'adam',\
                                             "loss":"binary_crossentropy",\
                                             "metrics":None,\
                                             "cell_type":"LSTM",\
                                             "num_layers":3,\
                                             "hidden_size":64,\
                                             "train_embedding":False,\
-                                            "use_attention":False}
+                                            "use_attention":False, \
+                                            "optimizer":"rmsprop"}
             ```
     :param train_params: (dict) dictionary of parameters to pass to build the model
             >>> Example : {"epochs":10, \
@@ -273,8 +273,9 @@ def grid_search():
 
 def run_train_pipeline(model_type,
                        model_name,
+                       prediction_mode=False,
                        load_model=False,
-                       train_data_location=matrix_train_location,
+                       data_location=matrix_train_location,
                        test_data_location=None,
                        build_params=None,
                        train_params=None):
@@ -283,8 +284,11 @@ def run_train_pipeline(model_type,
     from scratch (no loading) and saves it.
     :param model_type: (str). Should appear as a key in 'model_pipeline_fun'
     :param model_name: (str). Name of the model, very important if you want to load it from file.
+    :param prediction_mode: (bool). Whether to load a classifier in prediction mode
+            If True, a classifier will be loaded (no training) and
+            a new submission file will be created.
     :param load_model: (bool). Whether to load a pre-trained model (False by default).
-    :param train_data_location: (str/path).
+    :param data_location: (str/path). Path to the training matrix or the prediction input matrix.
     :param test_data_location: (str/path).
     :param build_params: (dict). Dictionary of build parameter. The entries depend on your specific model.
     :param train_params: (dict). DIctionary of trainin parameters. // //
@@ -305,17 +309,17 @@ def run_train_pipeline(model_type,
 
     print("Loading data")
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    train_matrix = np.load(os.path.join(abs_path,train_data_location))['arr_0']
+    data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
     else: test_matrix = None
 
     function = model_pipeline_fun[model_type]
     model = function(model_name,
-                     train_data=train_matrix,
+                     train_data=data_matrix,
                      load_model=load_model,
-                     train_model=True,
-                     save_model=True,
+                     train_model=not prediction_mode,
+                     save_model=not prediction_mode,
                      test_data=test_matrix,
                      build_params=build_params,
                      train_params=train_params,
@@ -325,6 +329,8 @@ def run_train_pipeline(model_type,
                      # they will be automatically ignored by all other functions
                      load_embedding=True,
                      embedding_name = "glove+stanford.npz")
+    if prediction_mode:
+        model.make_predictions(data_matrix, save=True)
     #cross_validation(train_data=train_matrix, typemodel='LR_classi', embedding_dim=embedding.embedding_dim, model_name='ourLR')
     return model
 

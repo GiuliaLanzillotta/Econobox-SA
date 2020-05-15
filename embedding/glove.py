@@ -4,7 +4,8 @@ from abc import abstractmethod, ABC
 from embedding import settings_location, embedding_dim, \
     stanford_embedding_location
 from embedding.embedding_base import EmbeddingBase
-from preprocessing import sample_dimension, cooc_folder, vocabularies_folder
+from data import sample_dimension
+from preprocessing import cooc_folder, vocabularies_folder
 import numpy as np 
 import pickle
 import json

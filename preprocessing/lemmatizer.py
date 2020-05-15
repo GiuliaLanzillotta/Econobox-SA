@@ -2,7 +2,7 @@
 from preprocessing.tokenizer import tokenize_text,build_vocab
 import pickle,os
 import numpy as np
-from preprocessing import train_positive_sample_location, train_negative_sample_location
+from data import train_positive_sample_location, train_negative_sample_location
 from nltk.corpus import stopwords
 import re
 from nltk.corpus import wordnet
