@@ -1,11 +1,14 @@
 # Tools to build the co-occurrence matrix from the input files and the vocabulary
+import sys
+import os
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ROOT_DIR)
+
 from __init__ import train_positive_location, train_negative_location, \
   train_positive_sample_location, train_negative_sample_location, cooc_folder
 from preprocessing.tokenizer import tokenize_text, load_vocab
 from scipy.sparse import *
-import numpy as np
 import pickle
-import os
 
 def build_cooc(vocab_name,
                window_size=None,

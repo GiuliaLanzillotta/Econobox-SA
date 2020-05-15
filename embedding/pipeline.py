@@ -3,18 +3,18 @@ from embedding import embedding_dim, glove_embedding_location, matrix_train_loca
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
-from preprocessing.cooc import load_cooc
 from preprocessing import sample_dimension, \
     train_negative_sample_location, train_positive_sample_location
 import numpy as np
 
-def build_embedding_matrix(label,
-                           embedding,
-                           input_files=None,
-                           label_values=None,
-                           aggregation_fun=sentence_embedding.sum_embeddings,
-                           input_entries=sample_dimension,
-                           output_location = matrix_train_location):
+def build_training_matrix(label,
+                          embedding,
+                          input_files=None,
+                          label_values=None,
+                          aggregation_fun=sentence_embedding.sum_embeddings,
+                          input_entries=sample_dimension,
+                          sentence_dimesion = embedding_dim,
+                          output_location = matrix_train_location):
     """
     Builds a matrix that associates each tweet to its embedding representation.
     :param input_entries: total size (in number of lines) of the input
@@ -23,6 +23,9 @@ def build_embedding_matrix(label,
     :param input_files: list(str). List of input files to transform.
     :param label_values: list(int). List of label values corresponding to each input file.
     :param aggregation_fun: function. Aggregation function to use to get a sentence embedding.
+    :param sentence_dimesion: specifies the dimensionality of a sentence. Note that
+    this value is correlated with the aggregation function. For instance, the sum_embeddings
+    aggregation function will require the same dimensionality of the embeddings.
     :param output_location: str/path. Where to save the output matri.
     :return: np.ndarray. The filled matrix.
     """
@@ -33,8 +36,8 @@ def build_embedding_matrix(label,
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
     # INITIALIZE ----------
-    if label: out_dim1 = embedding_dim + 1
-    else: out_dim1 = embedding_dim
+    if label: out_dim1 = sentence_dimesion + 1
+    else: out_dim1 = sentence_dimesion
     output = np.zeros((input_entries, out_dim1))
 
     # PROCESS THE FILES ----------
@@ -46,7 +49,11 @@ def build_embedding_matrix(label,
             # look at each line (=tweet)
             for l, line in enumerate(f):
                 # Get the tweet embedding from an helper function
-                sentence_emb = aggregation_fun(line,embedding).reshape(1, -1)  # making sure it is a row vector
+                # Note: you can safely ignore the max_len parameter
+                # if you're not using the no-embedding aggregation function
+                sentence_emb = aggregation_fun(line,embedding,
+                                               max_len=sentence_dimesion).reshape(1, -1)
+                                                            # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
                 #TODO: make sure the order doesn't matter
                 if not label:output[counter, :] = sentence_emb
@@ -94,16 +101,30 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
     if save: gloVe_embedding.save_embedding()
     return gloVe_embedding
 
-def run_embedding_pipeline(glove=True, no_embedding=False):
+def run_embedding_pipeline(no_embedding=False,
+                           output_location=matrix_train_location,
+                           glove=True):
+    """ Note: the glove parameter is not used now, because no other
+    embedding is implemented. When a new embedding will be at disposal
+    this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
     glove = get_glove_embedding(load_from_file=True)
-    if no_embedding: embedding_function = sentence_embedding.no_embeddings
-    else : embedding_function = None
-    build_embedding_matrix(label=True,
-                           embedding=glove,
-                           aggregation_fun=embedding_function)
+    embedding_function = None # default parameter will be used
+    train_dimension = None # //          //
+    if no_embedding:
+        embedding_function = sentence_embedding.no_embeddings
+        train_dimension = 50
+    build_training_matrix(label=True,
+                          embedding=glove,
+                          aggregation_fun=embedding_function,
+                          sentence_dimesion=train_dimension,
+                          output_location=output_location)
+    if no_embedding: print("Number of sentence cut-offs: ",sentence_embedding.count)
 
+
+# Until now:
+# got 15 sentences cut-off with a max_len of 50
 
 
 
