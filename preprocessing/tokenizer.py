@@ -66,3 +66,10 @@ def load_vocab(file_name):
     with open(vocabularies_folder+file_name, 'rb') as f:
         vocab = pickle.load(f)
     return vocab
+
+def get_vocab_dimension(file_name):
+    """
+    Opens the specified vocabulary to count the number of keys.
+    """
+    vocab = load_vocab(file_name)
+    return len(vocab.keys())

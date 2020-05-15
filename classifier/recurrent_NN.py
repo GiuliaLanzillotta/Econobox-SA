@@ -5,6 +5,7 @@ from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
 from classifier import models_store_path
 import tensorflow as tf
+import os
 
 
 class recurrent_NN(ClassifierBase):
@@ -21,7 +22,7 @@ class recurrent_NN(ClassifierBase):
     - embedding layer
     - attention mechanism
     ------------
-    # TODO: incorporate embedding
+
     # TODO: incorporate attention mechanism
     """
     def __init__(self,
@@ -52,7 +53,6 @@ class recurrent_NN(ClassifierBase):
         use_attention = kwargs.get("use_attention")
         activation = kwargs.get("activation")
         loss = kwargs.get("loss")
-        optimizer = kwargs.get("optimizer")
         metrics = kwargs.get("metrics")
 
 
@@ -64,7 +64,6 @@ class recurrent_NN(ClassifierBase):
         if not use_attention: use_attention = False
         if not activation: activation = "relu"
         if not loss: loss = "binary_crossentropy"
-        if not optimizer: optimizer = "adam"
         if not metrics : metrics = ['accuracy']
         ## ---------------------
 
@@ -72,13 +71,14 @@ class recurrent_NN(ClassifierBase):
         model = tf.keras.models.Sequential()
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
-        model.add(tf.keras.layers.Input(shape=(None,self.input_dim)))
+        model.add(tf.keras.layers.Input(shape=(None,)))
         weights = None
         if use_pretrained_embedding: weights = [self.embedding_matrix]
         model.add(tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
                                             output_dim=self.input_dim,
                                             weights=weights,
-                                            trainable=train_embedding))
+                                            trainable=train_embedding,
+                                            mask_zero=True))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
         if cell_type == "GRU":
@@ -88,10 +88,11 @@ class recurrent_NN(ClassifierBase):
         # Stacking num_layers recurrent layers
         for l in range(num_layers-1):
             # Note: forcing the recurrent layer to be Bidirectional
-            model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size),
-                                                    return_sequences=True,
+            model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size,
+                                                    return_sequences=True),
                                                     name="Recurrent"+str(l)))
-        model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size), name="Recurrent"+str(num_layers-1)))
+        model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size),
+                                                name="Recurrent"+str(num_layers-1)))
         ## Dense head --------
         ## This last part of the model is responsible for mapping
         ## back the output of the recurrent layer to a binary value,
@@ -99,6 +100,8 @@ class recurrent_NN(ClassifierBase):
         model.add(tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1"))
         model.add(tf.keras.layers.Dense(1, name="Dense2"))
         self.model = model
+        optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
+                                            momentum=0.09)
         self.model.compile(loss=loss,
                            optimizer=optimizer,
                            metrics=metrics)
@@ -157,7 +160,8 @@ class recurrent_NN(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+self.name
+        path = models_store_path+"/"+self.name
+        os.makedirs(path)
         self.model.save_weights(path,overwrite=overwrite)
 
     def load(self, **kwargs):

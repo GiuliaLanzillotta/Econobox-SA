@@ -6,6 +6,7 @@ from classifier import models_store_path
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense
+import os
 
 
 class vanilla_NN(ClassifierBase):
@@ -102,7 +103,8 @@ class vanilla_NN(ClassifierBase):
 
     def load(self, **kwargs):
         print("Loading model")
-        path = models_store_path+self.name
+        path = models_store_path+"/"+self.name
+        os.makedirs(path)
         self.model.load_weights(path)
 
 

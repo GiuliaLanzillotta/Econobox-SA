@@ -3,8 +3,9 @@ from classifier.vanilla_NN import vanilla_NN
 from classifier.recurrent_NN import recurrent_NN
 from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
-from classifier.classifier_base import ClassifierBase
-from embedding import matrix_train_location
+from preprocessing import standard_vocab_name
+from preprocessing.tokenizer import get_vocab_dimension
+from embedding import matrix_train_location, glove_embedding_location
 import embedding
 import numpy as np
 import os
@@ -24,7 +25,8 @@ def get_vanilla_model(model_name,
                       save_model=False,
                       test_data=None,
                       build_params=None,
-                      train_params=None):
+                      train_params=None,
+                      **kwargs):
     """
     Creates a new instance of Vanilla_NN
     Parameters:
@@ -62,8 +64,7 @@ def get_vanilla_model(model_name,
     if save_model: vanilla.save()
     return vanilla
 
-#TODO @Giulia: add no_embeddings training matrix
-#TODO @Giulia: complete configuration of recurrent NN
+
 def get_recurrent_model(model_name,
                         embedding_dim=embedding.embedding_dim,
                         train_data=None,
@@ -71,9 +72,9 @@ def get_recurrent_model(model_name,
                         train_model=False,
                         save_model=False,
                         test_data=None,
-                        model_params=None,
                         build_params=None,
-                        train_params=None):
+                        train_params=None,
+                        **kwargs):
     """
     Creates a new instance of Vanilla_NN
     Parameters:
@@ -85,8 +86,6 @@ def get_recurrent_model(model_name,
     :param train_model: (bool) whether to train the model.
     :param save_model: (bool) whether to save the model
     :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
-    :param model_params: (dict) dictionary of parameters to pass to build the model
-            Example:
     :param build_params: (dict) dictionary of parameters to pass to build the model
             ```
             >>> Example : build_params = {"activation":'relu', \
@@ -100,15 +99,42 @@ def get_recurrent_model(model_name,
                                             "use_attention":False}
             ```
     :param train_params: (dict) dictionary of parameters to pass to build the model
-            Example : {epochs:10,
-                        batch_size:32,
-                        validation_split:0.2}
+            >>> Example : {"epochs":10, \
+                            "batch_size":32, \
+                            "validation_split":0.2}
+
+    :param kwargs: additional arguments
+        Arguments accepted:
+        - :arg load_embedding: (bool) whether to load an embedding matrix into the classifier
+            (if false, the classifier will learn the embedding from scratch)
+        - :arg embedding_location: (str) - only used if the above parameter is true- path to the
+            file that stores the embedding matrix
+        - :arg vocabulary: (str) vocabulary in use
     :return: an instance of Vanilla_NN class
     """
 
-    recurrent = recurrent_NN(embedding_dim,model_name)
+    vocabulary = kwargs.get("vocabulary")
+    if not vocabulary: vocabulary = standard_vocab_name
+    vocab_dim = get_vocab_dimension(vocabulary)
+    # --------------------
+    # Opening pre-trained embedding matrix
+    load_embedding = kwargs.get("load_embedding")
+    embedding_location = kwargs.get("embedding_location")
+    if not embedding_location: embedding_location = glove_embedding_location
+    embedding_matrix = None
+    if load_embedding:
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        embedding_matrix = np.load(os.path.join(abs_path, embedding_location))['arr_0']
+    # -------------------
+    # Building the model
+    recurrent = recurrent_NN(embedding_dimension=embedding_dim,
+                             vocabulary_dimension=vocab_dim,
+                             name = model_name,
+                             embedding_matrix=embedding_matrix)
     recurrent.build(**build_params)
     if load_model: recurrent.load()
+    # ----------------
+    # Training, testing and saving
     if train_model:
         x_train = train_data[:, 0:-1]
         y_train = train_data[:, -1]
@@ -128,7 +154,8 @@ def get_LR_model(model_name,
                  save_model=True,
                  test_data=None,
                  build_params=None,
-                 train_params=None):
+                 train_params=None,
+                 **kwargs):
     """
           Creates a new instance of LR_classi
           Parameters:
@@ -158,7 +185,7 @@ def get_LR_model(model_name,
     if test_data is not None:
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
-        oursvm.test(x_test, y_test)
+        ourLR.test(x_test, y_test)
     if save_model: ourLR.save()
     return ourLR
 
@@ -171,7 +198,8 @@ def get_SVM_model(model_name,
                   save_model=True,
                   test_data=None,
                   build_params=None,
-                  train_params=None):
+                  train_params=None,
+                  **kwargs):
     """
        Creates a new instance of SVM_classi
        Parameters:
@@ -248,7 +276,8 @@ def run_train_pipeline(model_type,
                        train_data_location=matrix_train_location,
                        test_data_location=None,
                        build_params=None,
-                       train_params=None):
+                       train_params=None,
+                       train_embedding=False):
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
@@ -269,7 +298,9 @@ def run_train_pipeline(model_type,
     model_pipeline_fun = {
         "vanilla_NN": get_vanilla_model,
         "recurrent_NN":get_recurrent_model,
-        "_": lambda : None # empty function
+        "SVM_classi": get_SVM_model,
+        "LR_classi": get_LR_model,
+        "": lambda : None # empty function
     }
 
     print("Loading data")
@@ -287,7 +318,13 @@ def run_train_pipeline(model_type,
                      save_model=True,
                      test_data=test_matrix,
                      build_params=build_params,
-                     train_params=train_params)
+                     train_params=train_params,
+                     # Nota bene:
+                     # don't worry about the next arguments
+                     # if you're not using the recurrent net :
+                     # they will be automatically ignored by all other functions
+                     load_embedding=True,
+                     embedding_location = glove_embedding_location)
     #cross_validation(train_data=train_matrix, typemodel='LR_classi', embedding_dim=embedding.embedding_dim, model_name='ourLR')
     return model
 
