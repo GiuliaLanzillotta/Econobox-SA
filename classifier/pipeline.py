@@ -3,6 +3,8 @@ from classifier.vanilla_NN import vanilla_NN
 from classifier.recurrent_NN import recurrent_NN
 from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
+from classifier.RF_classi import RF_classi
+from classifier.Adaboost_classi import Adaboost_classi
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
@@ -76,7 +78,7 @@ def get_recurrent_model(model_name,
                         train_params=None,
                         **kwargs):
     """
-    Creates a new instance of Vanilla_NN
+    Creates a new instance of recurrent_NN
     Parameters:
     :param model_name: (str) the name of the model to create, or the name of the model to load.
     :param embedding_dim: (int) dimension of the embedding space
@@ -191,6 +193,92 @@ def get_LR_model(model_name,
     return ourLR
 
 
+def get_RandomForest_model(model_name,
+                  embedding_dim=embedding.embedding_dim,
+                  train_data=None,
+                  load_model=False,
+                  train_model=True,
+                  save_model=True,
+                  test_data=None,
+                  build_params=None,
+                  train_params=None,
+                  **kwargs):
+    """
+       Creates a new instance of RF_classi
+       Parameters:
+       :param model_name: (str) the name of the model to create, or the name of the model to load.
+       :param embedding_dim: (int) dimension of the embedding space
+       :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+               the embedding.pipeline.build_embedding_matrix method
+       :param load_model: (bool) whether to load the model from file.
+       :param train_model: (bool) whether to train the model.
+       :param save_model: (bool) whether to save the model
+       :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+       :param build_params: (dict) dictionary of parameters to pass to build the model
+               Example : {c:1,
+                         kernel:'rbf',
+                         }
+       :param train_params: (dict) dictionary of parameters to pass to build the model
+               Example : {validation_split:0.2}
+       :return: an instance of RF_classi class
+       """
+    ourRF = RF_classi(embedding_dim, model_name)
+    ourRF.build(**build_params)
+    if load_model: ourRF.load()
+    if train_model:
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        ourRF.train(x_train, y_train)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        ourRF.test(x_test, y_test)
+    if save_model: ourRF.save()
+    return ourRF
+
+def get_Adaboost_model(model_name,
+                  embedding_dim=embedding.embedding_dim,
+                  train_data=None,
+                  load_model=False,
+                  train_model=True,
+                  save_model=True,
+                  test_data=None,
+                  build_params=None,
+                  train_params=None,
+                  **kwargs):
+    """
+       Creates a new instance of RF_classi
+       Parameters:
+       :param model_name: (str) the name of the model to create, or the name of the model to load.
+       :param embedding_dim: (int) dimension of the embedding space
+       :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+               the embedding.pipeline.build_embedding_matrix method
+       :param load_model: (bool) whether to load the model from file.
+       :param train_model: (bool) whether to train the model.
+       :param save_model: (bool) whether to save the model
+       :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+       :param build_params: (dict) dictionary of parameters to pass to build the model
+               Example : {c:1,
+                         kernel:'rbf',
+                         }
+       :param train_params: (dict) dictionary of parameters to pass to build the model
+               Example : {validation_split:0.2}
+       :return: an instance of RF_classi class
+       """
+    ourADA = Adaboost_classi(embedding_dim, model_name)
+    ourADA.build(**build_params)
+    if load_model: ourADA.load()
+    if train_model:
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        ourADA.train(x_train, y_train)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        ourADA.test(x_test, y_test)
+    if save_model: ourADA.save()
+    return ourADA
+
 def get_SVM_model(model_name,
                   embedding_dim=embedding.embedding_dim,
                   train_data=None,
@@ -241,7 +329,9 @@ def cross_validation(train_data, typemodel, embedding_dim, model_name):
         "vanilla_NN": vanilla_NN(embedding_dim, model_name),
         "SVM_classi": SVM_classi(embedding_dim, model_name),
         "LR_classi": LR_classi(embedding_dim, model_name),
-        "recurrent_NN": recurrent_NN(embedding_dim,model_name),
+        #"recurrent_NN": recurrent_NN(embedding_dim,model_name),
+        "Adaboost_classi": Adaboost_classi(embedding_dim,model_name),
+        "RF_classi": RF_classi(embedding_dim,model_name),
         "_": lambda: None  # empty function
     }
 
@@ -304,34 +394,38 @@ def run_train_pipeline(model_type,
         "recurrent_NN":get_recurrent_model,
         "SVM_classi": get_SVM_model,
         "LR_classi": get_LR_model,
+        "Adaboost_classi":get_Adaboost_model,
+        "RF_classi": get_RandomForest_model,
         "": lambda : None # empty function
     }
 
     print("Loading data")
     abs_path = os.path.abspath(os.path.dirname(__file__))
     data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
+    print(data_matrix)
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
     else: test_matrix = None
 
-    function = model_pipeline_fun[model_type]
-    model = function(model_name,
-                     train_data=data_matrix,
-                     load_model=load_model,
-                     train_model=not prediction_mode,
-                     save_model=not prediction_mode,
-                     test_data=test_matrix,
-                     build_params=build_params,
-                     train_params=train_params,
-                     # Nota bene:
-                     # don't worry about the next arguments
-                     # if you're not using the recurrent net :
-                     # they will be automatically ignored by all other functions
-                     load_embedding=True,
-                     embedding_name = "glove+stanford.npz")
-    if prediction_mode:
-        model.make_predictions(data_matrix, save=True)
-    #cross_validation(train_data=train_matrix, typemodel='LR_classi', embedding_dim=embedding.embedding_dim, model_name='ourLR')
-    return model
+    #function = model_pipeline_fun[model_type]
+    #model = function(model_name,
+    #                 train_data=data_matrix,
+    #                 load_model=load_model,
+    #                 train_model=not prediction_mode,
+    #                 save_model=not prediction_mode,
+    #                 test_data=test_matrix,
+    #                 build_params=build_params,
+    #                 train_params=train_params,
+    #                 # Nota bene:
+    #                 # don't worry about the next arguments
+    #                 # if you're not using the recurrent net :
+    #                 # they will be automatically ignored by all other functions
+    #                 load_embedding=True,
+    #                 embedding_name = "glove+stanford.npz")
+    #if prediction_mode:
+    #    model.make_predictions(data_matrix, save=True)
+
+    cross_validation(train_data=data_matrix, typemodel='Adaboost_classi', embedding_dim=embedding.embedding_dim, model_name='ourADA')
+    #return model
 
 
