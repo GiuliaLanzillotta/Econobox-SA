@@ -53,11 +53,14 @@ def build_training_matrix(label,
                 # Get the tweet embedding from an helper function
                 # Note: you can safely ignore the max_len parameter
                 # if you're not using the no-embedding aggregation function
+
+                if not label: line = line[3:] #cutting the first 3 characters if we're making
+                # predictions since the test data has enumerated lines.
+
                 sentence_emb = aggregation_fun(line,embedding,
                                                max_len=sentence_dimesion).reshape(1, -1)
                                                             # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
-                #TODO: make sure the order doesn't matter
                 if not label:output[counter, :] = sentence_emb
                 else:output[counter, :] = np.column_stack((sentence_emb, label_value))
                 if l % 10000 == 0:

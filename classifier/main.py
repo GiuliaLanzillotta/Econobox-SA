@@ -13,15 +13,18 @@ if __name__ == "__main__":
         "cell_type":"GRU",
         "num_layers":1,
         "hidden_size":64,
-        "optimizer":"adam"
+        "optimizer":"adam",
+        "dropout_rate":0.4,
+        "use_normalization":True
     }
     run_train_pipeline("recurrent_NN",
                        "Recurrent_1L_GRU",
                        load_model=False,
-                       prediction_mode=True,
-                       data_location=zero_matrix_test_location,
+                       prediction_mode=False,
+                       data_location=zero_matrix_train_location,
+                       cv_on=False,
                        test_data_location=None,
                        build_params = build_params,
-                       train_params={"epochs":3,
+                       train_params={"epochs":15,
                                      "batch_size":32,
                                      "validation_split":0.3})

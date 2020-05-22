@@ -323,32 +323,21 @@ def get_SVM_model(model_name,
     return oursvm
 
 
-def cross_validation(train_data, typemodel, embedding_dim, model_name):
+def cross_validation(train_data, model_fun,
+                     embedding_dim, model_name,
+                     build_params, train_params):
 
-    typemodeldict = {
-        "vanilla_NN": vanilla_NN(embedding_dim, model_name),
-        "SVM_classi": SVM_classi(embedding_dim, model_name),
-        "LR_classi": LR_classi(embedding_dim, model_name),
-        #"recurrent_NN": recurrent_NN(embedding_dim,model_name),
-        "Adaboost_classi": Adaboost_classi(embedding_dim,model_name),
-        "RF_classi": RF_classi(embedding_dim,model_name),
-        "_": lambda: None  # empty function
-    }
-
-    ourmodel = typemodeldict[typemodel]
-
-    build_params = None
-    train_params = None
+    ourmodel = model_fun(embedding_dim,model_name)
     x_t = train_data[:, 0:-1]
     y_t = train_data[:, -1]
     kf = KFold(n_splits=K_FOLD_SPLITS, shuffle=True)
     mses = []
-    ourmodel.build()
+    ourmodel.build(build_params)
 
     for train_index, test_index in kf.split(x_t):
         print(test_index)
         X_train, X_test, y_train, y_test = x_t[train_index], x_t[test_index], y_t[train_index], y_t[test_index]
-        ourmodel.train(X_train, y_train)
+        ourmodel.train(X_train, y_train, train_params)
         score = ourmodel.test(X_test,y_test)
         mses.append(score)
         print(score)
@@ -366,6 +355,7 @@ def run_train_pipeline(model_type,
                        prediction_mode=False,
                        load_model=False,
                        data_location=matrix_train_location,
+                       cv_on=False,
                        test_data_location=None,
                        build_params=None,
                        train_params=None):
@@ -379,6 +369,7 @@ def run_train_pipeline(model_type,
             a new submission file will be created.
     :param load_model: (bool). Whether to load a pre-trained model (False by default).
     :param data_location: (str/path). Path to the training matrix or the prediction input matrix.
+    :param cv_on: (bool) Whether to use or not cross validation to assess the model.
     :param test_data_location: (str/path).
     :param build_params: (dict). Dictionary of build parameter. The entries depend on your specific model.
     :param train_params: (dict). DIctionary of trainin parameters. // //
@@ -402,30 +393,31 @@ def run_train_pipeline(model_type,
     print("Loading data")
     abs_path = os.path.abspath(os.path.dirname(__file__))
     data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
-    print(data_matrix)
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
     else: test_matrix = None
 
-    #function = model_pipeline_fun[model_type]
-    #model = function(model_name,
-    #                 train_data=data_matrix,
-    #                 load_model=load_model,
-    #                 train_model=not prediction_mode,
-    #                 save_model=not prediction_mode,
-    #                 test_data=test_matrix,
-    #                 build_params=build_params,
-    #                 train_params=train_params,
-    #                 # Nota bene:
-    #                 # don't worry about the next arguments
-    #                 # if you're not using the recurrent net :
-    #                 # they will be automatically ignored by all other functions
-    #                 load_embedding=True,
-    #                 embedding_name = "glove+stanford.npz")
-    #if prediction_mode:
-    #    model.make_predictions(data_matrix, save=True)
+    function = model_pipeline_fun[model_type]
+    if cv_on: cross_validation(train_data=data_matrix, model_fun=function,
+                               embedding_dim=embedding.embedding_dim, model_name=model_name,
+                               build_params=build_params, train_params=train_params)
 
-    cross_validation(train_data=data_matrix, typemodel='Adaboost_classi', embedding_dim=embedding.embedding_dim, model_name='ourADA')
-    #return model
+    model = function(model_name,
+                    train_data=data_matrix,
+                    load_model=load_model,
+                    train_model=not (prediction_mode or cv_on),
+                    save_model=not (prediction_mode or cv_on),
+                    test_data=test_matrix,
+                    build_params=build_params,
+                    train_params=train_params,
+                    # Nota bene:
+                    # don't worry about the next arguments
+                    # if you're not using the recurrent net :
+                    # they will be automatically ignored by all other functions
+                    load_embedding=True,
+                    embedding_name = "glove+stanford.npz")
+    if prediction_mode:
+       model.make_predictions(data_matrix, save=True)
+    return model
 
 

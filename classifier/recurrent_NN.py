@@ -68,6 +68,8 @@ class recurrent_NN(ClassifierBase):
         hidden_size = kwargs.get("hidden_size",64)  # size of hidden representation
         train_embedding = kwargs.get("train_embedding",False)  # whether to train the Embedding layer to the model
         use_pretrained_embedding = kwargs.get("use_pretrained_embedding",False)
+        dropout_rate = kwargs.get("dropout_rate",0.0) # setting the dropout to 0 is equivalent to not using it
+        use_normalization = kwargs.get("use_normalization",False)
         use_attention = kwargs.get("use_attention",False)
         activation = kwargs.get("activation","relu")
         metrics = kwargs.get("metrics",['accuracy'])
@@ -97,7 +99,8 @@ class recurrent_NN(ClassifierBase):
         for l in range(num_layers-1):
             # Note: forcing the recurrent layer to be Bidirectional
             model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size,
-                                                    return_sequences=True),
+                                                              return_sequences=True,
+                                                              recurrent_dropout=dropout_rate),
                                                     name="Recurrent"+str(l)))
         model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size),
                                                 name="Recurrent"+str(num_layers-1)))
@@ -105,7 +108,9 @@ class recurrent_NN(ClassifierBase):
         ## This last part of the model is responsible for mapping
         ## back the output of the recurrent layer to a binary value,
         ## which will indeed be our prediction
+        model.add(tf.keras.layers.Dropout(rate=dropout_rate))
         model.add(tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1"))
+        if use_normalization: model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dense(2, name="Dense2"))
         self.model = model
         optimizer = self.get_optimizer(optim)

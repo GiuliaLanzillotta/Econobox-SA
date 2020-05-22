@@ -3,6 +3,7 @@ from preprocessing.cooc import build_cooc, load_cooc
 from preprocessing.tokenizer import build_vocab, load_vocab
 from preprocessing import cooc_folder
 from preprocessing import lemmatizer as lemma
+import pickle
 import os
 
 def get_lemmatization(dictionary, stopwords = 0, output = "vocab_stemmed.pkl"):
