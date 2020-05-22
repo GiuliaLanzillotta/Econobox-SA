@@ -8,54 +8,6 @@ import tensorflow as tf
 import numpy as np
 import os
 
-
-class BahdanauAttention(tf.keras.layers.Layer):
-    """Implements an attention layer as described by Bahdanau."""
-    def __init__(self,
-                 units,
-                 **kwargs):
-        super().__init__(**kwargs)
-        self.W1 = tf.keras.layers.Dense(units)
-        self.W2 = tf.keras.layers.Dense(units)
-        self.V = tf.keras.layers.Dense(1)
-
-    def call(self, query=None, values=None):
-        """
-        :param query: The embedded word on which we should query.
-                shape == (batch_size, hidden size)
-        :param values: The sequence of words which constitutes the sentence.
-                shape == (batch_size, max_len, hidden size)
-        :return: context vector: (batch_size, hidden_size) tensor,
-                attn weights: (batch_size, max_length, 1) tensor
-            The context vector is a weighted sum of the input sequence that puts
-            more weight on the elements more similar to the given query.
-
-        """
-        query_with_time_axis = tf.expand_dims(query, 1)
-        score = self.V(tf.nn.tanh(self.W1(query_with_time_axis) + self.W2(values)))
-        attention_weights = tf.nn.softmax(score, axis=1)
-        context_vector = attention_weights * values
-        context_vector = tf.reduce_sum(context_vector, axis=1)
-        return context_vector, attention_weights
-
-class AttentionWrapper(tf.keras.layers.Layer):
-    """ Uses attention with 2 queries, given the output
-        of a recurrent layer."""
-    def __init__(self,
-                 vocab2index,
-                 **kwargs):
-        super().__init__(**kwargs)
-        self.vocab2index = vocab2index
-        self.attention = BahdanauAttention(64)
-
-    def __call__(self, sequence, *args, **kwargs):
-        #TODO: call attention for a positive query
-        #TODO: call attention for a negative query
-        #TODO: dense connect the two outputs
-        pass
-
-
-#TODO: connect attention to the recurrent net
 class recurrent_NN(ClassifierBase):
     """
     Recurrent NN classifier
@@ -100,6 +52,17 @@ class recurrent_NN(ClassifierBase):
                                                                             momentum=momentum)
         return optimizer
 
+    @staticmethod
+    def get_cell(cell_name):
+        """
+        Simply a routine to switch to the right recurrent cell
+        :param cell_name: name of the cell to use
+        """
+        if cell_name == "GRU":
+            return tf.keras.layers.GRU
+        if cell_name == "LSTM":
+            return tf.keras.layers.LSTM
+        raise NotImplementedError("cell type "+cell_name+" not supported!")
 
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
@@ -120,8 +83,6 @@ class recurrent_NN(ClassifierBase):
         metrics = kwargs.get("metrics",['accuracy'])
         optim = kwargs.get("optimizer","sgd")
         ## ---------------------
-
-
         model = tf.keras.models.Sequential()
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
@@ -136,10 +97,7 @@ class recurrent_NN(ClassifierBase):
         model.add(tf.keras.layers.Masking(mask_value=0))
         ## Recurrent layer -------
         ## This part of the model is responsible for processing the sequence
-        if cell_type == "GRU":
-            recurrent = tf.keras.layers.GRU
-        if cell_type == "LSTM":
-            recurrent = tf.keras.layers.LSTM
+        recurrent = self.get_cell(cell_type)
         # Stacking num_layers recurrent layers
         for l in range(num_layers-1):
             # Note: forcing the recurrent layer to be Bidirectional
@@ -231,4 +189,82 @@ class recurrent_NN(ClassifierBase):
         print("Loading model")
         path = models_store_path+self.name+"/"
         self.model.load_weights(path)
+
+
+class attention_NN(recurrent_NN):
+    """Extends the recurrent model with self-attention"""
+    def __init__(self,
+                 embedding_dimension,
+                 vocabulary_dimension,
+                 embedding_matrix=None,
+                 name="AttentionNN"):
+        super().__init__(embedding_dimension, vocabulary_dimension, embedding_matrix, name)
+
+    def build(self, **kwargs):
+        """Builds the attention NN computational graph"""
+        print("Building model.")
+        ## --------------------
+        ## Extracting model parameters from arguments
+        cell_type = kwargs.get("cell_type")  # either LSTM or GRU
+        assert cell_type in self.possible_cell_values, "The cell type must be one of the following values : " \
+                                                       + " ".join(
+            self.possible_cell_values)  # printing the admissible cell values
+        hidden_size = kwargs.get("hidden_size", 64)  # size of hidden representation
+        train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", False)
+        dropout_rate = kwargs.get("dropout_rate", 0.0)  # setting the dropout to 0 is equivalent to not using it
+        use_normalization = kwargs.get("use_normalization", False)
+        activation = kwargs.get("activation", "relu")
+        metrics = kwargs.get("metrics", ['accuracy'])
+        optim = kwargs.get("optimizer", "sgd")
+        att_key_dim = kwargs.get("att_key_dim", 64)
+
+        ## ---------------------
+        ## CREATING THE GRAPH NODES
+        inputs = tf.keras.layers.Input(shape=(None,), dtype='int32')
+        weights = None
+        if use_pretrained_embedding: weights = [self.embedding_matrix]
+        embedding = tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
+                                              output_dim=self.input_dim,
+                                              weights=weights,
+                                              mask_zero=True,
+                                              trainable=train_embedding)
+        masking = tf.keras.layers.Masking(mask_value=0)
+        recurrent_cell = self.get_cell(cell_type)
+        recurrent_layer = tf.keras.layers.Bidirectional(recurrent_cell(hidden_size,
+                                                                       return_sequences=True,
+                                                                       recurrent_dropout=dropout_rate),
+                                                        merge_mode="concat",
+                                                        name="RecurrentLayer")
+        # the output of the recurrent layer should have dimension [batch_size, timesteps, hidden_size*2]
+        # since we're merging the hidden states with concatenation
+        dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+        # SELF ATTENTION
+        query = tf.keras.layers.Dense(att_key_dim, activation="tanh", name="attention1")
+        score = tf.keras.layers.Dense(hidden_size*2, activation="softmax", name="attention2")
+        # DENSE head
+        dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
+        if use_normalization: norm = tf.keras.layers.BatchNormalization()
+        dense2 = tf.keras.layers.Dense(2, name="Dense2")
+        ## CONNECTING THE GRAPH
+        embedded_inputs = embedding(inputs)
+        masked_inputs = masking(embedded_inputs)
+        recurrent_output = recurrent_layer(masked_inputs) # tensor with all hidden states
+        queries = query(recurrent_output)
+        scores = score(queries)
+        context_vector = scores * recurrent_output
+        context_vector = tf.reduce_sum(context_vector, axis=1)
+        dropped_out = dropout(context_vector)
+        if use_normalization: dropped_out = norm(dropped_out)
+        dense1_out = dense1(dropped_out)
+        outputs = dense2(dense1_out)
+        ## COMPILING THE MODEL
+        self.model = tf.keras.Model(inputs = inputs, outputs=outputs)
+        optimizer = self.get_optimizer(optim)
+        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        self.model.compile(loss=loss,
+                           optimizer=optimizer,
+                           metrics=metrics)
+        print(self.model.summary())
+
 

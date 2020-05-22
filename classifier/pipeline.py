@@ -1,6 +1,6 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
-from classifier.recurrent_NN import recurrent_NN
+from classifier.recurrent_NN import recurrent_NN, attention_NN
 from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
@@ -130,10 +130,13 @@ def get_recurrent_model(model_name,
                                                 embeddings_folder+embedding_name))['arr_0']
     # -------------------
     # Building the model
-    recurrent = recurrent_NN(embedding_dimension=embedding_dim,
-                             vocabulary_dimension=vocab_dim,
-                             name = model_name,
-                             embedding_matrix=embedding_matrix)
+    use_attention = build_params.get("use_attention")
+    recurrent_fun = recurrent_NN
+    if use_attention: recurrent_fun = attention_NN
+    recurrent = recurrent_fun(embedding_dimension=embedding_dim,
+                              vocabulary_dimension=vocab_dim,
+                              name = model_name,
+                              embedding_matrix=embedding_matrix)
     recurrent.build(**build_params)
     if load_model: recurrent.load()
     # ----------------

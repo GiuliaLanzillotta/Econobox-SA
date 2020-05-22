@@ -10,15 +10,16 @@ from classifier.pipeline import run_train_pipeline
 
 if __name__ == "__main__":
     build_params = {
-        "cell_type":"LSTM",
+        "cell_type":"GRU",
         "num_layers":1,
         "hidden_size":64,
         "optimizer":"adam",
         "dropout_rate":0.4,
-        "use_normalization":True
+        "use_normalization":True,
+        "use_attention":True
     }
     run_train_pipeline("recurrent_NN",
-                       "Recurrent_1L_LSTM",
+                       "Attention_GRU",
                        load_model=False,
                        prediction_mode=False,
                        data_location=zero_matrix_train_location,
