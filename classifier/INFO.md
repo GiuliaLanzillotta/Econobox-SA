@@ -1,7 +1,11 @@
 # Classifiers 
 
 Keeping track here of the experiments with different classifiers and their performances. 
+<br>
+<br>
 
+
+--- 
 ### Vanilla NN 
 Feed-forward neural network. <br>
 Takes as input a sentence embedding. 
@@ -19,7 +23,11 @@ Takes as input a sentence embedding.
 - Embedding: Glove
 - Using pre-trained embedding: True 
 - Performance: <record here accuracy / f1 score> 
+<br>
+<br>
 
+
+--- 
 ### Recurrent net 
 Takes as input the sentence as a sequence of tokens. Each token represents the index of 
 the word in the vocabulary in use. The association of each word with its embedding is 
@@ -45,8 +53,10 @@ training.
 - Using pre-trained embedding: True 
 - Trained embedding further: False
 - Performance: 
-![accuracy](../data/assets/R_1L_GRU_acc.png)
-![loss](../data/assets/R_1L_GRU_loss.png)
+    
+    ![accuracy](../data/assets/R_1L_GRU_acc.png)
+    ![loss](../data/assets/R_1L_GRU_loss.png)
+
 - Training details: 
         
         train_params={"epochs":15,
@@ -89,3 +99,8 @@ training.
 ![attention](attentionpichere)
 [Here](https://www.tensorflow.org/tutorials/text/nmt_with_attention) is a link to a Tensorflow 2 
 tutorial on attention. 
+<br>
+<br>
+
+
+--- 
