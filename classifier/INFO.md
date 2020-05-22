@@ -140,21 +140,24 @@ like a probability distribution over the hidden states.
 - Using pre-trained embedding: True 
 - Trained embedding further: False
 - Performance: <record here accuracy / f1 score> 
-![accuracy](accuracyhere)
+![accuracy](../data/assets/ATT_GRU_acc.png)
 ![loss](losshere)
-- Training details: 
-        train_params={"epochs":15,
-                     "batch_size":32,
-                     "validation_split":0.3}
+- Training details:     
+
+            train_params={"epochs":15,
+                         "batch_size":32,
+                         "validation_split":0.3}
+                         
 - Other build details: 
-        build_params = {
-                    "cell_type":"GRU",
-                    "num_layers":1,
-                    "hidden_size":64,
-                    "optimizer":"adam",
-                    "dropout_rate":0.4,
-                    "use_normalization":True,
-                    "use_attention":True}
+
+            build_params = {
+                        "cell_type":"GRU",
+                        "num_layers":1,
+                        "hidden_size":64,
+                        "optimizer":"adam",
+                        "dropout_rate":0.4,
+                        "use_normalization":True,
+                        "use_attention":True}
 [Here](https://medium.com/apache-mxnet/sentiment-analysis-via-self-attention-with-mxnet-gluon-dc774d38ba69) is a link 
 to a Medium article that explains the implementation of self-attention.
 <br>

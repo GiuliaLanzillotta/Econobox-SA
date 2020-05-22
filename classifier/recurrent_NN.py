@@ -190,7 +190,7 @@ class recurrent_NN(ClassifierBase):
         path = models_store_path+self.name+"/"
         self.model.load_weights(path)
 
-
+#TODO: add penalty term for attention matrix
 class attention_NN(recurrent_NN):
     """Extends the recurrent model with self-attention"""
     def __init__(self,
@@ -241,7 +241,7 @@ class attention_NN(recurrent_NN):
         dropout = tf.keras.layers.Dropout(rate=dropout_rate)
         # SELF ATTENTION
         query = tf.keras.layers.Dense(att_key_dim, activation="tanh", name="attention1")
-        score = tf.keras.layers.Dense(hidden_size*2, activation="softmax", name="attention2")
+        score = tf.keras.layers.Dense(1, name="attention2")
         # DENSE head
         dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
         if use_normalization: norm = tf.keras.layers.BatchNormalization()
@@ -251,9 +251,10 @@ class attention_NN(recurrent_NN):
         masked_inputs = masking(embedded_inputs)
         recurrent_output = recurrent_layer(masked_inputs) # tensor with all hidden states
         queries = query(recurrent_output)
-        scores = score(queries)
-        context_vector = scores * recurrent_output
-        context_vector = tf.reduce_sum(context_vector, axis=1)
+        scores = score(queries) # batch x timesteps x 1
+        weights = tf.nn.softmax(scores, axis=1) # batch x timesteps x 1
+        context_vector = weights * recurrent_output # should be element-wise mult.
+        context_vector = tf.reduce_sum(context_vector, axis=1) # summing the timesteps
         dropped_out = dropout(context_vector)
         if use_normalization: dropped_out = norm(dropped_out)
         dense1_out = dense1(dropped_out)
@@ -267,4 +268,44 @@ class attention_NN(recurrent_NN):
                            metrics=metrics)
         print(self.model.summary())
 
+    def get_attention_weights(self, sentence):
+        """ Helper function for interpretability of the model."""
+        sentence_with_batch_size = tf.expand_dims(sentence, axis=0)
+        ## forward passing through the model
+        embedding = self.model.get_layer("embedding")
+        embedded_inputs = embedding(sentence_with_batch_size)
+        masking = self.model.get_layer("masking")
+        masked_inputs = masking(embedded_inputs)
+        recurrent_layer = self.model.get_layer("RecurrentLayer")
+        recurrent_output = recurrent_layer(masked_inputs)  # tensor with all hidden states
+        query = self.model.get_layer("attention1")
+        queries = query(recurrent_output)
+        score = self.model.get_layer("attention2")
+        scores = score(queries)
+        weights = tf.nn.softmax(scores, axis=1)
+        return weights
 
+    def visualize_attention(self, sentence):
+        """ Helper function for interpretability of the model.
+        :param sentence: (str) example sentence to use.
+        """
+        sequence_len = len(sentence)
+        weights = self.get_attention_weights(sentence)
+        attention_plot = np.zeros((sequence_len, sequence_len))
+        attention_weights = tf.reshape(weights, (-1,sequence_len)) # 1 x timesteps
+        #TODO: follow this model for visualization
+        # https://github.com/kionkim/stat_analysis/blob/master/notebooks/text_classification_RNN_SA_umich.ipynb
+
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.matshow(weights, cmap='viridis')
+
+        fontdict = {'fontsize': 14}
+
+        ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
+        ax.set_yticklabels([''] + sentence, fontdict=fontdict)
+
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+
+        plt.show()

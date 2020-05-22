@@ -26,6 +26,6 @@ if __name__ == "__main__":
                        cv_on=False,
                        test_data_location=None,
                        build_params = build_params,
-                       train_params={"epochs":15,
-                                     "batch_size":32,
-                                     "validation_split":0.3})
+                       train_params={"epochs":3,
+                                     "batch_size":16,
+                                     "validation_split":0.2})
