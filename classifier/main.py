@@ -10,7 +10,7 @@ from classifier.pipeline import run_train_pipeline
 
 if __name__ == "__main__":
     build_params = {
-        "cell_type":"GRU",
+        "cell_type":"LSTM",
         "num_layers":1,
         "hidden_size":64,
         "optimizer":"adam",
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         "use_normalization":True
     }
     run_train_pipeline("recurrent_NN",
-                       "Recurrent_1L_GRU",
+                       "Recurrent_1L_LSTM",
                        load_model=False,
                        prediction_mode=False,
                        data_location=zero_matrix_train_location,

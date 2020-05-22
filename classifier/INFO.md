@@ -71,8 +71,46 @@ training.
                     "optimizer":"adam",
                     "dropout_rate":0.4,
                     "use_normalization":True}
-                    
-#### Experiment 2 : attention
+
+#### Experiment 1 : "Recurrent_1L_LSTM"
+- Structure:
+
+        |Embedding|| 
+        ||Recurrence + 0.4 dropout|| 
+        ||Dropout|| 
+        ||Dense -64||
+        ||Batch normalization||
+        ||Dense -2||
+        
+        Note: using all that regularization because the net 
+        was overfitting on the training set. 
+   
+- Vocabulary used: vocab.pkl
+- Embedding: Glove
+- Using pre-trained embedding: True 
+- Trained embedding further: False
+- Performance: 
+    
+    ![accuracy](../data/assets/R_1L_LSTM_acc.png)
+    ![loss](../data/assets/R_1L_LSTM_loss.png)
+
+- Training details: 
+        
+        train_params={"epochs":15,
+                        "batch_size":32,
+                        "validation_split":0.3}
+- Other build details: 
+
+        build_params = {
+                    "cell_type":"LSTM",
+                    "num_layers":1,
+                    "hidden_size":64,
+                    "optimizer":"adam",
+                    "dropout_rate":0.4,
+                    "use_normalization":True}
+
+
+#### Experiment 3 : attention
 
 - Structure:
 

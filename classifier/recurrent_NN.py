@@ -9,6 +9,53 @@ import numpy as np
 import os
 
 
+class BahdanauAttention(tf.keras.layers.Layer):
+    """Implements an attention layer as described by Bahdanau."""
+    def __init__(self,
+                 units,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.W1 = tf.keras.layers.Dense(units)
+        self.W2 = tf.keras.layers.Dense(units)
+        self.V = tf.keras.layers.Dense(1)
+
+    def call(self, query=None, values=None):
+        """
+        :param query: The embedded word on which we should query.
+                shape == (batch_size, hidden size)
+        :param values: The sequence of words which constitutes the sentence.
+                shape == (batch_size, max_len, hidden size)
+        :return: context vector: (batch_size, hidden_size) tensor,
+                attn weights: (batch_size, max_length, 1) tensor
+            The context vector is a weighted sum of the input sequence that puts
+            more weight on the elements more similar to the given query.
+
+        """
+        query_with_time_axis = tf.expand_dims(query, 1)
+        score = self.V(tf.nn.tanh(self.W1(query_with_time_axis) + self.W2(values)))
+        attention_weights = tf.nn.softmax(score, axis=1)
+        context_vector = attention_weights * values
+        context_vector = tf.reduce_sum(context_vector, axis=1)
+        return context_vector, attention_weights
+
+class AttentionWrapper(tf.keras.layers.Layer):
+    """ Uses attention with 2 queries, given the output
+        of a recurrent layer."""
+    def __init__(self,
+                 vocab2index,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.vocab2index = vocab2index
+        self.attention = BahdanauAttention(64)
+
+    def __call__(self, sequence, *args, **kwargs):
+        #TODO: call attention for a positive query
+        #TODO: call attention for a negative query
+        #TODO: dense connect the two outputs
+        pass
+
+
+#TODO: connect attention to the recurrent net
 class recurrent_NN(ClassifierBase):
     """
     Recurrent NN classifier
@@ -21,10 +68,8 @@ class recurrent_NN(ClassifierBase):
     ------------
     Addons:
     - embedding layer
-    - attention mechanism
     ------------
 
-    # TODO: incorporate attention mechanism
     """
 
 
@@ -55,6 +100,7 @@ class recurrent_NN(ClassifierBase):
                                                                             momentum=momentum)
         return optimizer
 
+
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
         print("Building model.")
@@ -63,14 +109,13 @@ class recurrent_NN(ClassifierBase):
         ## Extracting model parameters from arguments
         cell_type = kwargs.get("cell_type")  # either LSTM or GRU
         assert cell_type in self.possible_cell_values, "The cell type must be one of the following values : " \
-                                                  + " ".join(self.possible_cell_values)  # printing the admissible cell values
+                                                       + " ".join(self.possible_cell_values)  # printing the admissible cell values
         num_layers = kwargs.get("num_layers",1)  # number of recurrent layers
         hidden_size = kwargs.get("hidden_size",64)  # size of hidden representation
         train_embedding = kwargs.get("train_embedding",False)  # whether to train the Embedding layer to the model
         use_pretrained_embedding = kwargs.get("use_pretrained_embedding",False)
         dropout_rate = kwargs.get("dropout_rate",0.0) # setting the dropout to 0 is equivalent to not using it
         use_normalization = kwargs.get("use_normalization",False)
-        use_attention = kwargs.get("use_attention",False)
         activation = kwargs.get("activation","relu")
         metrics = kwargs.get("metrics",['accuracy'])
         optim = kwargs.get("optimizer","sgd")
@@ -186,6 +231,4 @@ class recurrent_NN(ClassifierBase):
         print("Loading model")
         path = models_store_path+self.name+"/"
         self.model.load_weights(path)
-
-
 
