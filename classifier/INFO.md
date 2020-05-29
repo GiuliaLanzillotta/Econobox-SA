@@ -17,14 +17,9 @@ Takes as input a sentence embedding.
 - Using pre-trained embedding: False
 - Performance: <record here accuracy / f1 score> 
 #### Experiment 2 
-- Structure: 3 dense layers : <br>
-    64 -> 64 -> 2 
-- Vocabulary used: vocab.pkl
-- Embedding: Glove
+Same experiment as above, using pre-trained embedding. 
 - Using pre-trained embedding: True 
 - Performance: <record here accuracy / f1 score> 
-<br>
-<br>
 
 
 --- 
@@ -53,9 +48,11 @@ training.
 - Using pre-trained embedding: True 
 - Trained embedding further: False
 - Performance: 
-    
-    ![accuracy](../data/assets/R_1L_GRU_acc.png)
-    ![loss](../data/assets/R_1L_GRU_loss.png)
+ 
+<div>
+<img alt="accuracy" src="../data/assets/R_1L_GRU_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/R_1L_GRU_loss.png" width="400"/>
+</div>
 
 - Training details: 
         
@@ -72,23 +69,8 @@ training.
                     "dropout_rate":0.4,
                     "use_normalization":True}
 
-#### Experiment 1 : "Recurrent_1L_LSTM"
-- Structure:
-
-        |Embedding|| 
-        ||Recurrence + 0.4 dropout|| 
-        ||Dropout|| 
-        ||Dense -64||
-        ||Batch normalization||
-        ||Dense -2||
-        
-        Note: using all that regularization because the net 
-        was overfitting on the training set. 
-   
-- Vocabulary used: vocab.pkl
-- Embedding: Glove
-- Using pre-trained embedding: True 
-- Trained embedding further: False
+#### Experiment 2 : "Recurrent_1L_LSTM"
+Same experiment as above, using LSTM cells instead of GRU.
 - Performance: 
 
 <div>
@@ -96,11 +78,6 @@ training.
 <img alt="loss" src="../data/assets/R_1L_LSTM_loss.png" width="400"/>
 </div>
 
-- Training details: 
-        
-        train_params={"epochs":15,
-                        "batch_size":32,
-                        "validation_split":0.3}
 - Other build details: 
 
         build_params = {
@@ -142,8 +119,12 @@ like a probability distribution over the hidden states.
 - Using pre-trained embedding: True 
 - Trained embedding further: False
 - Performance: <record here accuracy / f1 score> 
-![accuracy](../data/assets/ATT_GRU_acc.png)
-![loss](losshere)
+ 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_acc.png" width="400"/>
+<img alt="loss" src="" width="400"/>
+</div>
+
 - Training details:     
 
             train_params={"epochs":15,
@@ -160,10 +141,11 @@ like a probability distribution over the hidden states.
                         "dropout_rate":0.4,
                         "use_normalization":True,
                         "use_attention":True}
+                        
 [Here](https://medium.com/apache-mxnet/sentiment-analysis-via-self-attention-with-mxnet-gluon-dc774d38ba69) is a link 
 to a Medium article that explains the implementation of self-attention.
-<br>
-<br>
+
+
 
 
 --- 
