@@ -5,6 +5,7 @@ from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
 from classifier import models_store_path, predictions_folder
 import tensorflow as tf
+import seaborn as sb
 import numpy as np
 import os
 
@@ -190,9 +191,15 @@ class recurrent_NN(ClassifierBase):
         path = models_store_path+self.name+"/"
         self.model.load_weights(path)
 
-#TODO: add penalty term for attention matrix
 class attention_NN(recurrent_NN):
-    """Extends the recurrent model with self-attention"""
+    """Extends the recurrent model with self-attention.
+    ------------------------
+    More on self-attention:
+    Our aim is to encode a variable length sentence into a fixed size embedding.
+    We achieve that by choosing a linear combination of the [timesteps] LSTM hidden vectors
+    in H. Computing the linear combination requires the self-attention mechanism.
+    The attention mechanism takes the whole LSTM hidden states H as input,
+    and outputs a vector of weights a. """
     def __init__(self,
                  embedding_dimension,
                  vocabulary_dimension,
@@ -217,7 +224,12 @@ class attention_NN(recurrent_NN):
         activation = kwargs.get("activation", "relu")
         metrics = kwargs.get("metrics", ['accuracy'])
         optim = kwargs.get("optimizer", "sgd")
-        att_key_dim = kwargs.get("att_key_dim", 64)
+        d_a = kwargs.get("att_key_dim", 64)
+        r = kwargs.get("heads",5) # the number of different parts to be extracted
+                                        # from the sentence, i.e the number of aspects
+                                        # to find in the sentence
+        penalization = kwargs.get("penalization", True)
+        gamma = kwargs.get("gamma",0.3) # penalization weight
 
         ## ---------------------
         ## CREATING THE GRAPH NODES
@@ -240,8 +252,8 @@ class attention_NN(recurrent_NN):
         # since we're merging the hidden states with concatenation
         dropout = tf.keras.layers.Dropout(rate=dropout_rate)
         # SELF ATTENTION
-        query = tf.keras.layers.Dense(att_key_dim, activation="tanh", name="attention1")
-        score = tf.keras.layers.Dense(1, name="attention2")
+        query = tf.keras.layers.Dense(d_a, activation="tanh", name="attention1", use_bias=False)
+        score = tf.keras.layers.Dense(r, name="attention2", use_bias=False)
         # DENSE head
         dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
         if use_normalization: norm = tf.keras.layers.BatchNormalization()
@@ -250,19 +262,47 @@ class attention_NN(recurrent_NN):
         embedded_inputs = embedding(inputs)
         masked_inputs = masking(embedded_inputs)
         recurrent_output = recurrent_layer(masked_inputs) # tensor with all hidden states
-        queries = query(recurrent_output)
-        scores = score(queries) # batch x timesteps x 1
-        weights = tf.nn.softmax(scores, axis=1) # batch x timesteps x 1
-        context_vector = weights * recurrent_output # should be element-wise mult.
-        context_vector = tf.reduce_sum(context_vector, axis=1) # summing the timesteps
+                        # shape of recurrent_output = batch x timesteps x 2*hidden_size
+        queries = query(recurrent_output) # W1 x H in the paper
+        scores = score(queries) # batch x timesteps x r
+        weights = tf.nn.softmax(scores, axis=1) # batch x timesteps x r
+        # the weights we obtained sum to 1 for each of the r dimensions
+        # we now use this weights to extract r different representations
+        # of the sentence - hoping that they can capture different
+        # aspects of the sentence
+        # dimensions: [timesteps x r] x [timesteps x hidden_dim*2]
+        #        --> [r x hidden_dim*2]
+        context_vector = tf.matmul(tf.transpose(weights, perm=[0,2,1]),
+                                   recurrent_output) # the perm keyword is necessary
+                                                     # to avoid transposing the batch dimension
         dropped_out = dropout(context_vector)
         if use_normalization: dropped_out = norm(dropped_out)
-        dense1_out = dense1(dropped_out)
+        # flattening:
+        # we now have our context vector with dimension [batch x r x hidden_dim*2]
+        # we just flatten it (as done in the paper) to get a single vector
+        # to work with
+        #TODO: instead of flattening use convolution
+        flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
+        dense1_out = dense1(flattened)
         outputs = dense2(dense1_out)
         ## COMPILING THE MODEL
         self.model = tf.keras.Model(inputs = inputs, outputs=outputs)
         optimizer = self.get_optimizer(optim)
         loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        if penalization:
+            # More on penalization:
+            # we are penalising on the distance from the identity matrix
+            # of the dot product of our weight matrix by itself:
+            # we are encouraging the dot product of two different
+            # attention heads to be 0
+            # TODO: try with L1 norm instead of Frobenius
+            (batch, timesteps, _) = tf.keras.backend.shape(weights)
+            res = tf.multiply(tf.transpose(weights, perm=[0,2,1]), weights) \
+                  - tf.eye(num_rows=timesteps,
+                           num_cols=timesteps,
+                           batch_shape=batch)
+            penalty = tf.norm(res, ord="fro", axis=[1,2]) # frobenius norm of the residual matrix
+            loss += gamma*(penalty)
         self.model.compile(loss=loss,
                            optimizer=optimizer,
                            metrics=metrics)
@@ -285,27 +325,23 @@ class attention_NN(recurrent_NN):
         weights = tf.nn.softmax(scores, axis=1)
         return weights
 
-    def visualize_attention(self, sentence):
+    def visualize_attention(self, sentence, sentence_vec):
         """ Helper function for interpretability of the model.
         :param sentence: (str) example sentence to use.
+        :param sentence_vec: (list) list of indices representing the sentence.
         """
         sequence_len = len(sentence)
-        weights = self.get_attention_weights(sentence)
-        attention_plot = np.zeros((sequence_len, sequence_len))
-        attention_weights = tf.reshape(weights, (-1,sequence_len)) # 1 x timesteps
-        #TODO: follow this model for visualization
-        # https://github.com/kionkim/stat_analysis/blob/master/notebooks/text_classification_RNN_SA_umich.ipynb
+        weights = self.get_attention_weights(sentence_vec)
+        weights = tf.reshape(weights, shape=weights.shape[1:-1]) # removing batch dimension
+        # Weights dimension: [1 x timesteps x r]
+        # for each of the r dimensions we can plot the relevant words
+        # we'll do this with a heat map over the sentence using
+        # different colours
 
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(1, 1, 1)
-        ax.matshow(weights, cmap='viridis')
-
-        fontdict = {'fontsize': 14}
-
-        ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
-        ax.set_yticklabels([''] + sentence, fontdict=fontdict)
-
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-        ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-
+        # preparing the text to write on the heat_map
+        labels = (np.asarray([sentence]*weights.shape[0]))
+        labels = labels.reshape(weights.shape)
+        heat_map = sb.heatmap(weights, xticklabels=False, annot=labels, fmt='')
+        plt.xlabel("Words")
+        plt.ylabel("Attention heads")
         plt.show()

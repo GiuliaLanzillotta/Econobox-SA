@@ -140,12 +140,57 @@ like a probability distribution over the hidden states.
                         "optimizer":"adam",
                         "dropout_rate":0.4,
                         "use_normalization":True,
-                        "use_attention":True}
+                        "use_attention":True, 
+                        "heads":1}
+         
                         
 [Here](https://medium.com/apache-mxnet/sentiment-analysis-via-self-attention-with-mxnet-gluon-dc774d38ba69) is a link 
 to a Medium article that explains the implementation of self-attention.
 
 
+#### Experiment 4 : "Attention_GRU_5heads"
+
+Same as the above experiment, using 5 attention heads instead of 1. 
+
+        build_params = {
+                "cell_type":"GRU",
+                "num_layers":1,
+                "hidden_size":64,
+                "optimizer":"adam",
+                "dropout_rate":0.4,
+                "use_normalization":True,
+                "use_attention":True,
+                "heads":5, # number extracted from section 4.4.2 of the paper
+                "penalization":False
+            }
+
+#### Experiment 4 : "Attention_GRU_5heads_penalized"
+
+Same as the above, including penalization for the weight matrix A to encourage diversity. 
+> The embedding matrix M can suffer from redundancy problems if the attention 
+> mechanism always provides similar summation weights for all the r hops. 
+> Thus we need a penalization term to encourage the diversity of summation 
+> weight vectors across different hops of attention. 
+
+            build_params = {
+                    "cell_type":"GRU",
+                    "num_layers":1,
+                    "hidden_size":64,
+                    "optimizer":"adam",
+                    "dropout_rate":0.4,
+                    "use_normalization":True,
+                    "use_attention":True,
+                    "heads":5, 
+                    "penalization":True ## this is the difference
+                }
+                
+            # More on penalization:
+            # we are penalizing the distance from the identity matrix
+            # of the dot product of our weight matrix by itself: 
+            # we are encouraging the dot product of two different 
+            # attention heads to be 0  
+            --> disentangling the different factors of attention
+   
 
 
 --- 

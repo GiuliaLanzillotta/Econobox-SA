@@ -16,16 +16,20 @@ if __name__ == "__main__":
         "optimizer":"adam",
         "dropout_rate":0.4,
         "use_normalization":True,
-        "use_attention":True
+        "use_attention":True,
+        "heads":5,
+        "penalization":False
     }
+    train_params = {"epochs":5,
+                    "batch_size":16,
+                    "validation_split":0.2}
+
     run_train_pipeline("recurrent_NN",
-                       "Attention_GRU",
-                       load_model=False,
+                       "Attention_GRU_5heads",
+                       load_model=True,
                        prediction_mode=False,
                        data_location=zero_matrix_train_location,
                        cv_on=False,
                        test_data_location=None,
                        build_params = build_params,
-                       train_params={"epochs":3,
-                                     "batch_size":16,
-                                     "validation_split":0.2})
+                       train_params=train_params)
