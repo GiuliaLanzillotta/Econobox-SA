@@ -91,8 +91,12 @@ training.
 - Trained embedding further: False
 - Performance: 
     
-    ![accuracy](../data/assets/R_1L_LSTM_acc.png)
-    ![loss](../data/assets/R_1L_LSTM_loss.png)
+    <div align="center">
+    <img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="500"/>
+    </div>
+
+<img src="../data/assets/R_1L_LSTM_loss.png" width="500"/>
+    
 
 - Training details: 
         
