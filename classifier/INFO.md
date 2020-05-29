@@ -92,8 +92,8 @@ training.
 - Performance: 
 
 <div>
-<img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="500"/>
-<img src="../data/assets/R_1L_LSTM_loss.png" width="500"/>
+<img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/R_1L_LSTM_loss.png" width="400"/>
 </div>
 
 - Training details: 
