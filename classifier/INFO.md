@@ -121,7 +121,7 @@ The idea comes from [this](https://arxiv.org/pdf/1703.03130.pdf) paper. <br>
 
 - Structure:
 
-![self-attention-scheme](https://miro.medium.com/max/1400/1*6c4-E0BRRLo197D_-vyXdg.png)
+<img src="https://miro.medium.com/max/1400/1*6c4-E0BRRLo197D_-vyXdg.png" width="500"/>
 
 From part (a) in the above diagram, we can see the entire architecture of the self-attention model. <br>
 The embedded tokens (w’s in the above) are fed into bidirectional LSTM layers (h’s). 
