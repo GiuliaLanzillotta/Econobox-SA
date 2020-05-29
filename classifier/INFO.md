@@ -90,13 +90,11 @@ training.
 - Using pre-trained embedding: True 
 - Trained embedding further: False
 - Performance: 
-    
-    <div align="center">
-    <img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="500"/>
-    </div>
 
+<div>
+<img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="500"/>
 <img src="../data/assets/R_1L_LSTM_loss.png" width="500"/>
-    
+</div>
 
 - Training details: 
         
