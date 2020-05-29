@@ -8,3 +8,4 @@
 train_matrix.npz
 embeddings/glove.twitter.27B.zip
 embeddings/glove.twitter.27B.200d.txt
+venv

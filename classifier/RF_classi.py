@@ -2,7 +2,7 @@ from classifier.classifier_base import ClassifierBase
 from classifier import models_store_path
 import pickle
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.externals import joblib
+from sklearn.utils import _joblib
 import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
@@ -72,9 +72,9 @@ class RF_classi(ClassifierBase):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        joblib.dump(self, 'ourRF.pkl')
+        _joblib.dump(self, 'ourRF.pkl')
 
     def load(self, **kwargs):
         print("Loading model")
         path = models_store_path+self.name
-        self.model = joblib.load('ourRF.pkl')
+        self.model = _joblib.load('ourRF.pkl')

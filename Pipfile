@@ -9,7 +9,6 @@ verify_ssl = true
 requests = "==2.23.0"
 nltk = "==3.4.5"
 jupyter = "==1.0.0"
-scipy = "==1.4.1"
 numpy = "==1.18.2"
 attrs = "==19.3.0"
 backcall = "==0.1.0"
@@ -66,6 +65,7 @@ matplotlib = "*"
 keras = "*"
 scikit-learn = "*"
 seaborn = "*"
+scipy = "*"
 
 [requires]
 python_version = "3.7"

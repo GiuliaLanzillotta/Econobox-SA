@@ -64,7 +64,8 @@ def load_vocab(file_name):
     """
     Loads the vocabulary at the given location.
     """
-    with open(vocabularies_folder+file_name, 'rb') as f:
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(abs_path,vocabularies_folder+file_name), 'rb') as f:
         vocab = pickle.load(f)
     return vocab
 

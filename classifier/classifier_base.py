@@ -4,6 +4,7 @@
 from abc import abstractmethod
 from classifier import predictions_folder
 import numpy as np
+import os
 
 class ClassifierBase(object):
 
@@ -39,9 +40,10 @@ class ClassifierBase(object):
         :return: None
         """
         print("Saving predictions")
+        abs_path = os.path.abspath(os.path.dirname(__file__))
         path = predictions_folder + self.name + "_predictions.csv"
         to_save_format = np.dstack((np.arange(1, predictions_array.size + 1), predictions_array))[0]
-        np.savetxt(path, to_save_format, "%d,%d",
+        np.savetxt(os.path.join(abs_path,path), to_save_format, "%d,%d",
                    delimiter=",", header="Id,Predictions")
 
 

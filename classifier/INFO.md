@@ -163,6 +163,23 @@ Same as the above experiment, using 5 attention heads instead of 1.
                 "heads":5, # number extracted from section 4.4.2 of the paper
                 "penalization":False
             }
+- **Performance**: 
+ 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_loss.png" width="400"/>
+</div>
+
+- **Visualization**: 
+Here's an heatmap visualization of the role of the 5 attention heads. <br>
+Each row corresponds to a different attention head, and should hence capture a different "aspect" of the sentence.<br>
+The heatmap shows the relative weights that each word is given by the attention head: the higher the weight, the more 
+*"attention"* the word will receive at classification time.
+
+<div>
+<img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_heatmap_pos.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_heatmap_neg.png" width="400"/>
+</div>
 
 #### Experiment 4 : "Attention_GRU_5heads_penalized"
 

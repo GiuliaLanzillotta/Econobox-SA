@@ -3,7 +3,7 @@
 from classifier.classifier_base import ClassifierBase
 from sklearn.svm import SVC
 from sklearn.metrics import f1_score
-from sklearn.externals import joblib
+from sklearn.utils import _joblib
 from sklearn.model_selection import cross_val_score
 import tensorflow as tf
 from keras.utils import to_categorical
@@ -54,12 +54,12 @@ class SVM_classi(ClassifierBase):
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         #path = models_store_path+self.name
-        joblib.dump(self, 'oursvm.pkl')
+        _joblib.dump(self, 'oursvm.pkl')
 
     def load(self, **kwargs):
         print("Loading model")
         #path = models_store_path+self.name
-        self.model = joblib.load('oursvm.pkl')
+        self.model = _joblib.load('oursvm.pkl')
 
 
 

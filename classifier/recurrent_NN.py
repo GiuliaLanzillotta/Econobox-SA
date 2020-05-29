@@ -189,7 +189,8 @@ class recurrent_NN(ClassifierBase):
     def load(self, **kwargs):
         print("Loading model")
         path = models_store_path+self.name+"/"
-        self.model.load_weights(path)
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        self.model.load_weights(os.path.join(abs_path,path))
 
 class attention_NN(recurrent_NN):
     """Extends the recurrent model with self-attention.
@@ -214,8 +215,7 @@ class attention_NN(recurrent_NN):
         ## Extracting model parameters from arguments
         cell_type = kwargs.get("cell_type")  # either LSTM or GRU
         assert cell_type in self.possible_cell_values, "The cell type must be one of the following values : " \
-                                                       + " ".join(
-            self.possible_cell_values)  # printing the admissible cell values
+                                                       + " ".join(self.possible_cell_values)  # printing the admissible cell values
         hidden_size = kwargs.get("hidden_size", 64)  # size of hidden representation
         train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
         use_pretrained_embedding = kwargs.get("use_pretrained_embedding", False)
@@ -230,6 +230,7 @@ class attention_NN(recurrent_NN):
                                         # to find in the sentence
         penalization = kwargs.get("penalization", True)
         gamma = kwargs.get("gamma",0.3) # penalization weight
+        use_convolution = kwargs.get("use_convolution", False)
 
         ## ---------------------
         ## CREATING THE GRAPH NODES
@@ -272,9 +273,9 @@ class attention_NN(recurrent_NN):
         # aspects of the sentence
         # dimensions: [timesteps x r] x [timesteps x hidden_dim*2]
         #        --> [r x hidden_dim*2]
-        context_vector = tf.matmul(tf.transpose(weights, perm=[0,2,1]),
-                                   recurrent_output) # the perm keyword is necessary
+        weights = tf.transpose(weights, perm=[0,2,1])# the perm keyword is necessary
                                                      # to avoid transposing the batch dimension
+        context_vector = tf.matmul(weights,recurrent_output)
         dropped_out = dropout(context_vector)
         if use_normalization: dropped_out = norm(dropped_out)
         # flattening:
@@ -282,6 +283,7 @@ class attention_NN(recurrent_NN):
         # we just flatten it (as done in the paper) to get a single vector
         # to work with
         #TODO: instead of flattening use convolution
+        #if use_convolution:pass
         flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
         dense1_out = dense1(flattened)
         outputs = dense2(dense1_out)
@@ -290,23 +292,34 @@ class attention_NN(recurrent_NN):
         optimizer = self.get_optimizer(optim)
         loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         if penalization:
-            # More on penalization:
-            # we are penalising on the distance from the identity matrix
-            # of the dot product of our weight matrix by itself:
-            # we are encouraging the dot product of two different
-            # attention heads to be 0
-            # TODO: try with L1 norm instead of Frobenius
-            (batch, timesteps, _) = tf.keras.backend.shape(weights)
-            res = tf.multiply(tf.transpose(weights, perm=[0,2,1]), weights) \
-                  - tf.eye(num_rows=timesteps,
-                           num_cols=timesteps,
-                           batch_shape=batch)
-            penalty = tf.norm(res, ord="fro", axis=[1,2]) # frobenius norm of the residual matrix
-            loss += gamma*(penalty)
+            def penalized_loss(y_true, y_pred):
+                penalty = self.get_penalization(weights,gamma)
+                cross_entr = tf.keras.losses.BinaryCrossentropy(from_logits=True)(y_true,y_pred)
+                return tf.reduce_mean(penalty + cross_entr)
+
+            loss = penalized_loss
         self.model.compile(loss=loss,
                            optimizer=optimizer,
-                           metrics=metrics)
-        print(self.model.summary())
+                           metrics=metrics,
+                           experimental_run_tf_function=False)
+        self.model.summary()
+
+    @tf.function
+    def get_penalization(self, weights, gamma):
+        """ Defines the penalized version of the binary crossentropy loss.
+                    --------------------------
+                    More on penalization:
+                    we are penalising on the distance from the identity matrix
+                    of the dot product of our weight matrix by itself:
+                    we are encouraging the dot product of two different
+                    attention heads to be 0
+                TODO: try with L1 norm instead of Frobenius
+                """
+        ## Compute penalization term
+        res = tf.multiply(tf.transpose(weights, perm=[0, 2, 1]), weights) \
+              - tf.eye(tf.shape(weights)[1])
+        penalty = tf.norm(res, ord="fro", axis=[1, 2])  # frobenius norm of the residual matrix
+        return gamma*tf.reduce_mean(penalty)
 
     def get_attention_weights(self, sentence):
         """ Helper function for interpretability of the model."""
@@ -330,18 +343,24 @@ class attention_NN(recurrent_NN):
         :param sentence: (str) example sentence to use.
         :param sentence_vec: (list) list of indices representing the sentence.
         """
-        sequence_len = len(sentence)
+        from preprocessing.tokenizer import tokenize_text
+        sentence = tokenize_text(sentence)
         weights = self.get_attention_weights(sentence_vec)
-        weights = tf.reshape(weights, shape=weights.shape[1:-1]) # removing batch dimension
+        prediction = self.model.predict(tf.expand_dims(sentence_vec, axis=0))
+        probabilities = tf.nn.softmax(prediction, axis=1).numpy()[0]
         # Weights dimension: [1 x timesteps x r]
         # for each of the r dimensions we can plot the relevant words
         # we'll do this with a heat map over the sentence using
         # different colours
-
+        weights = weights[:,0:len(sentence),:]
+        weights = tf.reshape(weights, shape=weights.shape[1:]) # removing batch dimension
+        weights = tf.transpose(weights) # shape = [r x words]
         # preparing the text to write on the heat_map
-        labels = (np.asarray([sentence]*weights.shape[0]))
+        labels = np.asarray(sentence*weights.shape[0])
         labels = labels.reshape(weights.shape)
         heat_map = sb.heatmap(weights, xticklabels=False, annot=labels, fmt='')
         plt.xlabel("Words")
         plt.ylabel("Attention heads")
+        plt.title("Predictions : negative = {0}, "
+                  "positive = {1}".format(probabilities[0],probabilities[1]), fontsize=10)
         plt.show()

@@ -123,9 +123,7 @@ def get_recurrent_model(model_name,
     # --------------------
     # Opening pre-trained embedding matrix
     load_embedding = kwargs.get("load_embedding")
-    embedding_name = kwargs.get("embedding_location")
-    if not embedding_name: embedding_name = "glove_emb.npz"
-    embedding_matrix = None
+    embedding_name = kwargs.get("embedding_location","glove_emb.npz")
     if load_embedding:
         glove_embedding = get_glove_embedding(load_from_file=True,
                                               load_Stanford=False,
@@ -143,7 +141,7 @@ def get_recurrent_model(model_name,
                               name = model_name,
                               embedding_matrix=embedding_matrix)
     recurrent.build(**build_params)
-    if load_model: recurrent.load()
+    if load_model:recurrent.load()
     # ----------------
     # Training, testing and saving
     if train_model:
@@ -157,10 +155,10 @@ def get_recurrent_model(model_name,
     if save_model: recurrent.save()
     # ---------------
     # Visualization
-    visualise_attention = kwargs.get("visualise_attention", True)
+    visualize_attention = kwargs.get("visualize_attention", True)
     sentence_pos = "I'm loving this project, let's keep on working guys!"
     sentence_neg = "I hate bugs, but not as much as I hate cooking."
-    if visualise_attention:
+    if visualize_attention:
         #Note: visualization can only be used with the attention model
         # 1. get the vectorised representation of the sentence
         sentence_pos_vec = no_embeddings(sentence_pos, embedding=glove_embedding)
@@ -168,7 +166,6 @@ def get_recurrent_model(model_name,
         # 2. get the attention plot
         recurrent.visualize_attention(sentence_pos, sentence_pos_vec)
         recurrent.visualize_attention(sentence_neg, sentence_neg_vec)
-        pass
 
     return recurrent
 
@@ -439,7 +436,7 @@ def run_train_pipeline(model_type,
                     # they will be automatically ignored by all other functions
                     load_embedding=True,
                     embedding_name = "glove+stanford.npz",
-                    visualise_attention=True)
+                    visualize_attention=True)
     if prediction_mode:
        model.make_predictions(data_matrix, save=True)
     return model

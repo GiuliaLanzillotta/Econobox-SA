@@ -2,7 +2,6 @@
 # TODO: incorporate possibility of using 2 different embeddings
 from embedding.embedding_base import EmbeddingBase
 from preprocessing.tokenizer import tokenize_text
-from embedding.pipeline import get_glove_embedding
 import numpy as np
 
 """
@@ -34,13 +33,6 @@ def no_embeddings(sentence, embedding, **kwargs):
     :return: np.array
         The embedding for the sentence.
     """
-    if embedding is None:
-        # load stanford glove embedding
-        embedding = get_glove_embedding(load_from_file=True,
-                                        load_Stanford=False,
-                                        file_name="glove+stanford.npz",
-                                        train=False,
-                                        save=False)
     assert issubclass(embedding.__class__, EmbeddingBase), "embedding should be an instance of EmbeddingBase"
     vocabulary = embedding.vocabulary
     max_len = kwargs.get("max_len")

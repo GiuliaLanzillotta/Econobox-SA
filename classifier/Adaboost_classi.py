@@ -2,7 +2,7 @@ from classifier.classifier_base import ClassifierBase
 from classifier import models_store_path
 import pickle
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.externals import joblib
+from sklearn.utils import _joblib
 import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
@@ -63,9 +63,9 @@ class Adaboost_classi(ClassifierBase):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        joblib.dump(self, 'ourADA.pkl')
+        _joblib.dump(self, 'ourADA.pkl')
 
     def load(self, **kwargs):
         print("Loading model")
         path = models_store_path+self.name
-        self.model = joblib.load('ourADA.pkl')
+        self.model = _joblib.load('ourADA.pkl')
