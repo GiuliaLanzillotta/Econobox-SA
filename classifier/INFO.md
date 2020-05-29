@@ -10,16 +10,16 @@ Keeping track here of the experiments with different classifiers and their perfo
 Feed-forward neural network. <br>
 Takes as input a sentence embedding. 
 #### Experiment 1 
-- Structure: 3 dense layers : <br>
+- **Structure**: 3 dense layers : <br>
     64 -> 64 -> 2 
-- Vocabulary used: vocab.pkl
-- Embedding: Glove
-- Using pre-trained embedding: False
-- Performance: <record here accuracy / f1 score> 
+- **Vocabulary used**: vocab.pkl
+- **Embedding**: Glove
+- **Using pre-trained embedding**: False
+- **Performance**: <record here accuracy / f1 score> 
 #### Experiment 2 
 Same experiment as above, using pre-trained embedding. 
-- Using pre-trained embedding: True 
-- Performance: <record here accuracy / f1 score> 
+- **Using pre-trained embedding**: True 
+- **Performance**: <record here accuracy / f1 score> 
 
 
 --- 
@@ -31,7 +31,7 @@ with a given embedding matrix. Furthermore, the embedding layer can be fine-tune
 training. 
 
 #### Experiment 1 : "Recurrent_1L_GRU"
-- Structure:
+- **Structure**:
 
         |Embedding|| 
         ||Recurrence + 0.4 dropout|| 
@@ -43,23 +43,23 @@ training.
         Note: using all that regularization because the net 
         was overfitting on the training set. 
    
-- Vocabulary used: vocab.pkl
-- Embedding: Glove
-- Using pre-trained embedding: True 
-- Trained embedding further: False
-- Performance: 
+- **Vocabulary used**: vocab.pkl
+- **Embedding**: Glove
+- **Using pre-trained embedding**: False
+- **Trained embedding further**: False
+- **Performance**: 
  
 <div>
 <img alt="accuracy" src="../data/assets/R_1L_GRU_acc.png" width="400"/>
 <img alt="loss" src="../data/assets/R_1L_GRU_loss.png" width="400"/>
 </div>
 
-- Training details: 
+- **Training details**: 
         
         train_params={"epochs":15,
                         "batch_size":32,
                         "validation_split":0.3}
-- Other build details: 
+- **Other build details**: 
 
         build_params = {
                     "cell_type":"GRU",
@@ -71,14 +71,14 @@ training.
 
 #### Experiment 2 : "Recurrent_1L_LSTM"
 Same experiment as above, using LSTM cells instead of GRU.
-- Performance: 
+- **Performance**: 
 
 <div>
 <img alt="accuracy" src="../data/assets/R_1L_LSTM_acc.png" width="400"/>
 <img alt="loss" src="../data/assets/R_1L_LSTM_loss.png" width="400"/>
 </div>
 
-- Other build details: 
+- **Other build details**: 
 
         build_params = {
                     "cell_type":"LSTM",
@@ -98,7 +98,7 @@ The idea comes from [this](https://arxiv.org/pdf/1703.03130.pdf) paper. <br>
 >focus on segments of the sentence, where the relevance of the 
 >segment is determined by the contribution to the task.
 
-- Structure:
+- **Structure**:
 
 <img src="https://miro.medium.com/max/1400/1*6c4-E0BRRLo197D_-vyXdg.png" width="500"/>
 
@@ -114,24 +114,24 @@ weight matrix to get the pre-attention matrix. A softmax layer, which is applied
 to the pre-attention matrix in the row-wise direction, making its weights looking 
 like a probability distribution over the hidden states.
    
-- Vocabulary used: vocab.pkl
-- Embedding: Glove
-- Using pre-trained embedding: True 
-- Trained embedding further: False
-- Performance: <record here accuracy / f1 score> 
+- **Vocabulary used**: vocab.pkl
+- **Embedding**: Glove
+- **Using pre-trained embedding**: False
+- **Trained embedding further**: False
+- **Performance**: 
  
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_acc.png" width="400"/>
 <img alt="loss" src="" width="400"/>
 </div>
 
-- Training details:     
+- **Training details**:     
 
             train_params={"epochs":15,
                          "batch_size":32,
                          "validation_split":0.3}
                          
-- Other build details: 
+- **Other build details**: 
 
             build_params = {
                         "cell_type":"GRU",
