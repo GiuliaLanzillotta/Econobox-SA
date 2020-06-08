@@ -178,8 +178,8 @@ The heatmap shows the relative weights that each word is given by the attention 
 
 For comparison, here is the heatmap of an untrained model: 
 <div>
-<img alt="untrained negative sentence" src="../data/assets/ATT_GRU_untrained_heatmap_neg.png" width="400"/>
 <img alt="untrained positive sentence" src="../data/assets/ATT_GRU_untrained_heatmap_pos.png" width="400"/>
+<img alt="untrained negative sentence" src="../data/assets/ATT_GRU_untrained_heatmap_neg.png" width="400"/>
 </div>
 <br>
 And here is the heatmap of this trained model:
