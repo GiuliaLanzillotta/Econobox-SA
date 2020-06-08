@@ -255,6 +255,18 @@ class attention_NN(recurrent_NN):
         # SELF ATTENTION
         query = tf.keras.layers.Dense(d_a, activation="tanh", name="attention1", use_bias=False)
         score = tf.keras.layers.Dense(r, name="attention2", use_bias=False)
+        # CONVOLUTION LAYERS (to use instead of flattening)
+        # we now have a [batch_size x heads x hidden_dim*2 ] vector, where each of the
+        # heads dimensions can be thought of as a channel in the signal (like we have
+        # RGB for images we have our heads-channels for the text).
+        # We can perform a series of 1d convolutions on each channel to extract more
+        # info from this representation, before passing it to the dense layers.
+        #todo repeat for number of convolution layers.
+        kernel_size = int(hidden_size/10)
+        convolution1 = tf.keras.layers.Conv1D(10, kernel_size=kernel_size,
+                                              strides=2, padding="valid",
+                                              dilation_rate=1, activation="relu", #note: dilation_rate = 1 means no dilation
+                                              name="convolution1")
         # DENSE head
         dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
         if use_normalization: norm = tf.keras.layers.BatchNormalization()
@@ -273,9 +285,8 @@ class attention_NN(recurrent_NN):
         # aspects of the sentence
         # dimensions: [timesteps x r] x [timesteps x hidden_dim*2]
         #        --> [r x hidden_dim*2]
-        weights = tf.transpose(weights, perm=[0,2,1])# the perm keyword is necessary
-                                                     # to avoid transposing the batch dimension
-        context_vector = tf.matmul(weights,recurrent_output)
+        context_vector = tf.matmul(weights,recurrent_output,
+                                   transpose_a=True, name="apply_attention")
         dropped_out = dropout(context_vector)
         if use_normalization: dropped_out = norm(dropped_out)
         # flattening:
@@ -283,6 +294,7 @@ class attention_NN(recurrent_NN):
         # we just flatten it (as done in the paper) to get a single vector
         # to work with
         #TODO: instead of flattening use convolution
+        ## Inserting convolution
         #if use_convolution:pass
         flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
         dense1_out = dense1(flattened)
@@ -291,12 +303,13 @@ class attention_NN(recurrent_NN):
         self.model = tf.keras.Model(inputs = inputs, outputs=outputs)
         optimizer = self.get_optimizer(optim)
         loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        # Here we insert the penalization term in the loss.
+        # Any valid loss function needs to accept 2 terms.
         if penalization:
             def penalized_loss(y_true, y_pred):
                 penalty = self.get_penalization(weights,gamma)
                 cross_entr = tf.keras.losses.BinaryCrossentropy(from_logits=True)(y_true,y_pred)
-                return tf.reduce_mean(penalty + cross_entr)
-
+                return penalty + cross_entr
             loss = penalized_loss
         self.model.compile(loss=loss,
                            optimizer=optimizer,
@@ -316,9 +329,9 @@ class attention_NN(recurrent_NN):
                 TODO: try with L1 norm instead of Frobenius
                 """
         ## Compute penalization term
-        res = tf.multiply(tf.transpose(weights, perm=[0, 2, 1]), weights) \
-              - tf.eye(tf.shape(weights)[1])
-        penalty = tf.norm(res, ord="fro", axis=[1, 2])  # frobenius norm of the residual matrix
+        res = tf.matmul(weights,weights, transpose_a=True) \
+              - tf.eye(tf.shape(weights)[2])
+        penalty = tf.norm(res, ord="fro", axis=[1, 2])**2  # frobenius norm of the residual matrix
         return gamma*tf.reduce_mean(penalty)
 
     def get_attention_weights(self, sentence):
