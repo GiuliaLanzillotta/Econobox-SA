@@ -181,6 +181,7 @@ For comparison, here is the heatmap of an untrained model:
 <img alt="untrained negative sentence" src="../data/assets/ATT_GRU_untrained_heatmap_neg.png" width="400"/>
 <img alt="untrained positive sentence" src="../data/assets/ATT_GRU_untrained_heatmap_pos.png" width="400"/>
 </div>
+<br>
 And here is the heatmap of this trained model:
 <div>
 <img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_heatmap_pos.png" width="400"/>
@@ -224,7 +225,12 @@ Same as the above, including penalization for the weight matrix A to encourage d
 - **Visualization**: 
 <div>
 <img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_heatmap_pos.png" width="400"/>
-<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_heatmap_neg.png" width="400"/>
+<img alt="negative sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_heatmap_neg.png" width="400"/>
 </div>
+<br>
+From the heatmap it's clear that the visualization is working: <br>
+as stated before the role of the penalization is to decouple the attention heads as much as possible. 
+Comparing the results of the penalized version to those of the standard attention version (with the same number 
+of attention heads := 5) we get markedly less juxtaposition between the heads in the penalized version.
 
 --- 
