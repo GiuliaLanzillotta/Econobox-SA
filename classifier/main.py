@@ -18,7 +18,7 @@ if __name__ == "__main__":
         "use_normalization":True,
         "use_attention":True,
         "heads":5,
-        "penalization":True # LEAVE IT TO FALSE, still doesn't work
+        "penalization":True
     }
     train_params = {"epochs":5,
                     "batch_size":16,
