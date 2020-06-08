@@ -176,6 +176,12 @@ Each row corresponds to a different attention head, and should hence capture a d
 The heatmap shows the relative weights that each word is given by the attention head: the higher the weight, the more 
 *"attention"* the word will receive at classification time.
 
+For comparison, here is the heatmap of an untrained model: 
+<div>
+<img alt="untrained negative sentence" src="../data/assets/ATT_GRU_untrained_heatmap_neg.png" width="400"/>
+<img alt="untrained positive sentence" src="../data/assets/ATT_GRU_untrained_heatmap_pos.png" width="400"/>
+</div>
+And here is the heatmap of this trained model:
 <div>
 <img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_heatmap_pos.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_heatmap_neg.png" width="400"/>
@@ -208,6 +214,17 @@ Same as the above, including penalization for the weight matrix A to encourage d
             # attention heads to be 0  
             --> disentangling the different factors of attention
    
+- **Performance**: 
+ 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss.png" width="400"/>
+</div>   
 
+- **Visualization**: 
+<div>
+<img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_heatmap_pos.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_heatmap_neg.png" width="400"/>
+</div>
 
 --- 

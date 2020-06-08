@@ -116,7 +116,6 @@ def get_recurrent_model(model_name,
         - :arg vocabulary: (str) vocabulary in use
     :return: an instance of Vanilla_NN class
     """
-
     vocabulary = kwargs.get("vocabulary")
     if not vocabulary: vocabulary = standard_vocab_name
     vocab_dim = get_vocab_dimension(vocabulary)

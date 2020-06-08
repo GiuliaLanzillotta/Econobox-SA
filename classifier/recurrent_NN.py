@@ -7,6 +7,7 @@ from classifier import models_store_path, predictions_folder
 import tensorflow as tf
 import seaborn as sb
 import numpy as np
+import math
 import os
 
 class recurrent_NN(ClassifierBase):
@@ -182,8 +183,8 @@ class recurrent_NN(ClassifierBase):
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         path = models_store_path+self.name+"/"
-        try: os.makedirs(path)
-        except Exception as e: print(e)
+        if not os.path.exists(path):
+            os.makedirs(path)
         self.model.save_weights(path,overwrite=overwrite)
 
     def load(self, **kwargs):
@@ -208,6 +209,42 @@ class attention_NN(recurrent_NN):
                  name="AttentionNN"):
         super().__init__(embedding_dimension, vocabulary_dimension, embedding_matrix, name)
 
+    @staticmethod
+    def build_convolutions(dilation_rate,
+                           initial_filter_size,
+                           window_size,
+                           input_length):
+        """Builds the convolution segment in the network.
+            :param dilation_rate: (float) dilation rate to use in the convolution
+            :param initial_filter_size: (int) first convolution layer number of output filters.
+                    For each layer this number will be doubled.
+            :param window_size: (int) the convolution layer window size.
+            :param input_length: (int) length of the input
+            -----------------
+            About convolution:
+            # CONVOLUTION LAYERS (to use instead of flattening)
+            # we now have a [batch_size x heads x hidden_dim*2 ] vector, where each of the
+            # heads dimensions can be thought of as a channel in the signal (like we have
+            # RGB for images we have our heads-channels for the text).
+            # We can perform a series of 1d convolutions on each channel to extract more
+            # info from this representation, before passing it to the dense layers.
+            # Note: we want to convolve the input until the third dimension becomes one
+                (so that we obtain a flattening of the sequence)
+            """
+        # a few calculations to get the number of layers given the rest
+        # since we're diving by 2 the dimension at each layer we need
+        num_layers = int(math.log2(input_length))
+        convolutions = []
+        channels = initial_filter_size
+        for l in range(num_layers):
+            layer = tf.keras.layers.Conv1D(channels, kernel_size=window_size,
+                                           strides=2, padding="same",
+                                           dilation_rate=dilation_rate, activation="relu",
+                                           name='convolution{}'.format(str(l + 1)))
+            convolutions.append(layer)
+            channels = channels * 2
+        return convolutions
+
     def build(self, **kwargs):
         """Builds the attention NN computational graph"""
         print("Building model.")
@@ -230,7 +267,9 @@ class attention_NN(recurrent_NN):
                                         # to find in the sentence
         penalization = kwargs.get("penalization", True)
         gamma = kwargs.get("gamma",0.3) # penalization weight
+        # CONVOLUTION parameters [only used is use_convolution is True]
         use_convolution = kwargs.get("use_convolution", False)
+        dilation_rate = kwargs.get("dilation_rate", 1) #note: dilation_rate = 1 means no dilation
 
         ## ---------------------
         ## CREATING THE GRAPH NODES
@@ -256,17 +295,11 @@ class attention_NN(recurrent_NN):
         query = tf.keras.layers.Dense(d_a, activation="tanh", name="attention1", use_bias=False)
         score = tf.keras.layers.Dense(r, name="attention2", use_bias=False)
         # CONVOLUTION LAYERS (to use instead of flattening)
-        # we now have a [batch_size x heads x hidden_dim*2 ] vector, where each of the
-        # heads dimensions can be thought of as a channel in the signal (like we have
-        # RGB for images we have our heads-channels for the text).
-        # We can perform a series of 1d convolutions on each channel to extract more
-        # info from this representation, before passing it to the dense layers.
-        #todo repeat for number of convolution layers.
-        kernel_size = int(hidden_size/10)
-        convolution1 = tf.keras.layers.Conv1D(10, kernel_size=kernel_size,
-                                              strides=2, padding="valid",
-                                              dilation_rate=1, activation="relu", #note: dilation_rate = 1 means no dilation
-                                              name="convolution1")
+        if use_convolution:
+            convolutions = self.build_convolutions(dilation_rate=dilation_rate,
+                                                   initial_filter_size=10,
+                                                   window_size=(hidden_size//10),
+                                                   input_length=hidden_size*2)
         # DENSE head
         dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
         if use_normalization: norm = tf.keras.layers.BatchNormalization()
@@ -293,10 +326,15 @@ class attention_NN(recurrent_NN):
         # we now have our context vector with dimension [batch x r x hidden_dim*2]
         # we just flatten it (as done in the paper) to get a single vector
         # to work with
-        #TODO: instead of flattening use convolution
+        if not use_convolution: flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
         ## Inserting convolution
-        #if use_convolution:pass
-        flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
+        if use_convolution:
+            for conv_layer in convolutions:
+                conv_result = conv_layer(dropped_out)
+            # the output of the last convolution layer will have size
+            # [batch_size x num_channels x 1]
+            num_channels = tf.shape(conv_result)[1]
+            flattened = tf.reshape(conv_result, shape=[-1, num_channels])
         dense1_out = dense1(flattened)
         outputs = dense2(dense1_out)
         ## COMPILING THE MODEL
