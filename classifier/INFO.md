@@ -228,9 +228,59 @@ Same as the above, including penalization for the weight matrix A to encourage d
 <img alt="negative sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_heatmap_neg.png" width="400"/>
 </div>
 <br>
-From the heatmap it's clear that the visualization is working: <br>
+From the heatmap it's clear that the visualization is working: 
 as stated before the role of the penalization is to decouple the attention heads as much as possible. 
 Comparing the results of the penalized version to those of the standard attention version (with the same number 
 of attention heads := 5) we get markedly less juxtaposition between the heads in the penalized version.
+
+
+#### Experiment 5 : "Attention_GRU_penalised_convolution"
+
+The idea comes from [the same](https://arxiv.org/pdf/1703.03130.pdf) paper on self attention mentioned before. <br>
+
+- **Structure**:
+Referring to the diagram showed in *Experiment 3*, the focus of this experiment is on the connection 
+between the *timesteps x heads* matrix and the dense layer above. <br>
+Instead of flattening the input into one dimension we would like to preserve the information 
+in the structure. We do this by convolving the input along each head dimension. For each convolution
+we double the number of channels (= number of heads in the beginning) and halve the length of the 
+input (= hidden dimension x 2 in the beginning), and we keep convolving until we get lenght 1 on each 
+channel. The output of the convolution will be of dimension [(batch size), channels, 1], which can be 
+directly fed into the dense head.<br>
+
+- **Vocabulary used**: vocab.pkl
+- **Embedding**: Glove
+- **Using pre-trained embedding**: False
+- **Trained embedding further**: False
+- **Performance**: 
+ 
+<div>
+<img alt="accuracy" src="../data/assets/-" width="400"/>
+<img alt="loss" src="" width="400"/>
+</div>
+
+- **Training details**:     
+
+            train_params={"epochs":15,
+                         "batch_size":32,
+                         "validation_split":0.3}
+                         
+- **Other build details**: 
+
+            build_params = {
+                    "cell_type":"GRU",
+                    "num_layers":1,
+                    "hidden_size":64,
+                    "optimizer":"adam",
+                    "dropout_rate":0.4,
+                    "use_normalization":True,
+                    "use_attention":True,
+                    "heads":5,
+                    "penalization":True,
+                    "use_convolution":True,
+                    "dilation_rate":1
+                }
+         
+                    
 
 --- 

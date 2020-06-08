@@ -18,7 +18,9 @@ if __name__ == "__main__":
         "use_normalization":True,
         "use_attention":True,
         "heads":5,
-        "penalization":True
+        "penalization":True,
+        "use_convolution":True,
+        "dilation_rate":1
     }
     train_params = {"epochs":5,
                     "batch_size":16,
