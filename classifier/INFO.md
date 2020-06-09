@@ -224,7 +224,7 @@ Same as the above, including penalization for the weight matrix A to encourage d
 
 - **Performance - batch size = 128**: 
 <div>
-<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc_128.png.png" width="400"/>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc_128.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss_128.png" width="400"/>
 </div>   
 
@@ -258,17 +258,16 @@ directly fed into the dense head.<br>
 - **Embedding**: Glove
 - **Using pre-trained embedding**: False
 - **Trained embedding further**: False
-- **Performance**: 
- 
+- **Performance - batch size = 128**: 
 <div>
-<img alt="accuracy" src="../data/assets/-" width="400"/>
-<img alt="loss" src="" width="400"/>
-</div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_conv_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_conv_loss.png" width="400"/>
+</div>  
 
 - **Training details**:     
 
             train_params={"epochs":15,
-                         "batch_size":32,
+                         "batch_size":128,
                          "validation_split":0.3}
                          
 - **Other build details**: 
@@ -285,13 +284,7 @@ directly fed into the dense head.<br>
                     "penalization":True,
                     "use_convolution":True,
                     "dilation_rate":1
-                }
-         
-- **Performance - batch size = 128**: 
-<div>
-<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_conv_acc.png" width="400"/>
-<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_conv_loss.png" width="400"/>
-</div>   
+                } 
 
 - **Visualization**: 
 <div>
