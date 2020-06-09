@@ -215,11 +215,18 @@ Same as the above, including penalization for the weight matrix A to encourage d
             # attention heads to be 0  
             --> disentangling the different factors of attention
    
-- **Performance**: 
+- **Performance - batch size = 16**: 
  
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss.png" width="400"/>
+</div>   
+
+- **Performance - batch size = 128**: 
+ 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc_128.png.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss_128.png" width="400"/>
 </div>   
 
 - **Visualization**: 
@@ -245,7 +252,7 @@ Instead of flattening the input into one dimension we would like to preserve the
 in the structure. We do this by convolving the input along each head dimension. For each convolution
 we double the number of channels (= number of heads in the beginning) and halve the length of the 
 input (= hidden dimension x 2 in the beginning), and we keep convolving until we get lenght 1 on each 
-channel. The output of the convolution will be of dimension [(batch size), channels, 1], which can be 
+channel. The output of the convolution will be of dimension [batch size x channels x 1], which can be 
 directly fed into the dense head.<br>
 
 - **Vocabulary used**: vocab.pkl

@@ -182,10 +182,11 @@ class recurrent_NN(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
+        abs_path = os.path.abspath(os.path.dirname(__file__))
         path = models_store_path+self.name+"/"
         if not os.path.exists(path):
             os.makedirs(path)
-        self.model.save_weights(path,overwrite=overwrite)
+        self.model.save_weights(os.path.join(abs_path,path),overwrite=overwrite)
 
     def load(self, **kwargs):
         print("Loading model")
@@ -233,16 +234,26 @@ class attention_NN(recurrent_NN):
             """
         # a few calculations to get the number of layers given the rest
         # since we're diving by 2 the dimension at each layer we need
-        num_layers = int(math.log2(input_length))
+        num_layers = int(math.log2(input_length//(1+window_size)))
         convolutions = []
         channels = initial_filter_size
+        padding = "same"
         for l in range(num_layers):
-            layer = tf.keras.layers.Conv1D(channels, kernel_size=window_size,
-                                           strides=2, padding="same",
+            channels = channels * 2
+            layer = tf.keras.layers.Conv1D(filters=channels, kernel_size=window_size,
+                                           strides=2, padding=padding,
                                            dilation_rate=dilation_rate, activation="relu",
                                            name='convolution{}'.format(str(l + 1)))
             convolutions.append(layer)
-            channels = channels * 2
+        # Flattening to 2D
+        # Input shape:
+        #     - If `data_format='channels_last'`:
+        #       3D tensor with shape:
+        #       `(batch_size, steps, features)`
+        #   Output shape:
+        #     2D tensor with shape `(batch_size, features)`.
+        pooling = tf.keras.layers.GlobalAveragePooling1D(data_format="channels_last")
+        convolutions.append(pooling)
         return convolutions
 
     def build(self, **kwargs):
@@ -297,9 +308,9 @@ class attention_NN(recurrent_NN):
         # CONVOLUTION LAYERS (to use instead of flattening)
         if use_convolution:
             convolutions = self.build_convolutions(dilation_rate=dilation_rate,
-                                                   initial_filter_size=10,
-                                                   window_size=(hidden_size//10),
-                                                   input_length=hidden_size*2)
+                                                                    initial_filter_size=r,
+                                                                    window_size=(hidden_size//10),
+                                                                    input_length=hidden_size*2)
         # DENSE head
         dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
         if use_normalization: norm = tf.keras.layers.BatchNormalization()
@@ -326,15 +337,14 @@ class attention_NN(recurrent_NN):
         # we now have our context vector with dimension [batch x r x hidden_dim*2]
         # we just flatten it (as done in the paper) to get a single vector
         # to work with
-        if not use_convolution: flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
+        flattened = tf.reshape(dropped_out, shape=[-1, r*hidden_size*2])
         ## Inserting convolution
         if use_convolution:
             for conv_layer in convolutions:
                 conv_result = conv_layer(dropped_out)
             # the output of the last convolution layer will have size
-            # [batch_size x num_channels x 1]
-            num_channels = tf.shape(conv_result)[1]
-            flattened = tf.reshape(conv_result, shape=[-1, num_channels])
+            # [batch_size x num_channels]
+            flattened = conv_result
         dense1_out = dense1(flattened)
         outputs = dense2(dense1_out)
         ## COMPILING THE MODEL

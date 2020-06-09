@@ -9,6 +9,7 @@ from classifier.pipeline import run_train_pipeline
 
 
 if __name__ == "__main__":
+
     build_params = {
         "cell_type":"GRU",
         "num_layers":1,
@@ -19,16 +20,16 @@ if __name__ == "__main__":
         "use_attention":True,
         "heads":5,
         "penalization":True,
-        "use_convolution":True,
+        "use_convolution":False,
         "dilation_rate":1
     }
-    train_params = {"epochs":5,
-                    "batch_size":16,
+    train_params = {"epochs":10,
+                    "batch_size":128,
                     "validation_split":0.2}
 
     run_train_pipeline("recurrent_NN",
                        "Attention_GRU_5heads_penalized",
-                       load_model=False,
+                       load_model=True,
                        prediction_mode=False,
                        data_location=zero_matrix_train_location,
                        cv_on=False,
