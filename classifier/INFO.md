@@ -223,7 +223,6 @@ Same as the above, including penalization for the weight matrix A to encourage d
 </div>   
 
 - **Performance - batch size = 128**: 
- 
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc_128.png.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss_128.png" width="400"/>
@@ -288,6 +287,16 @@ directly fed into the dense head.<br>
                     "dilation_rate":1
                 }
          
-                    
+- **Performance - batch size = 128**: 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_conv_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_conv_loss.png" width="400"/>
+</div>   
+
+- **Visualization**: 
+<div>
+<img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_conv_heatmap_pos.png" width="400"/>
+<img alt="negative sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_conv_heatmap_neg.png" width="400"/>
+</div>                    
 
 --- 
