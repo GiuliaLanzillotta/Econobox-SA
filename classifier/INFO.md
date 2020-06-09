@@ -215,17 +215,11 @@ Same as the above, including penalization for the weight matrix A to encourage d
             # attention heads to be 0  
             --> disentangling the different factors of attention
    
-- **Performance - batch size = 16**: 
+- **Performance - batch size = 128**: 
  
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss.png" width="400"/>
-</div>   
-
-- **Performance - batch size = 128**: 
-<div>
-<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc_128.png" width="400"/>
-<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss_128.png" width="400"/>
 </div>   
 
 - **Visualization**: 
