@@ -36,8 +36,6 @@ def get_ids(tokens, tokenizer, max_seq_length):
     input_ids = token_ids + [0] * (max_seq_length-len(token_ids))
     return input_ids
 
-
-#Nota bene??:
 #the embedding dimension of a tweet(sentence) is standard 768
 
 def get_BERT_EMBEDDING(input_files, output_location, max_seq_length=128):
@@ -81,8 +79,7 @@ def get_BERT_EMBEDDING(input_files, output_location, max_seq_length=128):
     np.savez(output_location, output)
     return output
 
-get_BERT_EMBEDDING([train_positive_sample_location, train_positive_sample_location],
-                   bert_matrix_train_location, max_seq_length=128)
+
 
 
 
