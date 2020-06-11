@@ -40,11 +40,12 @@ class ClassifierBase(object):
         :return: None
         """
         print("Saving predictions")
+        #todo: fix the hashtag in the header
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = predictions_folder + self.name + "_predictions.csv"
         to_save_format = np.dstack((np.arange(1, predictions_array.size + 1), predictions_array))[0]
         np.savetxt(os.path.join(abs_path,path), to_save_format, "%d,%d",
-                   delimiter=",", header="Id,Predictions")
+                   delimiter=",", header="Id,Prediction")
 
 
     @abstractmethod

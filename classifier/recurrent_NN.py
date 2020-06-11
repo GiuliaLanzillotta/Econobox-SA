@@ -4,6 +4,8 @@
 from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
 from classifier import models_store_path, predictions_folder
+from embedding.pipeline import generate_training_matrix, get_validation_data
+from embedding import sentence_embedding
 import tensorflow as tf
 import seaborn as sb
 import numpy as np
@@ -130,16 +132,45 @@ class recurrent_NN(ClassifierBase):
         Training the model and saving the history of training.
         """
         print("Training model.")
+        generator_mode = kwargs.get("generator_mode")
         epochs = kwargs.get("epochs",10)
         batch_size = kwargs.get("batch_size",32)
         validation_split = kwargs.get("validation_split",0.2)
 
-        y_train = tf.keras.utils.to_categorical(y)
-        self.history = self.model.fit(x, y_train,
+        if not generator_mode:
+            y_train = tf.keras.utils.to_categorical(y)
+            self.history = self.model.fit(x, y_train,
                                       epochs=epochs,
                                       batch_size=batch_size,
                                       validation_split=validation_split,
                                       shuffle=True)
+        else:
+            # extracting relevant arguments
+            embedding = kwargs.get("embedding")
+            input_files = kwargs.get("input_files")
+            label_values = kwargs.get("label_values")
+            input_entries = kwargs.get("input_entries")
+            max_len = kwargs.get("max_len")
+            n_steps = int((1-validation_split)*input_entries/batch_size)
+            validation_data = get_validation_data(embedding=embedding,
+                                                  input_files=input_files,
+                                                  label_values=label_values,
+                                                  validation_split=validation_split,
+                                                  categorical=True,
+                                                  aggregation_fun=sentence_embedding.no_embeddings,
+                                                  input_entries=input_entries,
+                                                  sentence_dimesion=max_len)
+            self.history = self.model.fit(generate_training_matrix(embedding=embedding,
+                                                                   input_files=input_files,
+                                                                   label_values=label_values,
+                                                                   chunksize=batch_size,
+                                                                   validation_split=validation_split,
+                                                                   categorical=True,
+                                                                   aggregation_fun=sentence_embedding.no_embeddings,
+                                                                   input_entries=input_entries,
+                                                                   sentence_dimesion=max_len),
+                                          epochs=epochs, steps_per_epoch =n_steps,
+                                          validation_data=validation_data)
         self.plot_history()
 
     def make_predictions(self, x, save=True, **kwargs):
@@ -179,13 +210,14 @@ class recurrent_NN(ClassifierBase):
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.show()
+        #todo: save the plot automatically
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = models_store_path+self.name+"/"
-        if not os.path.exists(path):
-            os.makedirs(path)
+        if not os.path.exists(os.path.join(abs_path,path)):
+            os.makedirs(os.path.join(abs_path,path))
         self.model.save_weights(os.path.join(abs_path,path),overwrite=overwrite)
 
     def load(self, **kwargs):

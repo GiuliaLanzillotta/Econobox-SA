@@ -40,54 +40,49 @@ def get_ids(tokens, tokenizer, max_seq_length):
 #Nota bene??:
 #the embedding dimension of a tweet(sentence) is standard 768
 
-def get_BERT_EMBEDDING(input_files, output_location):
+def get_BERT_EMBEDDING(input_files, output_location, max_seq_length=128):
     out_dim = 768
     #the total number of tweets
     N = 20000
     output = np.zeros((N, out_dim))
 
+    ## FIRST DEFINE THE MODEL
+    print("Building Bert model.")
+    input_word_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32, name="input_word_ids")
+    input_mask = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32, name="input_mask")
+    segment_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32, name="segment_ids")
+    bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=True)
+    pooled_output, sequence_output = bert_layer([input_word_ids, input_mask, segment_ids])
+    model = Model(inputs=[input_word_ids, input_mask, segment_ids],
+                  outputs=[pooled_output, sequence_output])
 
+    ## THEN PROCESS THE FILES
+    print("Processing the files")
     for i, file in enumerate(input_files):
-
         with open(file) as f:
             for l, line in enumerate(f):
-                max_seq_length = 128
-                input_word_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,name="input_word_ids")
-                input_mask = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,name="input_mask")
-                segment_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,name="segment_ids")
-                bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1",trainable=True)
-                pooled_output, sequence_output = bert_layer([input_word_ids, input_mask, segment_ids])
-
                 vocab_file = bert_layer.resolved_object.vocab_file.asset_path.numpy()
                 do_lower_case = bert_layer.resolved_object.do_lower_case.numpy()
                 tokenizer = FullTokenizer(vocab_file, do_lower_case)
-
                 stokens = tokenizer.tokenize(line)
                 stokens = ["[CLS]"] + stokens + ["[SEP]"]
                 #get the model inputs from the tokens
                 input_ids = get_ids(stokens, tokenizer, max_seq_length)
                 input_masks = get_masks(stokens, max_seq_length)
                 input_segments = get_segments(stokens, max_seq_length)
-                model = Model(inputs=[input_word_ids, input_mask, segment_ids],
-                              outputs=[pooled_output, sequence_output])
-
-                print(len(input_ids), len(input_masks), len(input_segments))
-
-                pool_embs, all_embs = model.predict([[input_ids], [input_masks], [input_segments]])
-
-
+                pool_embs, all_embs = model.predict([np.array(input_ids).reshape(1,-1),
+                            np.array(input_masks).reshape(1,-1), np.array(input_segments).reshape(1,-1)])
                 #now we need to store this into a matrix
                 #look at how we did this with the embedding matrix
-
                 #output dim is also 768 then
-
                 output[i, :] = pool_embs
                 if l % 10000 == 0:
                     print(l)
     np.savez(output_location, output)
     return output
 
-get_BERT_EMBEDDING([train_positive_sample_location, train_positive_sample_location],bert_matrix_train_location )
+get_BERT_EMBEDDING([train_positive_sample_location, train_positive_sample_location],
+                   bert_matrix_train_location, max_seq_length=128)
 
 
 

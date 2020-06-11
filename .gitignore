@@ -8,4 +8,14 @@
 train_matrix.npz
 embeddings/glove.twitter.27B.zip
 embeddings/glove.twitter.27B.200d.txt
+embeddings/only_stanford.npz
 venv
+replaced_zero_embedding_test_matrix.npz
+zero_embedding_full_train_matrix.npz
+replaced_zero_embedding_full_train_matrix.npz
+vocabularies/stanford_vocab.pkl
+data/twitter-datasets/
+classifiers/Attention_GRU_5heads_full/
+classifiers/Attention_GRU_5heads_full_et/
+
+

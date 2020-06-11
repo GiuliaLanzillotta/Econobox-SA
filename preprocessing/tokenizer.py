@@ -1,11 +1,13 @@
 # Here we implement all functions/classes relative to tokenizing 
 from data import train_positive_location, train_negative_location, \
   train_positive_sample_location, train_negative_sample_location
+from embedding import stanford_embedding_location
 from preprocessing import vocabularies_folder
 from nltk.tokenize.casual import TweetTokenizer
 from collections import Counter
 import os
 import pickle
+import re
 
 def tokenize_text(text):
     """
@@ -20,6 +22,29 @@ def tokenize_text(text):
     tokens = tokenizer.tokenize(text)
     words = [w.lower() for w in tokens]
     return words
+
+# todo incorporate standardization in tokenization
+
+def build_stanford_vocab(file_name="stanford_vocab.pkl"):
+    """ Extracts the vocabulary from the Stanford embedding and saves it
+        as a new vocabulary. """
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    f = open(os.path.join(abs_path, stanford_embedding_location), encoding='utf8')
+    words = []
+    for line in f:
+        values = line.split()
+        word = values[0]
+        words.append(word)
+    f.close()
+    # counting the words
+    counter = Counter(words)
+    words_count = dict(counter)
+    # building voabulary
+    vocab = {k:i for i,k in enumerate(words_count)}
+    # saving the vocabulary
+    with open(os.path.join(abs_path,vocabularies_folder+file_name), 'wb') as f:
+        pickle.dump(vocab, f, pickle.HIGHEST_PROTOCOL)
+    return vocab
 
 def build_vocab(frequency_treshold=10,
                 file_name="vocab.pkl",
@@ -56,7 +81,7 @@ def build_vocab(frequency_treshold=10,
     # building voabulary 
     vocab = {k:i for i,k in enumerate(filtered_words)}
     # saving the vocabulary 
-    with open(file_name, 'wb') as f: 
+    with open(os.path.join(abs_path,vocabularies_folder+file_name), 'wb') as f:
         pickle.dump(vocab, f, pickle.HIGHEST_PROTOCOL)
     return vocab
 

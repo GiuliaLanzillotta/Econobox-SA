@@ -36,5 +36,7 @@ All these vocabularies, if not specified differently, are obtained from "train_p
 6) ##### vocab_lemm_rep_10_10810.pkl:
    dictionary with 11370 words where each word occurs at least 10 times in the corpora. Same as above.
 
+7) ##### stanford_vocab.pkl:
+    dictionary with 1193515 entries. It containes the vocabulary of the Stanford pre-trained embedding. 
 
  

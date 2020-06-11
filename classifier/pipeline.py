@@ -7,9 +7,11 @@ from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension
-from embedding.pipeline import get_glove_embedding
+from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 from embedding.sentence_embedding import  no_embeddings
+from data import replaced_train_negative_location, replaced_train_positive_location, \
+    full_dimension
 import embedding
 import numpy as np
 import os
@@ -123,9 +125,12 @@ def get_recurrent_model(model_name,
     # Opening pre-trained embedding matrix
     load_embedding = kwargs.get("load_embedding")
     embedding_name = kwargs.get("embedding_location","glove_emb.npz")
+    generator_mode = kwargs.get("generator_mode", False)
+    max_len = kwargs.get("max_len",100)
     if load_embedding:
-        glove_embedding = get_glove_embedding(load_from_file=True,
-                                              load_Stanford=False,
+        glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
+                                              load_from_file=True,
+                                              load_Stanford=False, #no need to reload the stanford embedding when we already load the embedding matrix from file
                                               file_name=embedding_name,
                                               train=False,
                                               save=False)
@@ -144,9 +149,22 @@ def get_recurrent_model(model_name,
     # ----------------
     # Training, testing and saving
     if train_model:
-        x_train = train_data[:, 0:-1]
-        y_train = train_data[:, -1]
-        recurrent.train(x_train, y_train, **train_params)
+        x_train, y_train = None, None
+        if not generator_mode:
+            x_train = train_data[:, 0:-1]
+            y_train = train_data[:, -1]
+
+        generator_params = {
+            "embedding": glove_embedding,
+            "input_files":[replaced_train_negative_location,replaced_train_positive_location],
+            "input_entries":full_dimension,
+            "max_len":max_len
+        }
+
+        recurrent.train(x_train, y_train,
+                        generator_mode=generator_mode,
+                        **generator_params,
+                        **train_params)
     if test_data is not None:
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
@@ -154,10 +172,10 @@ def get_recurrent_model(model_name,
     if save_model: recurrent.save()
     # ---------------
     # Visualization
-    visualize_attention = kwargs.get("visualize_attention", True)
+    visualize_attention = kwargs.get("visualize_attention", train_model)
     sentence_pos = "I'm loving this project, let's keep on working guys!"
     sentence_neg = "I hate bugs, but not as much as I hate cooking."
-    if visualize_attention:
+    if visualize_attention and use_attention:
         #Note: visualization can only be used with the attention model
         # 1. get the vectorised representation of the sentence
         sentence_pos_vec = no_embeddings(sentence_pos, embedding=glove_embedding)
@@ -374,6 +392,7 @@ def run_train_pipeline(model_type,
                        prediction_mode=False,
                        load_model=False,
                        data_location=matrix_train_location,
+                       generator_mode=False,
                        cv_on=False,
                        test_data_location=None,
                        build_params=None,
@@ -381,6 +400,8 @@ def run_train_pipeline(model_type,
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
+    :param generator_mode: whether to use a generator for the input instead of a matrix.
+        :type generator_mode: bool
     :param model_type: (str). Should appear as a key in 'model_pipeline_fun'
     :param model_name: (str). Name of the model, very important if you want to load it from file.
     :param prediction_mode: (bool). Whether to load a classifier in prediction mode
@@ -409,12 +430,14 @@ def run_train_pipeline(model_type,
         "": lambda : None # empty function
     }
 
-    print("Loading data")
+    data_matrix = None
+    test_matrix = None
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
+    if not generator_mode:
+        print("Loading data")
+        data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
-    else: test_matrix = None
 
     function = model_pipeline_fun[model_type]
     if cv_on: cross_validation(train_data=data_matrix, model_fun=function,
@@ -433,9 +456,11 @@ def run_train_pipeline(model_type,
                     # don't worry about the next arguments
                     # if you're not using the recurrent net :
                     # they will be automatically ignored by all other functions
+                    vocabulary="stanford_vocab.pkl",
                     load_embedding=True,
-                    embedding_name = "glove+stanford.npz",
-                    visualize_attention=True)
+                    embedding_location ="only_stanford.npz",
+                    generator_mode=generator_mode,
+                    max_len=100)
     if prediction_mode:
        model.make_predictions(data_matrix, save=True)
     return model

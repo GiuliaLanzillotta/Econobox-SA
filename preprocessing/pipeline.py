@@ -3,6 +3,7 @@ from preprocessing.cooc import build_cooc, load_cooc
 from preprocessing.tokenizer import build_vocab, load_vocab
 from preprocessing import cooc_folder
 from preprocessing import lemmatizer as lemma
+from data import input_files_location
 import pickle
 import os
 
@@ -57,7 +58,7 @@ def get_vocabulary(vocabulary_name,
             print("the argument input_files should not be None \n")
             print("Replacement will not be executed \n")
         else:
-            print("fucntion get_vocabulary: starting replacement (i.d don't -> do not ) \n")
+            print("function get_vocabulary: starting replacement (i.d don't -> do not ) \n")
             lemm_rep = lemma.RegexpReplacer()
             for i,input_file in enumerate(input_files):
                 with open(input_file) as f:
@@ -80,7 +81,12 @@ def get_vocabulary(vocabulary_name,
 
 
 
-def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"]):
+def getTxtLemmatization(input_files,
+                        stopwords = False,
+                        replace = True,
+                        replace_stanford=False,
+                        lemmatize = False,
+                        outputfiles = None):
     """
     function that produces a lemmatized text.
     :param input_files: a list containing the path to the two files.
@@ -88,24 +94,33 @@ def getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile 
     :replacement : (bool) either you want to have replacement id. don't -> do not
     :outputfile: list containing the names of the two output files
     """
-    if replacement == 1:
-        print("function getTxtLemmatization: starting replacement (i.d don't -> do not ) \n")
-        lemm_rep = lemma.RegexpReplacer()
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    if not outputfiles: outputfiles = ["lemmatized_"+f for f in input_files]
+    if replace:
+        print("Starting replacement")
+        mode = "standard"
+        if replace_stanford: mode = "stanford"
+        lemm_rep = lemma.RegexpReplacer(mode)
         for i,input_file in enumerate(input_files):
-            with open(input_file) as f:
+            with open(os.path.join(abs_path,input_files_location+input_file), encoding='utf8') as f:
                 file_replaced = lemm_rep.replace(f.read())
-            with open("tobedeleted_"+str(i + 1)+".txt", "w") as f:
+            with open(os.path.join(abs_path,input_files_location+"replaced_"+input_file), "w",
+                      encoding='utf8') as f:
                 f.write(file_replaced)
-        input_files = ["tobedeleted_1.txt","tobedeleted_2.txt"]
+        input_files = ["replaced_"+f for f in input_files]
         print("replacement done. \n")
-    print("Starting lemmatizing on first file:  i.d( loove -> love, believes -> belief) \n")
-    file_1 = lemma.TxtLemmatized(file_name = input_files[0], stopword = stopwords, output_file = outputfile[0])
-    print("Starting lemmatizing on second file:  i.d( loove -> love, believes -> belief) \n")
-    file_2 = lemma.TxtLemmatized(file_name = input_files[1], stopword = stopwords, output_file = outputfile[1])
+    if lemmatize:
+        for i,file_name in enumerate(input_files):
+            print("Starting lemmatizing on"+file_name)
+            lemma.TxtLemmatized(file_name=file_name,
+                                  stopword=stopwords,
+                                  output_file=outputfiles[0],
+                                  use_lemmatizer=True,
+                                  use_replacer=True)
     print("Done \n")
-    os.remove("tobedeleted_1.txt")
-    os.remove("tobedeleted_2.txt")
-    return (file_1, file_2)
+    if replace and lemmatize:
+        os.remove(input_files[0], input_files[1])
+
         
 
 
@@ -169,8 +184,9 @@ def run_preprocessing(vocab_name,
     :param input_files:  (list(str)) the list of input files, if not provided the sample files will be used.
     :return: vocabulary and co-occurrence matrix
     """
-    if(to_lemmatize_input == True):
-        files = getTxtLemmatization(input_files, stopwords = 0, replacement = 1, outputfile = ["lemm_pos.txt", "lemm_neg.txt"])
+    if(to_lemmatize_input):
+        getTxtLemmatization(input_files, stopwords = False, replace=True, lemmatize=True,
+                                    outputfile = ["lemm_pos.txt", "lemm_neg.txt"])
         input_files =  ["lemm_pos.txt", "lemm_neg.txt"]
     print("I am here \n")
     vocab = get_vocabulary(vocab_name,
@@ -178,7 +194,7 @@ def run_preprocessing(vocab_name,
                            input_files = input_files,
                            replacement_first=0, #it's already carried out in the function above
                            vocab_params=vocab_build_params)
-    if(to_lemmatize_input ==  True):
+    if(to_lemmatize_input):
         vocab = get_lemmatization(vocab, stopwords = 0, output = "dict_tmp.pkl") #get lemmatization continues with all other kinds of lemmatization
     
     cooc = get_cooc_matrix(cooc_name,

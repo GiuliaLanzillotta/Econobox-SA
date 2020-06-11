@@ -85,16 +85,18 @@ class GloVeEmbedding(EmbeddingBase):
             coefs = np.asarray(values[1:], dtype='float32')
             embeddings_index[word] = coefs
         f.close()
-
+        lost = 0
         emb_matrix = np.zeros((self.vocabulary_dimension +1 , self.embedding_dimension))
         for word in self.vocabulary.keys():
             idx = self.vocabulary.get(word)
             embedding_vector = embeddings_index.get(word)
             if embedding_vector is not None:
-                emb_matrix[idx + 1] = embedding_vector
+                try: emb_matrix[idx + 1] = embedding_vector
+                except Exception as _: lost = lost +1
             # Please note that the words for which there is no
             # embedding vector in the pre-trained embedding
             # will be left as 0 - which should be Neutral
+        print("Lost words: ",lost)
         self.embedding_matrix = emb_matrix
         return emb_matrix
 

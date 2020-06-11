@@ -8,6 +8,8 @@ import re
 from nltk.corpus import wordnet
 from nltk import  WordNetLemmatizer
 from collections import Counter
+from data import input_files_location
+
 
 
 
@@ -29,9 +31,6 @@ class RepeatReplacer(object):
             return self.replace(repl_word)
         else:
             return repl_word
-
-
-
 
 
 def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemmed.pkl"):
@@ -63,38 +62,6 @@ def DictionaryLemmatizer(dictionary,stopword = 0, file_name = "dictionary_stemme
         pickle.dump(final_dict, f, pickle.HIGHEST_PROTOCOL)
     return final_dict
     
-    
-def  TxtLemmatized(file_name = "train_pos.txt", stopword = 0, output_file = "lemm_pos.txt"):
-    """Function that lemmatizes the input file. To be used for example when creating the glove
-       embeddings with a dictionary that has been lemmatized.
-       @param file_name: str 
-       name of the file
-       @param stopword: if 1 then it deletes also the stop words: very very slow
-    
-    """
-    lemmatizer = WordNetLemmatizer()
-    replacer = RepeatReplacer()
-    with open(os.getcwd() +"\\" + file_name) as f: ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
-        file_new = []
-        for i,sentence in enumerate(f):
-            if i % 10000 == 0:
-                print(i)
-            sentence = tokenize_text(sentence)
-            sentence_temporal = []
-            for words in sentence:
-                words = lemmatizer.lemmatize(words)
-                words = replacer.replace(words)
-                sentence_temporal.append(words)
-            if(stopword == 1):
-                print("Starting deleting stopwords from sentence " , i, "\n")
-                sentence_temporal = [word for word in sentence_temporal if not word in stopwords.words()]
-            string = " "
-            string_1 = string.join(sentence_temporal)
-            file_new.append(string_1 + " \n")
-    with open(output_file, "w") as f:
-        f.writelines(file_new)
-    return file_new
-      
 
 replacement_patterns = [
 (r'won\'t', 'will not'),
@@ -109,12 +76,82 @@ replacement_patterns = [
 (r'(\w+)\'d', '\g<1> would')
 ]
 
+# Replacement patterns that mimics the preprocessing on the Tweets emplyed by
+# the Stanford group.
+eyes = "[8:=;]"
+nose = "['`\-]?"
+
+def lower_replacement(match):
+    return match.group(1).lower() + " <ALLCAPS>"
+
+stanford_replacement_patterns = [
+    (r'([A-Z]+)', lower_replacement),
+    (r'https?://\S+\b|www\.\w+\.+\S*',"<URL>"), # matches an URL
+    ("/"," / "),
+    (r'@\w+', "<USER>"),
+    (r''+eyes+''+nose+'?[)D]+|[(d]+'+nose+'?'+eyes, "<SMILE>"), # matces :-) or (-: and all variants
+    (r''+eyes+nose+'?'+'p+|d+'+nose+'?'+eyes, "<LOLFACE>"), # matches :-p or d-: and all variants
+    (r''+eyes+nose+'?'+'\(+|\)+'+nose+'?'+eyes, "<SADFACE>"),
+    (r''+eyes+nose+'?'+'[\/|l*]|[\/|l*]+'+nose+'?'+eyes, "<NEUTRALFACE>"),
+    (r'<3',"<HEART>"),
+    (r'[-+]?[.\d]*[\d]+[:,.\d]*', "<NUMBER>"),
+    (r'#([A-Z0-9]+)','<HASHTAG> \g<1> <ALLCAPS>'), # all caps hashtags
+    (r'#(\w*[a-z]+\w*)','<HASHTAG> \g<1>'), # mixed hashtags
+    (r'([!?.]){2,}','\g<1> <REPEAT>'), # mark punctuation repetition
+    (r'\b(\S*?)(.)\2{2,}(.)*\b','\g<1>\g<2>\g<3> <ELONG>') # Mark elongated words (eg. "wayyyy" => "way <ELONG>")
+]
+
+available_patterns = {
+    "standard":replacement_patterns,
+    "stanford":stanford_replacement_patterns
+}
+
 #Class that enables to change a string transforming grammatical forms like don't and can't in do not and cannot.
 class RegexpReplacer(object):
-    def __init__(self, patterns=replacement_patterns):
-        self.patterns = [(re.compile(regex), repl) for (regex, repl) in patterns]
+    def __init__(self, patterns=None):
+        self.patterns = available_patterns[patterns]
     def replace(self, text):
         s = text
         for (pattern, repl) in self.patterns:
             s = re.sub(pattern, repl, s)
         return s
+
+
+def TxtLemmatized(file_name="train_pos.txt",
+                  stopword=False,
+                  output_file="lemm_pos.txt",
+                  use_lemmatizer=True,
+                  use_replacer=True):
+    """Function that lemmatizes the input file. To be used for example when creating the glove
+       embeddings with a dictionary that has been lemmatized.
+       @param file_name: str
+       name of the file
+       @param stopword: if 1 then it deletes also the stop words: very very slow
+       :param output_file: name of the output file
+       :param patterns: either "standard" or "stanford".
+                the patterns to be used by the regexpReplacer
+
+    """
+    if use_lemmatizer: lemmatizer = WordNetLemmatizer()
+    if use_replacer: replacer = RepeatReplacer()
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(abs_path,input_files_location+file_name), encoding='utf8') as f:  ### PROBABLY YOU HAVE TO CHANGE DIRECTORY HERE
+        file_new = []
+        for i, sentence in enumerate(f):
+            if i % 10000 == 0:
+                print(i)
+            sentence = tokenize_text(sentence)
+            sentence_temporal = []
+            for words in sentence:
+                if use_lemmatizer: words = lemmatizer.lemmatize(words)
+                if use_replacer: words = replacer.replace(words)
+                sentence_temporal.append(words)
+            if (stopword):
+                print("Starting deleting stopwords from sentence ", i, "\n")
+                sentence_temporal = [word for word in sentence_temporal if not word in stopwords.words()]
+            string_1 = " ".join(sentence_temporal)
+            file_new.append(string_1 + " \n")
+    with open(os.path.join(abs_path,input_files_location+output_file), "w", encoding='utf8') as f:
+        f.writelines(file_new)
+    return file_new
+

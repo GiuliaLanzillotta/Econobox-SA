@@ -4,8 +4,9 @@ import os
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
 
-from __init__ import train_positive_location, train_negative_location, \
-  train_positive_sample_location, train_negative_sample_location, cooc_folder
+from data import train_positive_location, train_negative_location, \
+  train_positive_sample_location, train_negative_sample_location
+from preprocessing import cooc_folder
 from preprocessing.tokenizer import tokenize_text, load_vocab
 from scipy.sparse import *
 import pickle

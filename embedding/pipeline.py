@@ -4,8 +4,146 @@ from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
 from data import sample_dimension, \
-    train_negative_sample_location, train_positive_sample_location, test_location
+    train_negative_sample_location, train_positive_sample_location, test_location, test_dimension
+import tensorflow as tf
 import numpy as np
+import random
+import os
+
+def load_file_chunk(start, chunksize, file):
+    """
+    Loads -chunksize- tweets from the specified file, starting from
+    -start- tweet (excluded).
+    """
+    f = open(file, encoding='utf8')
+    lines = f.readlines()
+    selected = lines[int(start):int(start + chunksize)]
+    return selected
+
+def generate_training_matrix(embedding,
+                             input_files=None,
+                             label_values=None,
+                             chunksize=100,
+                             validation_split=0.2,
+                             categorical=True,
+                             aggregation_fun=sentence_embedding.sum_embeddings,
+                             input_entries=sample_dimension,
+                             sentence_dimesion = embedding_dim):
+    """
+    Generator version of the function "build training matrix".
+    A generator is a function that builds the data at runtime.
+    To use in case of big files.
+    :param categorical: whether to turn the labels to categorical variables.
+        :type categorical: bool
+    :param validation_split: fraction of the input to use as validation.
+        :type validation_split: float
+    :param chunksize: dimension of the chunk to load
+        :type chunksize: int
+    :param input_entries: total size (in number of lines) of the input
+    :param embedding: EmbeddingBase. The embedding class to use.
+    :param input_files: list(str). List of input files to transform.
+    :param label_values: list(int). List of label values corresponding to each input file.
+    :param aggregation_fun: function. Aggregation function to use to get a sentence embedding.
+    :param sentence_dimesion: specifies the dimensionality of a sentence. Note that
+    this value is correlated with the aggregation function. For instance, the sum_embeddings
+    aggregation function will require the same dimensionality of the embeddings.
+    :return: a tuple (x, y)
+    """
+    if label_values is None:
+        label_values = [0, 1]
+    if input_files is None:
+        input_files = [train_negative_sample_location,
+                       train_positive_sample_location]
+    assert len(label_values) == len(input_files), \
+        "The number of files must equal the number of labels"
+
+    # resolving paths
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    input_paths = [os.path.join(abs_path,f) for f in input_files]
+
+    validation_size = int(validation_split*input_entries//len(input_files))
+    start = 0
+    while start < int(input_entries//len(input_files) - validation_size):
+        # Here we load a chunk from the positive file
+        # and a chunk from the negative file
+        sentences = []
+        for file in input_paths:
+            sentences += load_file_chunk(start, chunksize, file)
+        labels = []
+        for lv in label_values: labels+=[lv]*chunksize
+        # embedding the sentence
+        sentences_emb = [aggregation_fun(line, embedding,
+            max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
+                            # we reshape to make sure it is a row vector
+        # shuffling
+        temp = list(zip(sentences_emb, labels))
+        random.shuffle(temp)
+        sentences, labels = zip(*temp)
+        sentences = np.array(sentences).reshape(chunksize*2,-1)
+        if categorical: labels = tf.keras.utils.to_categorical(labels)
+        start += chunksize
+        yield (sentences, labels)
+
+
+def get_validation_data(embedding,
+                        input_files=None,
+                        label_values=None,
+                        validation_split=0.2,
+                        categorical=True,
+                        aggregation_fun=sentence_embedding.sum_embeddings,
+                        input_entries=sample_dimension,
+                        sentence_dimesion = embedding_dim):
+    """
+    Loads the whole validation set into memory.
+    To use together with the generator function in case of big files.
+    :param validation_split: fraction of the input to use as validation.
+        :type validation_split: float
+    :param input_entries: total size (in number of lines) of the input
+    :param categorical: whether to turn the labels to categorical variables.
+        :type categorical: bool
+    :param embedding: EmbeddingBase. The embedding class to use.
+    :param input_files: list(str). List of input files to transform.
+    :param label_values: list(int). List of label values corresponding to each input file.
+    :param aggregation_fun: function. Aggregation function to use to get a sentence embedding.
+    :param sentence_dimesion: specifies the dimensionality of a sentence. Note that
+    this value is correlated with the aggregation function. For instance, the sum_embeddings
+    aggregation function will require the same dimensionality of the embeddings.
+    :return: a tuple (x, y)
+    """
+    print("Preparing validation data.")
+    if label_values is None:
+        label_values = [0, 1]
+    if input_files is None:
+        input_files = [train_negative_sample_location,
+                       train_positive_sample_location]
+    assert len(label_values) == len(input_files), \
+        "The number of files must equal the number of labels"
+
+    # resolving paths
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    input_paths = [os.path.join(abs_path,f) for f in input_files]
+
+    validation_size = int(validation_split*input_entries//len(input_files))
+    start =  input_entries//len(input_files) - validation_size
+    # Here we load a chunk from the positive file
+    # and a chunk from the negative file
+    sentences = []
+    for file in input_paths:
+        sentences += load_file_chunk(start, validation_size, file)
+    labels = []
+    for lv in label_values: labels+=[lv]*validation_size
+    # embedding the sentence
+    sentences_emb = [aggregation_fun(line, embedding,
+        max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
+                        # we reshape to make sure it is a row vector
+    # shuffling
+    temp = list(zip(sentences_emb, labels))
+    random.shuffle(temp)
+    sentences, labels = zip(*temp)
+    sentences = np.array(sentences).reshape(validation_size*2, -1)
+    if categorical: labels = tf.keras.utils.to_categorical(labels)
+    print("Validation data prepared.")
+    return (sentences, labels)
 
 
 def build_training_matrix(label,
@@ -46,7 +184,7 @@ def build_training_matrix(label,
     counter = 0
     for i, file in enumerate(input_files):
         label_value = label_values[i]
-        with open(file) as f:
+        with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # look at each line (=tweet)
             for l, line in enumerate(f):
@@ -66,6 +204,7 @@ def build_training_matrix(label,
                 if l % 10000 == 0:
                     print(l)
                 counter += 1
+    print("Number of lines read:",counter)
     # Save the output
     np.savez(output_location, output)
     return output
@@ -107,10 +246,17 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
     return gloVe_embedding
 
 def run_embedding_pipeline(no_embedding=False,
+                           input_files=None,
+                           input_entries=sample_dimension,
                            output_location=matrix_train_location,
                            prediction_mode=False,
                            glove=True):
     """
+    :param input_files: (list(str)) relative paths to the input files
+    :param glove: (bool) whether to use Glove embedding (for now the only available one)
+    :param output_location: (str) where to save the output matrix
+    :param no_embedding: (bool) whether to use the zero embedding function
+    :param input_entries: (int) dimension of the input file
     :param prediction_mode : (bool) whether the system is in prediction mode (i.e. loading
             the test data)
     Note: the glove parameter is not used now, because no other
@@ -118,32 +264,41 @@ def run_embedding_pipeline(no_embedding=False,
     this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
-    glove = get_glove_embedding(load_from_file=True,
+    glove = get_glove_embedding(vocabulary_file="stanford_vocab.pkl",
+                                load_from_file=True,
                                 load_Stanford=False,
-                                file_name="glove+stanford.npz",
+                                file_name="only_stanford.npz",
                                 train=False,
-                                save=False)
+                                save=True)
     embedding_function = None # default parameter will be used
-    max_len = None # //          //
+    max_len = None          # //          //
     if no_embedding:
         embedding_function = sentence_embedding.no_embeddings
         max_len = 50
-
-    input_files = None
-    if prediction_mode: input_files = [test_location]
+    if prediction_mode:
+        input_files = [test_location]
+        input_entries = test_dimension
+    # resolving paths
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    output_path = os.path.join(abs_path,output_location)
+    input_paths = [os.path.join(abs_path,f) for f in input_files]
 
     build_training_matrix(label=not prediction_mode,
                           embedding=glove,
                           aggregation_fun=embedding_function,
                           sentence_dimesion=max_len,
-                          output_location=output_location,
-                          input_files=input_files)
+                          output_location=output_path,
+                          input_entries=input_entries,
+                          input_files=input_paths)
 
     if no_embedding: print("Number of sentence cut-offs: ",sentence_embedding.count)
 
 
 # Until now:
 # got 15 sentences cut-off with a max_len of 50
+#
+# 103 cut-offs with a max len of 50 in full text file
+
 
 
 
