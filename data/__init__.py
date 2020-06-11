@@ -7,6 +7,7 @@ replaced_train_negative_location = '../data/twitter-datasets/replaced_train_neg_
 test_location = "../data/twitter-datasets/test_data.txt"
 replaced_test_location = "../data/twitter-datasets/replaced_test_data.txt"
 input_files_location = "../data/twitter-datasets/"
+tweetDF_location = "../data/tweetDF.pkl"
 sample_dimension = 200000
 full_dimension = 1250000*2
 test_dimension = 10000
