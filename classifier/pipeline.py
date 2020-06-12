@@ -1,23 +1,27 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
+from classifier.BERT_NN import BERT_NN
 from classifier.recurrent_NN import recurrent_NN, attention_NN
 from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
 from preprocessing import standard_vocab_name
-from preprocessing.tokenizer import get_vocab_dimension,load_inverse_vocab
+from preprocessing.tokenizer import get_vocab_dimension
 from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
+from embedding import bert_matrix_train_location
 from embedding.sentence_embedding import  no_embeddings
 from data import replaced_train_negative_location, replaced_train_positive_location, \
     full_dimension
+from data import tweetDF_location
 import embedding
 import numpy as np
-np.random.seed(42)
 import os
 from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
+from classifier.BERT_NN import PP_BERT_Data
+from preprocessing.tweetDF import load_tweetDF
 
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 
@@ -70,6 +74,34 @@ def get_vanilla_model(model_name,
         vanilla.test(x_test,y_test, **train_params)
     if save_model: vanilla.save()
     return vanilla
+
+def get_BERT_model(model_name,
+                   embedding_dim = embedding.embedding_dim,
+                   max_seq_length = None,
+                   train_data=None,
+                   load_model=False,
+                   train_model=False,
+                   save_model=False,
+                   test_data=None,
+                   build_params=None,
+                   train_params=None,
+                   **kwargs):
+
+    ourBERT = BERT_NN(max_seq_length,embedding_dim,model_name)
+    ourBERT.build(**build_params)
+    if load_model: ourBERT.load()
+    if train_model:
+        x_train = train_data.train_x
+        y_train = train_data.train_y
+        ourBERT.train(x_train, y_train, **train_params)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        ourBERT.test(x_test, y_test, **train_params)
+    if save_model: ourBERT.save()
+    return ourBERT
+
+
 
 
 def get_recurrent_model(model_name,
@@ -166,12 +198,11 @@ def get_recurrent_model(model_name,
                         generator_mode=generator_mode,
                         **generator_params,
                         **train_params)
-    if save_model: recurrent.save()
     if test_data is not None:
-        idx2word = load_inverse_vocab(vocabulary)
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
-        recurrent.test(x_test,y_test, idx2word=idx2word)
+        recurrent.test(x_test,y_test, **train_params)
+    if save_model: recurrent.save()
     # ---------------
     # Visualization
     visualize_attention = kwargs.get("visualize_attention", train_model)
@@ -393,9 +424,9 @@ def run_train_pipeline(model_type,
                        model_name,
                        prediction_mode=False,
                        load_model=False,
-                       data_location=matrix_train_location,
-                       choose_randomly=False,
-                       random_percentage=0.1,
+                       text_data_mode_on = True,
+                       max_seq_length = 128,
+                       data_location=tweetDF_location,
                        generator_mode=False,
                        cv_on=False,
                        test_data_location=None,
@@ -404,9 +435,6 @@ def run_train_pipeline(model_type,
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
-    :param random_percentage: the percentage of the data matrix to be preserved.
-    :param choose_randomly: whether to take a random subset of the data matrix.
-        :type choose_randomly: bool
     :param generator_mode: whether to use a generator for the input instead of a matrix.
         :type generator_mode: bool
     :param model_type: (str). Should appear as a key in 'model_pipeline_fun'
@@ -434,35 +462,29 @@ def run_train_pipeline(model_type,
         "LR_classi": get_LR_model,
         "Adaboost_classi":get_Adaboost_model,
         "RF_classi": get_RandomForest_model,
+        "BERT_NN": get_BERT_model,
         "": lambda : None # empty function
     }
 
-    data_matrix = None
+    data_m = None
     test_matrix = None
-    abs_path = os.path.abspath(os.path.dirname(__file__))
-    if not generator_mode:
-        print("Loading data")
-        data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
-        if choose_randomly and not prediction_mode:
-            train_size = int(random_percentage*data_matrix.shape[0])
-            test_size = int(0.1*train_size)
-            print("Randomly picking ",train_size," indices to train on and ", test_size, " indices to test on.")
-            random_indices = np.random.choice(data_matrix.shape[0],train_size+test_size,replace=False)
-            train_indices = random_indices[:train_size]
-            test_indices = random_indices[train_size:]
-            test_matrix = data_matrix[test_indices,:]
-            data_matrix = data_matrix[train_indices,:]
 
-    if test_data_location is not None and not choose_randomly:
+    if text_data_mode_on:
+        data_m = PP_BERT_Data(load_tweetDF()[:10], classes=[0,1], max_seq_length=max_seq_length)
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    if not text_data_mode_on:
+        print("Loading data")
+        data_m = np.load(os.path.join(abs_path, data_location))['arr_0']
+    if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
 
     function = model_pipeline_fun[model_type]
-    if cv_on: cross_validation(train_data=data_matrix, model_fun=function,
+    if cv_on: cross_validation(train_data=data_m, model_fun=function,
                                embedding_dim=embedding.embedding_dim, model_name=model_name,
                                build_params=build_params, train_params=train_params)
 
     model = function(model_name,
-                    train_data=data_matrix,
+                    train_data=data_m,
                     load_model=load_model,
                     train_model=not (prediction_mode or cv_on),
                     save_model=not (prediction_mode or cv_on),
@@ -479,7 +501,7 @@ def run_train_pipeline(model_type,
                     generator_mode=generator_mode,
                     max_len=100)
     if prediction_mode:
-       model.make_predictions(data_matrix, save=True)
+       model.make_predictions(data_m, save=True)
     return model
 
 
