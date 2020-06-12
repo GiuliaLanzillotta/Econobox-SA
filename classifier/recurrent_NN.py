@@ -136,13 +136,16 @@ class recurrent_NN(ClassifierBase):
         epochs = kwargs.get("epochs",10)
         batch_size = kwargs.get("batch_size",32)
         validation_split = kwargs.get("validation_split",0.2)
-
+        earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
+                                                              min_delta=0.0001,
+                                                              patience=1)
         if not generator_mode:
             y_train = tf.keras.utils.to_categorical(y)
             self.history = self.model.fit(x, y_train,
                                       epochs=epochs,
                                       batch_size=batch_size,
                                       validation_split=validation_split,
+                                      callbacks=[earlystop_callback],
                                       shuffle=True)
         else:
             # extracting relevant arguments
@@ -169,6 +172,7 @@ class recurrent_NN(ClassifierBase):
                                                                    aggregation_fun=sentence_embedding.no_embeddings,
                                                                    input_entries=input_entries,
                                                                    sentence_dimesion=max_len),
+                                          callbacks=[earlystop_callback],
                                           epochs=epochs, steps_per_epoch =n_steps,
                                           validation_data=validation_data)
         self.plot_history()
@@ -180,18 +184,54 @@ class recurrent_NN(ClassifierBase):
         preds_classes[preds_classes == 0] = -1
         if save: self.save_predictions(preds_classes)
 
+    @staticmethod
+    def analyse_worst_predictions(x, y, pred_probs, idx2word, n=10):
+        """ Picking the n most wrong predictions and printing the
+            sentences."""
+        print("Analysing the mistakes of the model.")
+        # extracting the mistakes over which we were more confident
+        temp = np.column_stack([x,np.array(y).reshape(-1,1),pred_probs])
+        mistakes = temp[:,x.shape[1]] != np.argmax(temp[:,-2:], axis=1)
+        temp_ms = temp[mistakes]
+        n_worst_positive_indices = np.argsort(temp_ms[:,-1])[-n:]
+        n_worst_negative_indices = np.argsort(temp_ms[:,-2])[-n:]
+        n_worst_positive = temp_ms[n_worst_positive_indices,:x.shape[1]]
+        n_positive_confidences = temp_ms[n_worst_positive_indices,-1]
+        n_worst_negative = temp_ms[n_worst_negative_indices,:x.shape[1]]
+        n_negative_confidences = temp_ms[n_worst_negative_indices,-2]
+        # turning to words
+        to_words = lambda idx: idx2word.get(idx-1, "")
+        #because the sentence embedding is created
+        #sentence_emb[i] = vocabulary.get(word) + 1
+        n_worst_negative_words = np.vectorize(to_words)(n_worst_negative)
+        n_worst_negative_sentences = [" ".join(line) for line in n_worst_negative_words]
+        n_worst_positive_words = np.vectorize(to_words)(n_worst_positive)
+        n_worst_positive_sentences = [" ".join(line) for line in n_worst_positive_words]
+        print("False negatives:")
+        for i, sentence in enumerate(n_worst_negative_sentences):
+            print(sentence)
+            print("Confidence: ", n_negative_confidences[i])
+        print("False positives:")
+        for i, sentence in enumerate(n_worst_positive_sentences):
+            print(sentence)
+            print("Confidence: ", n_positive_confidences[i])
+        return
 
     def test(self, x, y,**kwargs):
         print("Testing model")
-        batch_size = kwargs.get("batch_size")
-        verbose = kwargs.get("verbose")
-        if not batch_size: batch_size = 32
-        if not verbose: verbose=1
+        idx2word = kwargs.get("idx2word")
 
-        y_test = tf.keras.utils.to_categorical(y)
-        self.model.evaluate(x, y_test,
-                            batch_size=batch_size,
-                            verbose=verbose)
+        #y_test = tf.keras.utils.to_categorical(y)
+        prediction = self.model.predict(x, verbose=0)
+        prediction_probs = tf.nn.softmax(prediction, axis=1).numpy()
+        prediction_classes = np.argmax(prediction, axis=-1).astype("int")
+
+        self.score_model(true_classes=y,
+                         predicted_classes=prediction_classes,
+                         predicted_probabilities=prediction_probs)
+
+        self.analyse_worst_predictions(x,y,prediction_probs,idx2word,n=5)
+
 
     def plot_history(self):
         # summarize history for accuracy

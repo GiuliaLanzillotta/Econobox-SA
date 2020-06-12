@@ -6,7 +6,7 @@ from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
 from preprocessing import standard_vocab_name
-from preprocessing.tokenizer import get_vocab_dimension
+from preprocessing.tokenizer import get_vocab_dimension,load_inverse_vocab
 from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 from embedding.sentence_embedding import  no_embeddings
@@ -14,6 +14,7 @@ from data import replaced_train_negative_location, replaced_train_positive_locat
     full_dimension
 import embedding
 import numpy as np
+np.random.seed(42)
 import os
 from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
@@ -165,11 +166,12 @@ def get_recurrent_model(model_name,
                         generator_mode=generator_mode,
                         **generator_params,
                         **train_params)
+    if save_model: recurrent.save()
     if test_data is not None:
+        idx2word = load_inverse_vocab(vocabulary)
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
-        recurrent.test(x_test,y_test, **train_params)
-    if save_model: recurrent.save()
+        recurrent.test(x_test,y_test, idx2word=idx2word)
     # ---------------
     # Visualization
     visualize_attention = kwargs.get("visualize_attention", train_model)
@@ -392,6 +394,8 @@ def run_train_pipeline(model_type,
                        prediction_mode=False,
                        load_model=False,
                        data_location=matrix_train_location,
+                       choose_randomly=False,
+                       random_percentage=0.1,
                        generator_mode=False,
                        cv_on=False,
                        test_data_location=None,
@@ -400,6 +404,9 @@ def run_train_pipeline(model_type,
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
+    :param random_percentage: the percentage of the data matrix to be preserved.
+    :param choose_randomly: whether to take a random subset of the data matrix.
+        :type choose_randomly: bool
     :param generator_mode: whether to use a generator for the input instead of a matrix.
         :type generator_mode: bool
     :param model_type: (str). Should appear as a key in 'model_pipeline_fun'
@@ -436,7 +443,17 @@ def run_train_pipeline(model_type,
     if not generator_mode:
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
-    if test_data_location is not None:
+        if choose_randomly and not prediction_mode:
+            train_size = int(random_percentage*data_matrix.shape[0])
+            test_size = int(0.1*train_size)
+            print("Randomly picking ",train_size," indices to train on and ", test_size, " indices to test on.")
+            random_indices = np.random.choice(data_matrix.shape[0],train_size+test_size,replace=False)
+            train_indices = random_indices[:train_size]
+            test_indices = random_indices[train_size:]
+            test_matrix = data_matrix[test_indices,:]
+            data_matrix = data_matrix[train_indices,:]
+
+    if test_data_location is not None and not choose_randomly:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
 
     function = model_pipeline_fun[model_type]

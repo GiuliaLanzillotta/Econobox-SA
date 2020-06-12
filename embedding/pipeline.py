@@ -175,8 +175,7 @@ def build_training_matrix(label,
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
     # INITIALIZE ----------
-    if label:
-        out_dim1 = sentence_dimesion + 1
+    if label: out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
     output = np.zeros((input_entries, out_dim1))
 

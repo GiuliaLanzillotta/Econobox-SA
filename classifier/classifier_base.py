@@ -1,6 +1,14 @@
 """ Base classifier definition.
     All other classifiers should implement this class.
 """
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
+from tensorflow.keras.utils import to_categorical
 from abc import abstractmethod
 from classifier import predictions_folder
 import numpy as np
@@ -32,6 +40,34 @@ class ClassifierBase(object):
              x, y,
              **kwargs):
         pass
+
+    @staticmethod
+    def score_model(true_classes, predicted_classes,
+                    predicted_probabilities):
+        """Calculates various scores associated with the model predictions.
+            To use when testing the model."""
+        # accuracy: (tp + tn) / (p + n)
+        accuracy = accuracy_score(true_classes, predicted_classes)
+        print('Accuracy: %f' % accuracy)
+        # precision tp / (tp + fp)
+        precision = precision_score(true_classes, predicted_classes)
+        print('Precision: %f' % precision)
+        # recall: tp / (tp + fn)
+        recall = recall_score(true_classes, predicted_classes)
+        print('Recall: %f' % recall)
+        # f1: 2 tp / (2 tp + fp + fn)
+        f1 = f1_score(true_classes, predicted_classes)
+        print('F1 score: %f' % f1)
+        # kappa
+        kappa = cohen_kappa_score(true_classes, predicted_classes)
+        print('Cohens kappa: %f' % kappa)
+        # ROC AUC
+        auc = roc_auc_score(to_categorical(true_classes), predicted_probabilities)
+        print('ROC AUC: %f' % auc)
+        # confusion matrix
+        matrix = confusion_matrix(true_classes, predicted_classes)
+        print(matrix)
+
 
     def save_predictions(self, predictions_array):
         """

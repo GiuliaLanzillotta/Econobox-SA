@@ -17,5 +17,6 @@ vocabularies/stanford_vocab.pkl
 data/twitter-datasets/
 classifiers/Attention_GRU_5heads_full/
 classifiers/Attention_GRU_5heads_full_et/
+classifiers/Attention_GRU_5heads_conv_full/
 
 

@@ -94,6 +94,14 @@ def load_vocab(file_name):
         vocab = pickle.load(f)
     return vocab
 
+def load_inverse_vocab(file_name):
+    """
+        Loads the idx2word vocabulary at the given location.
+        """
+    vocab = load_vocab(file_name)
+    idx2word = {item[1]:item[0] for item in vocab.items()}
+    return idx2word
+
 def get_vocab_dimension(file_name):
     """
     Opens the specified vocabulary to count the number of keys.
