@@ -77,7 +77,7 @@ def get_vanilla_model(model_name,
 
 def get_BERT_model(model_name,
                    embedding_dim = embedding.embedding_dim,
-                   max_seq_length = None,
+                   max_seq_length = 128,
                    train_data=None,
                    load_model=False,
                    train_model=False,
