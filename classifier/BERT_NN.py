@@ -35,7 +35,6 @@ class PP_BERT_Data():
         print(type(train))
 
         print("max seq_len", self.max_seq_length)
-        #self.max_seq_length = min(self.max_seq_len, max_seq_lenght)
         self.train_x = self._pad(self.train_x)
 
     def _prepare(self, df):
@@ -46,7 +45,6 @@ class PP_BERT_Data():
             tokens = self.tokenizer.tokenize(text=text)
             tokens = ["[CLS]"] + tokens + ["[SEP]"]
             token_ids = self.tokenizer.convert_tokens_to_ids(tokens)
-            self.max_seq_length = max(self.max_seq_length, len(token_ids))
             x.append(token_ids)
             y.append(self.classes.index(label))
 
