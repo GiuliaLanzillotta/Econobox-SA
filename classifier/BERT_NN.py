@@ -76,42 +76,7 @@ class BERT_NN(ClassifierBase):
         self.classes = [0,1]
 
 
-    def build(self, **kwargs):
-        ##extracting model parameters from arguments
-        activation = kwargs.get("activation", "relu")
-        metrics = kwargs.get("metrics", ['accuracy'])
-        optim = kwargs.get("optimizer", 'adam')
-
-        with tf.io.gfile.GFile(bert_config_file_location, "r") as reader:
-            bc = StockBertConfig.from_json_string(reader.read())
-            bert_params = map_stock_config_to_params(bc)
-            bert_params.adapter_size = None
-            bert = BertModelLayer.from_params(bert_params, name="bert")
-
-
-        max_seq_length = self.max_seq_length
-
-        input_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype='int32', name="input_ids")
-        bert_output = bert(input_ids)
-        print('bert shape', bert_output.shape)
-
-        dense1 = tf.keras.layers.Dense(64, activation=activation, name="Dense1")(bert_output)
-        dense2 = tf.keras.layers.Dense(64, activation=activation, name="Dense2")(dense1)
-        dense3 = tf.keras.layers.Dense(2, activation='softmax', name='Dense3')(dense2)
-
-        ## COMPILING THE MODEL
-        self.model = tf.keras.Model(inputs=input_ids, outputs=dense3)
-
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(1e-5),
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="acc")]
-        )
-
-
-        #self.model.summary()
-
-    def create_model(self, bert_ckpt_file, **kwargs):
+    def build(self, bert_ckpt_file, **kwargs):
 
 
         with tf.io.gfile.GFile(bert_config_file_location, "r") as reader:
@@ -219,7 +184,7 @@ class BERT_NN(ClassifierBase):
 
 #BERT1 = BERT_NN(max_seq_length=128, embedding_dimension=200,name="BERT_NN")
 
-#BERT1.create_model(bert_ckpt_file=bert_ckpt_file_location)
+#BERT1.build(bert_ckpt_file=bert_ckpt_file_location)
 
 #data =
 #dataset_train = data[:5]
