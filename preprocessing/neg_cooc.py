@@ -11,7 +11,10 @@ from preprocessing.tokenizer import tokenize_text, load_vocab
 from scipy.sparse import *
 import random
 import pickle
-import numpy as np 
+import numpy as np
+import math
+
+table_size = 10**3 
 
 
 #computes probabilities for sampling according to unigram distributeion to the power 3/4
@@ -40,7 +43,7 @@ def compute_sampling_probabilities(vocab, input_files):
               print(counter)
           counter += 1
   
-  probabilities = [p**(0.75) for p in occurences]
+  probabilities = [n**(0.75) for n in occurences]
   Z = sum(probabilities)  
   probabilities = [p/Z for p in probabilities]
 
@@ -77,12 +80,28 @@ def build_neg_cooc(vocab_name, num_samples,
   # opening each file
   abs_path = os.path.abspath(os.path.dirname(__file__))
   probabilities = compute_sampling_probabilities(vocab, input_files)  
+    
+  lookup_table = [0] * table_size
+
+  count = 0
+  for t in vocab_values:
+    r = math.ceil(table_size * probabilities[t]) 
+    start = count
+    count += r + 1
+    end = count
+    if(len(lookup_table) < count):
+      k = count - len(lookup_table)
+      lookup_table[start:] = [t] * (r-k)
+      lookup_table.extend([t]*k)
+    else:  
+      lookup_table[start:end] = [t] * r 
+
   for fn in input_files:
       with open(os.path.join(abs_path, fn), encoding="utf8") as f:
         print("Working on ",fn)
         # looking at each line
         for line in f:
-          # Here we filter out the words that are not in the vocabulary 
+          # Here we filter out the wordcs that are not in the vocabulary 
           words = tokenize_text(line)
           tokens = [vocab.get(t, -1) for t in words]
           tokens = [t for t in tokens if t >= 0]
@@ -99,7 +118,9 @@ def build_neg_cooc(vocab_name, num_samples,
                   # Note: I exclude the self-co-occurrence 
                   # to save space in memory 
                   continue
-                neg_samples = #sample!!!
+                #print("start sampling")
+                neg_samples = np.random.choice(vocab_values, num_samples, p = probabilities)
+                #print("done sampling")
                 c = 1
                 if weighting == 'Distance':
                   c = c/i
@@ -107,7 +128,7 @@ def build_neg_cooc(vocab_name, num_samples,
                 row.extend([t1]*num_samples)
                 col.extend(neg_samples)
 
-          if counter % 10000 == 0:
+          if counter % 100 == 0:
               print(counter)
           counter += 1
             
