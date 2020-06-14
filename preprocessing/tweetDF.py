@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import numpy as np
 from data import train_positive_location, train_negative_location, \
   train_positive_sample_location, train_negative_sample_location
@@ -17,12 +18,13 @@ def get_tweet_df():
         'sent': 1
     })
     df_data = pd.concat([df_pos_1, df_neg_1], ignore_index=True, sort=False)
-
-    with open("../data/tweetDF.pkl", 'wb') as f:
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(abs_path,"../data/tweetDF.pkl"), 'wb') as f:
         pickle.dump(df_data,f, pickle.HIGHEST_PROTOCOL)
 
 def load_tweetDF():
-  with open("../data/tweetDF.pkl", 'rb') as f:
-    tweetDF = pickle.load(f)
-  return tweetDF
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(abs_path,"../data/tweetDF.pkl"), 'rb') as f:
+        tweetDF = pickle.load(f)
+    return tweetDF
 

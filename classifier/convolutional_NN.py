@@ -4,14 +4,16 @@
 from classifier.classifier_base import ClassifierBase
 from matplotlib import pyplot as plt
 from classifier import models_store_path, predictions_folder
-from embedding.pipeline import generate_training_matrix, get_validation_data
-from embedding import sentence_embedding
+from embedding.pipeline import generate_training_matrix, \
+    get_validation_data
+from matplotlib import pyplot as plt
+from classifier.base_NN import BaseNN
 import tensorflow as tf
+import seaborn as sb
 import numpy as np
 import math
-import os
 
-class convolutional_NN(ClassifierBase):
+class convolutional_NN(BaseNN):
     """
     Convolutional NN classifier
     This class wraps a classifier based on 1D convolutions.
@@ -19,166 +21,94 @@ class convolutional_NN(ClassifierBase):
     Parameters :
     -
     """
+
     def __init__(self,
                  embedding_dimension,
                  vocabulary_dimension,
                  embedding_matrix=None, # initializer of embedding
                  name="ConvolutionalNN"):
-        super().__init__(embedding_dimension, name=name)
-        self.history = None
-        self.model = None
-        self.embedding_matrix = embedding_matrix
-        self.vocabulary_dim = vocabulary_dimension + 1
+        super().__init__(embedding_dimension,
+                         vocabulary_dimension,
+                         name,
+                         embedding_matrix)
 
     @staticmethod
-    def get_optimizer(optim_name):
-        """
-        Simply a routine to switch to the right optimizer
-        :param optim_name: name of the optimizer to use
-        """
-        learning_rate = 0.001
-        momentum = 0.09
-        optimizer = None
-        if optim_name == "sgd": optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=momentum)
-        if optim_name == "adam": optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-        if optim_name == "rmsprop": optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate,
-                                                                            momentum=momentum)
-        return optimizer
+    def get_pooling_layer(pooling_type, pool_size=2):
+        """ Switching method for pooling layer."""
+        if pooling_type=="max":
+            return tf.keras.layers.MaxPool1D(pool_size=pool_size)
+        if pooling_type=="avg":
+            return tf.keras.layers.AvgPool1D(pool_size=pool_size)
 
-    def train(self, x, y, **kwargs):
-        """
-        Training the model and saving the history of training.
-        """
-        print("Training model.")
-        generator_mode = kwargs.get("generator_mode")
-        epochs = kwargs.get("epochs",10)
-        batch_size = kwargs.get("batch_size",32)
-        validation_split = kwargs.get("validation_split",0.2)
-        earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
-                                                              min_delta=0.0001,
-                                                              patience=1)
-        if not generator_mode:
-            y_train = tf.keras.utils.to_categorical(y)
-            self.history = self.model.fit(x, y_train,
-                                      epochs=epochs,
-                                      batch_size=batch_size,
-                                      validation_split=validation_split,
-                                      callbacks=[earlystop_callback],
-                                      shuffle=True)
-        else:
-            # extracting relevant arguments
-            embedding = kwargs.get("embedding")
-            input_files = kwargs.get("input_files")
-            label_values = kwargs.get("label_values")
-            input_entries = kwargs.get("input_entries")
-            max_len = kwargs.get("max_len")
-            n_steps = int((1-validation_split)*input_entries/batch_size)
-            validation_data = get_validation_data(embedding=embedding,
-                                                  input_files=input_files,
-                                                  label_values=label_values,
-                                                  validation_split=validation_split,
-                                                  categorical=True,
-                                                  aggregation_fun=sentence_embedding.no_embeddings,
-                                                  input_entries=input_entries,
-                                                  sentence_dimesion=max_len)
-            self.history = self.model.fit(generate_training_matrix(embedding=embedding,
-                                                                   input_files=input_files,
-                                                                   label_values=label_values,
-                                                                   chunksize=batch_size,
-                                                                   validation_split=validation_split,
-                                                                   categorical=True,
-                                                                   aggregation_fun=sentence_embedding.no_embeddings,
-                                                                   input_entries=input_entries,
-                                                                   sentence_dimesion=max_len),
-                                          callbacks=[earlystop_callback],
-                                          epochs=epochs, steps_per_epoch =n_steps,
-                                          validation_data=validation_data)
-        self.plot_history()
+    def build(self, **kwargs):
+        print("Building model.")
+        ## -------------------
+        ## EXTRACTING ARGUMENTS
+        train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", False)
+        pooling = kwargs.get("use_pooling",True)
+        pooling_type = kwargs.get("pooling_type","max_pooling")
+        num_convolutions = kwargs.get("num_convolutions",10)
+        window_size = kwargs.get("window_size",5)
+        dilation_rate = kwargs.get("dilation_rate",1.0)
+        pool_size = kwargs.get("pool_size",2)
+        hidden_size = kwargs.get("hidden_size", 64)  # size of hidden representation
+        dropout_rate = kwargs.get("dropout_rate", 0.0)  # setting the dropout to 0 is equivalent to not using it
+        use_normalization = kwargs.get("use_normalization", False)
+        activation = kwargs.get("activation", "relu")
+        metrics = kwargs.get("metrics", ['accuracy'])
+        optim = kwargs.get("optimizer", "sgd")
+        ## -------------------
+        ## CREATING THE NODES
+        inputs = tf.keras.layers.Input(shape=(None,), dtype='int32')
+        weights = None
+        if use_pretrained_embedding: weights = [self.embedding_matrix]
+        embedding = tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
+                                              output_dim=self.input_dim,
+                                              weights=weights,
+                                              mask_zero=True,
+                                              trainable=train_embedding)
+        masking = tf.keras.layers.Masking(mask_value=0)
+        convolutions = []
+        for l in range(num_convolutions):
+            channels = channels * 2
+            layer = tf.keras.layers.Conv1D(filters=channels,
+                                           kernel_size=window_size,
+                                           strides=1,
+                                           padding="same",
+                                           dilation_rate=dilation_rate,
+                                           activation="relu",
+                                           name='convolution{}'.format(str(l + 1)))
+            convolutions.append(layer)
+        flattening = tf.keras.layers.GlobalAveragePooling1D(data_format="channels_last")
+        if pooling: pool = self.get_pooling_layer(pooling_type, pool_size)
+        # DENSE head
+        dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+        dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
+        if use_normalization: norm = tf.keras.layers.BatchNormalization()
+        dense2 = tf.keras.layers.Dense(2, name="Dense2")
+        ## -------------------
+        ## CONNECTING THE NODES
+        embedded_inputs = embedding(inputs)
+        masked_inputs = masking(embedded_inputs)
+        conv_input = masked_inputs
+        for conv_layer in convolutions:
+            conv_res = conv_layer(conv_input)
+            if pooling: conv_res = pool(conv_res)
+            conv_input = conv_res
+        flattened = flattening(conv_res)
+        dense1_out = dense1(flattened)
+        outputs = dense2(dense1_out)
+        ## -------------------
+        ## COMPILING THE MODEL
+        self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        optimizer = self.get_optimizer(optim)
+        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        self.model.compile(loss=loss,
+                           optimizer=optimizer,
+                           metrics=metrics,
+                           experimental_run_tf_function=False)
+        self.model.summary()
 
-    def make_predictions(self, x, save=True, **kwargs):
-        print("Making predictions")
-        preds = self.model.predict(x)
-        preds_classes = np.argmax(preds, axis=-1).astype("int")
-        preds_classes[preds_classes == 0] = -1
-        if save: self.save_predictions(preds_classes)
 
-    @staticmethod
-    def analyse_worst_predictions(x, y, pred_probs, idx2word, n=10):
-        """ Picking the n most wrong predictions and printing the
-            sentences."""
-        print("Analysing the mistakes of the model.")
-        # extracting the mistakes over which we were more confident
-        temp = np.column_stack([x,np.array(y).reshape(-1,1),pred_probs])
-        mistakes = temp[:,x.shape[1]] != np.argmax(temp[:,-2:], axis=1)
-        temp_ms = temp[mistakes]
-        n_worst_positive_indices = np.argsort(temp_ms[:,-1])[-n:]
-        n_worst_negative_indices = np.argsort(temp_ms[:,-2])[-n:]
-        n_worst_positive = temp_ms[n_worst_positive_indices,:x.shape[1]]
-        n_positive_confidences = temp_ms[n_worst_positive_indices,-1]
-        n_worst_negative = temp_ms[n_worst_negative_indices,:x.shape[1]]
-        n_negative_confidences = temp_ms[n_worst_negative_indices,-2]
-        # turning to words
-        to_words = lambda idx: idx2word.get(idx-1, "")
-        #because the sentence embedding is created
-        #sentence_emb[i] = vocabulary.get(word) + 1
-        n_worst_negative_words = np.vectorize(to_words)(n_worst_negative)
-        n_worst_negative_sentences = [" ".join(line) for line in n_worst_negative_words]
-        n_worst_positive_words = np.vectorize(to_words)(n_worst_positive)
-        n_worst_positive_sentences = [" ".join(line) for line in n_worst_positive_words]
-        print("False negatives:")
-        for i, sentence in enumerate(n_worst_negative_sentences):
-            print(sentence)
-            print("Confidence: ", n_negative_confidences[i])
-        print("False positives:")
-        for i, sentence in enumerate(n_worst_positive_sentences):
-            print(sentence)
-            print("Confidence: ", n_positive_confidences[i])
-        return
 
-    def test(self, x, y,**kwargs):
-        print("Testing model")
-        idx2word = kwargs.get("idx2word")
-
-        #y_test = tf.keras.utils.to_categorical(y)
-        prediction = self.model.predict(x, verbose=0)
-        prediction_probs = tf.nn.softmax(prediction, axis=1).numpy()
-        prediction_classes = np.argmax(prediction, axis=-1).astype("int")
-
-        self.score_model(true_classes=y,
-                         predicted_classes=prediction_classes,
-                         predicted_probabilities=prediction_probs)
-
-        self.analyse_worst_predictions(x,y,prediction_probs,idx2word,n=5)
-
-    def plot_history(self):
-        # summarize history for accuracy
-        plt.plot(self.history.history['accuracy'])
-        plt.plot(self.history.history['val_accuracy'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        plt.show()
-        # summarize history for loss
-        plt.plot(self.history.history['loss'])
-        plt.plot(self.history.history['val_loss'])
-        plt.title('model loss')
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        plt.show()
-        #todo: save the plot automatically
-
-    def save(self, overwrite=True, **kwargs):
-        print("Saving model")
-        abs_path = os.path.abspath(os.path.dirname(__file__))
-        path = models_store_path+self.name+"/"
-        if not os.path.exists(os.path.join(abs_path,path)):
-            os.makedirs(os.path.join(abs_path,path))
-        self.model.save_weights(os.path.join(abs_path,path),overwrite=overwrite)
-
-    def load(self, **kwargs):
-        print("Loading model")
-        path = models_store_path+self.name+"/"
-        abs_path = os.path.abspath(os.path.dirname(__file__))
-        self.model.load_weights(os.path.join(abs_path,path))

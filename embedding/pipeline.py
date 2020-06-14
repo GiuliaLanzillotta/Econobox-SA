@@ -263,10 +263,10 @@ def run_embedding_pipeline(no_embedding=False,
     this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
-    glove = get_glove_embedding(vocabulary_file="stanford_vocab.pkl",
+    glove = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
                                 load_from_file=True,
                                 load_Stanford=False,
-                                file_name="only_stanford.npz",
+                                file_name="necessary_stanford.npz",
                                 train=False,
                                 save=True)
     embedding_function = None # default parameter will be used
@@ -290,7 +290,9 @@ def run_embedding_pipeline(no_embedding=False,
                           input_entries=input_entries,
                           input_files=input_paths)
 
-    if no_embedding: print("Number of sentence cut-offs: ",sentence_embedding.count)
+    if no_embedding:
+        print("Number of sentence cut-offs: ",sentence_embedding.count)
+        print("Average frequency of in-vocabulary words: ", sentence_embedding.frequency/input_entries)
 
 
 # Until now:

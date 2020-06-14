@@ -13,6 +13,7 @@ the text, *filter* the sentence and finally *aggregate* the embeddings.
 # global variable used to count the number
 # of cut-offs when using the no embeddings sentence embedding
 count = 0
+frequency = 0
 
 def no_embeddings(sentence, embedding, **kwargs):
     """
@@ -40,6 +41,8 @@ def no_embeddings(sentence, embedding, **kwargs):
     # Here we filter out the words that are not in the vocabulary
     sentence = tokenize_text(sentence)
     sentence_filtered = [t for t in sentence if t in vocabulary.keys()]
+    global frequency
+    frequency += len(sentence_filtered)/len(sentence)
     sentence_emb = np.zeros(max_len)
     for i,word in enumerate(sentence_filtered):
         if i >= max_len:

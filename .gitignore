@@ -5,18 +5,41 @@
 *.vscode*
 *activate*
 *.idea/
+venv
+
+## ------------------------------
+## DATA
+matrices
 train_matrix.npz
+replaced_zero_embedding_test_matrix.npz
+replaced_zero_embedding_train_matrix.npz
+zero_embedding_full_train_matrix.npz
+replaced_zero_embedding_full_train_matrix.npz
+data/twitter-datasets/
+## ------------------------------
+## EMBEDDINGS
 embeddings/glove.twitter.27B.zip
 embeddings/glove.twitter.27B.200d.txt
 embeddings/only_stanford.npz
-venv
-replaced_zero_embedding_test_matrix.npz
-zero_embedding_full_train_matrix.npz
-replaced_zero_embedding_full_train_matrix.npz
+embeddings/necessary_stanford.npz
+## ------------------------------
+## VOCABULARIES
 vocabularies/stanford_vocab.pkl
-data/twitter-datasets/
+vocabularies/full_vocab.pkl
+vocabularies/full_vocab_in_stanford.pkl
+## ------------------------------
+## CLASSIFIERS
 classifiers/Attention_GRU_5heads_full/
 classifiers/Attention_GRU_5heads_full_et/
 classifiers/Attention_GRU_5heads_conv_full/
+classifiers/Attention_GRU_5heads_2/
+classifiers/Attention_GRU_10heads_full/
+classifiers/Attention_GRU_5heads_full2/
+## -----------------------------
+## FLOYD STUFF
+.floydexpt
+.floydignore
+floyd.yml
+floyd_requirements.txt
 
 

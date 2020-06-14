@@ -8,7 +8,7 @@ import numpy as np
 import os
 import bert
 FullTokenizer = bert.bert_tokenization.FullTokenizer
-from keras.utils import to_categorical
+from base_NN import BaseNN
 from tqdm import tqdm
 from data import tweetDF_location
 from preprocessing.tweetDF import load_tweetDF
@@ -59,7 +59,7 @@ class PP_BERT_Data():
         return np.array(x)
 
 
-class BERT_NN(ClassifierBase):
+class BERT_NN(BaseNN):
     """Neural net with Bert embedding layer"""
 
     def __init__(self,
@@ -104,81 +104,6 @@ class BERT_NN(ClassifierBase):
             metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="acc")]
         )
 
-
-    def train(self, x, y,**kwargs):
-        """
-        Training the model and saving the history of training.
-        """
-        print("Training model.")
-        epochs = kwargs.get("epochs")
-        batch_size = kwargs.get("batch_size")
-        validation_split = kwargs.get("validation_split")
-
-        if not epochs: epochs = 1
-        if not batch_size: batch_size=32
-        if not validation_split: validation_split=0.20
-
-
-        self.history = self.model.fit(
-            x=x,
-            y=y,
-            validation_split=validation_split,
-            batch_size=batch_size,
-            shuffle=True,
-            epochs=10,
-        )
-        self.plot_history()
-
-    def test(self, x, y,**kwargs):
-        print("Testing model")
-        batch_size = kwargs.get("batch_size")
-        verbose = kwargs.get("verbose")
-        if not batch_size: batch_size = 32
-        if not verbose: verbose=1
-
-        y_test = to_categorical(y)
-        self.model.evaluate(x, y_test,
-                            batch_size=batch_size,
-                            verbose=verbose)
-
-    def make_predictions(self, x, save=True, **kwargs):
-        print("Making predictions")
-        preds = self.model.predict(x)
-        preds_classes = np.argmax(preds, axis=-1).astype("int")
-        preds_classes[preds_classes == 0] = -1
-        if save: self.save_predictions(preds_classes)
-
-
-    def plot_history(self):
-
-        # summarize history for accuracy
-        plt.plot(self.history.history['acc'])
-        plt.plot(self.history.history['val_acc'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        plt.show()
-        # summarize history for loss
-        plt.plot(self.history.history['loss'])
-        plt.plot(self.history.history['val_loss'])
-        plt.title('model loss')
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        plt.show()
-
-    def save(self, overwrite=True, **kwargs):
-        print("Saving model")
-        path = models_store_path+self.name+"/"
-        try: os.makedirs(path)
-        except Exception as e: print(e)
-        self.model.save_weights(path,overwrite=overwrite)
-
-    def load(self, **kwargs):
-        print("Loading model")
-        path = models_store_path+self.name+"/"
-        self.model.load_weights(path)
 
 #BERT1 = BERT_NN(max_seq_length=128, embedding_dimension=200,name="BERT_NN")
 

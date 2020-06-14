@@ -28,3 +28,12 @@ Just a recap on the Embeddings we have so far.
                                 file_name="only_stanford.npz",
                                 train=False,
                                 save=True)
+                                
+3. *necessary_stanford.npz*
+    Stanford embedding restricted to the words in this dataset.
+           get_glove_embedding(vocabulary_file="full_vocab.pkl",
+                                load_from_file=False,
+                                load_Stanford=True,
+                                file_name="necessary_stanford.npz",
+                                train=False,
+                                save=True)

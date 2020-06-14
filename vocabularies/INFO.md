@@ -39,4 +39,12 @@ All these vocabularies, if not specified differently, are obtained from "train_p
 7) ##### stanford_vocab.pkl:
     dictionary with 1193515 entries. It containes the vocabulary of the Stanford pre-trained embedding. 
 
- 
+8) ##### full_vocab.pkl:
+    dictionary with 473693 entries. It containes the set of all words contained in the full dataset 
+    in its *replaced version*. 
+    Note: the replaced version is the one in which the full text has been lemmatized according 
+    to the Stanford standards.
+
+9) ##### full_vocab_in_stanford.pkl:
+    dictionary with 173035 entries. Intersection of *full_vocab* and *stanford_vocab*.
+
