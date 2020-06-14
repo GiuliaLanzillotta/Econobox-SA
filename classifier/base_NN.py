@@ -55,11 +55,13 @@ class BaseNN(ClassifierBase):
         epochs = kwargs.get("epochs",10)
         batch_size = kwargs.get("batch_size",32)
         validation_split = kwargs.get("validation_split",0.2)
+        use_categorical = kwargs.get("use_categorical",False)
         earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
                                                               min_delta=0.0001,
                                                               patience=1)
         if not generator_mode:
-            y_train = tf.keras.utils.to_categorical(y)
+            y_train = y
+            if use_categorical: y_train = tf.keras.utils.to_categorical(y)
             self.history = self.model.fit(x, y_train,
                                       epochs=epochs,
                                       batch_size=batch_size,

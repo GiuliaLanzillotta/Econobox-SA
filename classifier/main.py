@@ -28,7 +28,8 @@ if __name__ == "__main__":
 
     train_params = {"epochs":10,
                     "batch_size":2048,
-                    "validation_split":0.2}
+                    "validation_split":0.2,
+                    "to_categorical":False}
 
     run_train_pipeline("BERT_NN",
                        "BERT_NN_no_training",
