@@ -89,7 +89,7 @@ Same experiment as above, using LSTM cells instead of GRU.
                     "use_normalization":True}
 
 
-#### Experiment 3 : "Attention_GRU"
+#### Experiment 3 : "Attention_GRU_5heads_full"
 
 The idea comes from [this](https://arxiv.org/pdf/1703.03130.pdf) paper. <br>
 > Self-Attention (SA), a variant of the attention mechanism, 
@@ -114,11 +114,15 @@ weight matrix to get the pre-attention matrix. A softmax layer, which is applied
 to the pre-attention matrix in the row-wise direction, making its weights looking 
 like a probability distribution over the hidden states.
    
-- **Vocabulary used**: vocab.pkl
-- **Embedding**: Glove
-- **Using pre-trained embedding**: False
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
 - **Trained embedding further**: False
-- **Performance**: 
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score**: 0.84400
+- **Performance - batch size = 1024**: 
  
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_acc.png" width="400"/>
@@ -127,16 +131,21 @@ like a probability distribution over the hidden states.
 
 - **Training details**:     
 
-            train_params={"epochs":15,
-                         "batch_size":32,
-                         "validation_split":0.3}
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+
+    np.random.seed(42)
+    
+    train_params = {"epochs":10,
+                    "batch_size":1024,
+                    "validation_split":0.2,
+                    "use_categorical":True}
                          
 - **Other build details**: 
 
             build_params = {
                         "cell_type":"GRU",
                         "num_layers":1,
-                        "hidden_size":64,
+                        "hidden_size":128,
                         "optimizer":"adam",
                         "dropout_rate":0.4,
                         "use_normalization":True,
@@ -148,7 +157,7 @@ like a probability distribution over the hidden states.
 to a Medium article that explains the implementation of self-attention.
 
 
-#### Experiment 4 : "Attention_GRU_5heads"
+#### Experiment 4 : "Attention_GRU_5heads_full"
 
 Same as the above experiment, using 5 attention heads instead of 1. 
 
@@ -248,11 +257,14 @@ input (= hidden dimension x 2 in the beginning), and we keep convolving until we
 channel. The output of the convolution will be of dimension [batch size x channels x 1], which can be 
 directly fed into the dense head.<br>
 
-- **Vocabulary used**: vocab.pkl
-- **Embedding**: Glove
-- **Using pre-trained embedding**: False
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
 - **Trained embedding further**: False
-- **Performance - batch size = 128**: 
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Performance - batch size = 1024**: 
 <div>
 <img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_conv_acc.png" width="400"/>
 <img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_conv_loss.png" width="400"/>
@@ -287,3 +299,50 @@ directly fed into the dense head.<br>
 </div>                    
 
 --- 
+
+#### Experiment 6 : "convolution_3_pool"
+
+Using a convolutional network to extract the features from the sentence, 
+represented through the Stanford embedding.
+
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **P** : 0.52480
+- **Performance - batch size = 1024**: 
+<div>
+<img alt="accuracy" src="../data/assets/CONV3_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/CONV3_loss.png" width="400"/>
+</div>  
+
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)
+            
+            train_params = {"epochs":10,
+                            "batch_size":128,
+                            "validation_split":0.2,
+                            "use_categorical":True}
+            
+                         
+- **Other build details**: 
+
+            build_params = {"train_embedding":False,
+                            "use_pretrained_embedding":True,
+                            "use_pooling":True,
+                            "pooling_type":"max_pooling",
+                            "num_convolutions":11,
+                            "window_size":5,
+                            "dilation_rate":1.0, #no dilation
+                            "pool_size":2,
+                            "hidden_size":128,
+                            "dropout_rate":0.4,
+                            "use_normalization":True,
+                            "optimizer":"adam"
+                            }

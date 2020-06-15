@@ -29,10 +29,10 @@ class recurrent_NN(BaseNN):
                  vocabulary_dimension,
                  embedding_matrix=None, # initializer of embedding
                  name="RecurrentNN"):
-        super().__init__(embedding_dimension,
-                         vocabulary_dimension,
-                         name,
-                         embedding_matrix)
+        super().__init__(embedding_dimension=embedding_dimension,
+                         vocabulary_dimension=vocabulary_dimension,
+                         name=name,
+                         embedding_matrix=embedding_matrix)
         self.possible_cell_values = ["GRU","LSTM"]
 
     @staticmethod
@@ -120,7 +120,10 @@ class attention_NN(recurrent_NN):
                  vocabulary_dimension,
                  embedding_matrix=None,
                  name="AttentionNN"):
-        super().__init__(embedding_dimension, vocabulary_dimension, embedding_matrix, name)
+        super().__init__(embedding_dimension=embedding_dimension,
+                         vocabulary_dimension=vocabulary_dimension,
+                         name=name,
+                         embedding_matrix=embedding_matrix)
 
     @staticmethod
     def build_convolutions(dilation_rate,
@@ -182,7 +185,7 @@ class attention_NN(recurrent_NN):
                                                        + " ".join(self.possible_cell_values)  # printing the admissible cell values
         hidden_size = kwargs.get("hidden_size", 64)  # size of hidden representation
         train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
-        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", False)
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", True)
         dropout_rate = kwargs.get("dropout_rate", 0.0)  # setting the dropout to 0 is equivalent to not using it
         use_normalization = kwargs.get("use_normalization", False)
         activation = kwargs.get("activation", "relu")

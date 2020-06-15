@@ -2,6 +2,7 @@
 from classifier.vanilla_NN import vanilla_NN
 from classifier.BERT_NN import BERT_NN
 from classifier.recurrent_NN import recurrent_NN, attention_NN
+from classifier.convolutional_NN import convolutional_NN
 from classifier.SVM_classi import SVM_classi
 from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
@@ -220,6 +221,85 @@ def get_recurrent_model(model_name,
         recurrent.visualize_attention(sentence_neg, sentence_neg_vec)
 
     return recurrent
+
+
+def get_convolutional_model(model_name,
+                            embedding_dim=embedding.embedding_dim,
+                            train_data=None,
+                            load_model=False,
+                            train_model=False,
+                            save_model=False,
+                            test_data=None,
+                            build_params=None,
+                            train_params=None,
+                            **kwargs):
+    """
+    Creates a new instance of convolutional_NN
+    Parameters:
+    :param model_name: (str) the name of the model to create, or the name of the model to load.
+    :param embedding_dim: (int) dimension of the embedding space
+    :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+            the embedding.pipeline.build_embedding_matrix method
+    :param load_model: (bool) whether to load the model from file.
+    :param train_model: (bool) whether to train the model.
+    :param save_model: (bool) whether to save the model
+    :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+    :param build_params: (dict) dictionary of parameters to pass to build the model
+    :param train_params: (dict) dictionary of parameters to pass to build the model
+    :param kwargs: additional arguments
+        Arguments accepted:
+        - :arg load_embedding: (bool) whether to load an embedding matrix into the classifier
+            (if false, the classifier will learn the embedding from scratch)
+        - :arg embedding_location: (str) - only used if the above parameter is true- path to the
+            file that stores the embedding matrix
+        - :arg vocabulary: (str) vocabulary in use
+    :return: an instance of Vanilla_NN class
+    """
+    vocabulary = kwargs.get("vocabulary")
+    if not vocabulary: vocabulary = standard_vocab_name
+    vocab_dim = get_vocab_dimension(vocabulary)
+    # --------------------
+    # Opening pre-trained embedding matrix
+    load_embedding = kwargs.get("load_embedding")
+    embedding_name = kwargs.get("embedding_location","glove_emb.npz")
+    generator_mode = kwargs.get("generator_mode", False)
+    if load_embedding:
+        glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
+                                              load_from_file=True,
+                                              load_Stanford=False, #no need to reload the stanford embedding when we already load the embedding matrix from file
+                                              file_name=embedding_name,
+                                              train=False,
+                                              save=False)
+        embedding_matrix = glove_embedding.embedding_matrix
+    # -------------------
+    # Building the model
+    convolutional_fun = convolutional_NN
+    convolutional = convolutional_fun(embedding_dimension=embedding_dim,
+                                      vocabulary_dimension=vocab_dim,
+                                      name = model_name,
+                                      embedding_matrix=embedding_matrix)
+    convolutional.build(**build_params)
+    if load_model:convolutional.load()
+    # ----------------
+    # Training, testing and saving
+    if train_model:
+        x_train, y_train = None, None
+        if not generator_mode:
+            x_train = train_data[:, 0:-1]
+            y_train = train_data[:, -1]
+
+        convolutional.train(x_train, y_train,
+                            generator_mode=generator_mode,
+                            **train_params)
+
+    if save_model: convolutional.save()
+    if test_data is not None:
+        idx2word = load_inverse_vocab(vocabulary)
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        convolutional.test(x_test,y_test, idx2word=idx2word)
+
+    return convolutional
 
 def get_LR_model(model_name,
                  embedding_dim=embedding.embedding_dim,
@@ -476,6 +556,7 @@ def run_train_pipeline(model_type,
         "Adaboost_classi":get_Adaboost_model,
         "RF_classi": get_RandomForest_model,
         "BERT_NN": get_BERT_model,
+        "convolutional_NN":get_convolutional_model,
         "": lambda : None # empty function
     }
 

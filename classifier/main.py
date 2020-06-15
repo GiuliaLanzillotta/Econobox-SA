@@ -12,37 +12,36 @@ from classifier.pipeline import run_train_pipeline
 
 if __name__ == "__main__":
 
-    build_params = {
-                    "cell_type":"GRU",
-                    "num_layers":1,
-                    "hidden_size":128,
-                    "optimizer":"adam",
-                    "dropout_rate":0.4,
-                    "use_normalization":True,
-                    "use_attention":True,
-                    "heads":5,
-                    "penalization":False,
-                    "use_convolution":False,
-                    "dilation_rate":1
-                }
-
-    train_params = {"epochs":10,
-                    "batch_size":2048,
-                    "validation_split":0.2,
-                    "to_categorical":False}
-
-    run_train_pipeline("recurrent_NN",
-                       "GRU_Attention_5heads_full3",
-                       load_model=False,
-                       prediction_mode=False,
-                       text_data_mode_on=False,
-                       data_location=replaced_zero_matrix_full_train_location,
-                       max_seq_length=128,
-                       cv_on=False,
-                       choose_randomly=True,
-                       random_percentage=0.3,
-                       test_data_location=None,
-                       build_params = build_params,
-                       train_params=train_params,
-                       generator_mode=False)
-
+        build_params = {"train_embedding":False,
+                        "use_pretrained_embedding":True,
+                        "use_pooling":True,
+                        "pooling_type":"max",
+                        "num_convolutions":3,
+                        "window_size":5,
+                        "dilation_rate":1, #no dilation
+                        "pool_size":2,
+                        "hidden_size":128,
+                        "dropout_rate":0.4,
+                        "use_normalization":True,
+                        "optimizer":"adam"
+                        }
+    
+        train_params = {"epochs":10,
+                        "batch_size":128,
+                        "validation_split":0.2,
+                        "use_categorical":True}
+    
+        run_train_pipeline("convolutional_NN",
+                           "convolution_3_pool",
+                           load_model=True,
+                           prediction_mode=False,
+                           text_data_mode_on=False,
+                           data_location=replaced_zero_matrix_train_location,
+                           max_seq_length=128,
+                           cv_on=False,
+                           choose_randomly=False,
+                           random_percentage=0.3,
+                           test_data_location=None,
+                           build_params = build_params,
+                           train_params=train_params,
+                           generator_mode=False)

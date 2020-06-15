@@ -27,10 +27,10 @@ class convolutional_NN(BaseNN):
                  vocabulary_dimension,
                  embedding_matrix=None, # initializer of embedding
                  name="ConvolutionalNN"):
-        super().__init__(embedding_dimension,
-                         vocabulary_dimension,
-                         name,
-                         embedding_matrix)
+        super().__init__(embedding_dimension=embedding_dimension,
+                         vocabulary_dimension=vocabulary_dimension,
+                         name=name,
+                         embedding_matrix=embedding_matrix)
 
     @staticmethod
     def get_pooling_layer(pooling_type, pool_size=2):
@@ -45,12 +45,12 @@ class convolutional_NN(BaseNN):
         ## -------------------
         ## EXTRACTING ARGUMENTS
         train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
-        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", False)
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding", True)
         pooling = kwargs.get("use_pooling",True)
-        pooling_type = kwargs.get("pooling_type","max_pooling")
+        pooling_type = kwargs.get("pooling_type","max")
         num_convolutions = kwargs.get("num_convolutions",10)
         window_size = kwargs.get("window_size",5)
-        dilation_rate = kwargs.get("dilation_rate",1.0)
+        dilation_rate = kwargs.get("dilation_rate",1)
         pool_size = kwargs.get("pool_size",2)
         hidden_size = kwargs.get("hidden_size", 64)  # size of hidden representation
         dropout_rate = kwargs.get("dropout_rate", 0.0)  # setting the dropout to 0 is equivalent to not using it
@@ -70,8 +70,9 @@ class convolutional_NN(BaseNN):
                                               trainable=train_embedding)
         masking = tf.keras.layers.Masking(mask_value=0)
         convolutions = []
+        channels = self.input_dim
         for l in range(num_convolutions):
-            channels = channels * 2
+            if l > num_convolutions//2: channels = channels * 2
             layer = tf.keras.layers.Conv1D(filters=channels,
                                            kernel_size=window_size,
                                            strides=1,
@@ -97,6 +98,7 @@ class convolutional_NN(BaseNN):
             if pooling: conv_res = pool(conv_res)
             conv_input = conv_res
         flattened = flattening(conv_res)
+        flattened = dropout(flattened)
         dense1_out = dense1(flattened)
         outputs = dense2(dense1_out)
         ## -------------------
