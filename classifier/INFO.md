@@ -319,6 +319,32 @@ represented through the Stanford embedding.
 <img alt="loss" src="../data/assets/CONV3_loss.png" width="400"/>
 </div>  
 
+
+- **Test results** : 
+        
+        
+    Accuracy: 0.850000
+    Precision: 0.855470
+    Recall: 0.796557
+    F1 score: 0.824963
+    Cohens kappa: 0.694025
+    ROC AUC: 0.937990
+    Confusion matrix: 
+        [[37239  4479]
+         [ 6771 26511]]
+                 
+- **Model worst mistakes**:<br>
+
+| False negatives  | False positives  |
+| ------------- | ------------- | 
+| when worst comes to worst talk to your dog   |  <user> great hope it improves later , thanks ! |
+| i feel hurt really hurt  | 0.9999662637710571  | <number> / <number> rt <user> i absolutely love my view , <number> / <number> . <repeat> your view ? hahahaha . |
+| i over slept woke up ate now back in bed feels good not going to school lol buh i gotta go tomorow <hashtag> fml  | royals like and spread our official account in fb ! <url> po kasi yung ntin|
+| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml | <user> thank you , very sweet .   |
+| have to admit , and i mean this constructively , surprised by how sterile getting ( relative to other great cities . <repeat> | now following <user> follow bakk n m ur lucky <number> th follower lol  |
+                                       
+
+
 - **Training details**:     
 Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
 <br>Also, trained with *Early Stopping* on. 
@@ -333,19 +359,22 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                          
 - **Other build details**: 
 
-            build_params = {"train_embedding":False,
-                            "use_pretrained_embedding":True,
-                            "use_pooling":True,
-                            "pooling_type":"max_pooling",
-                            "num_convolutions":11,
-                            "window_size":5,
-                            "dilation_rate":1.0, #no dilation
-                            "pool_size":2,
-                            "hidden_size":128,
-                            "dropout_rate":0.4,
-                            "use_normalization":True,
-                            "optimizer":"adam"
+            build_params = {"train_embedding": False,
+                            "use_pretrained_embedding": True,
+                            "use_pooling": True,
+                            "pooling_type": "max",
+                            "num_convolutions": 3,
+                            "window_size": 5,
+                            "dilation_rate": 1,  # no dilation
+                            "pool_size": 2,
+                            "hidden_size": 128,
+                            "dropout_rate": 0.4,
+                            "use_normalization": True,
+                            "optimizer": "adam"
                             }
+ 
+ - **Trainable params**: 852,386
+
                             
                             
 
@@ -361,7 +390,7 @@ a representation for the sequence to use for classification.
 - **Trained embedding further**: False
 - **Input text replacement**: Stanford replacer
 - **Input text lemmatization**:False
-- **Kaggle lederboard score** : 0.52480 - we should double check here, there might be something wrong with the experiment.
+- **Kaggle lederboard score** : 0.8410
 - **Performance - batch size = 1024**: 
 <div>
 <img alt="accuracy" src="../data/assets/GRU_CONV_acc.png" width="400"/>

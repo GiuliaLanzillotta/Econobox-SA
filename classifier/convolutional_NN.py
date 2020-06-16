@@ -97,6 +97,7 @@ class convolutional_NN(BaseNN):
             conv_res = conv_layer(conv_input)
             if pooling: conv_res = pool(conv_res)
             conv_input = conv_res
+        if use_normalization: norm(conv_res)
         flattened = flattening(conv_res)
         flattened = dropout(flattened)
         dense1_out = dense1(flattened)
