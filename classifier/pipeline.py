@@ -16,6 +16,7 @@ from embedding.sentence_embedding import  no_embeddings
 from data import replaced_train_negative_location, replaced_train_positive_location, \
     full_dimension
 from data import tweetDF_location
+from data import testDF_location
 import embedding
 import numpy as np
 import os
@@ -24,6 +25,7 @@ from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
 from classifier.BERT_NN import PP_BERT_Data
 from preprocessing.tweetDF import load_tweetDF
+from preprocessing.tweetDF import load_testDF
 
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 
@@ -88,6 +90,30 @@ def get_BERT_model(model_name,
                    build_params=None,
                    train_params=None,
                    **kwargs):
+    """
+        Creates a new instance of BERT_NN
+        Parameters:
+        :param model_name: (str) the name of the model to create, or the name of the model to load.
+        :param embedding_dim: (int) dimension of the embedding space
+        (this is actually not needed, but because this model inherits from base_NN we need it)
+        :param train_data : pandas dataframe (with the tweets). Existing of two colums
+        colum1= the tweets, column2 = the sentiment
+        :param load_model: (bool) whether to load the model from file.
+        :param train_model: (bool) whether to train the model.
+        :param save_model: (bool) whether to save the model
+        :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+        :param build_params: (dict) dictionary of parameters to pass to build the model
+                Example : {optimizer:'adam',
+                          metrics:accuracy,
+                          adapter_size: 64,
+                          dropout_rate = 0.5}
+        Note that if adapter_size = 0, all of the parameters of BERT are fine tuned
+        :param train_params: (dict) dictionary of parameters to pass to build the model
+                Example : {epochs:10,
+                            batch_size:32,
+                            validation_split:0.2}
+        :return: an instance of BERT_NN class
+        """
 
     ourBERT = BERT_NN(max_seq_length,embedding_dim,model_name)
     ourBERT.build(**build_params)
@@ -510,7 +536,7 @@ def run_train_pipeline(model_type,
                        max_seq_length = 128,
                        choose_randomly=False,
                        random_percentage=0.1,
-                       data_location=tweetDF_location,
+                       data_location=testDF_location,
                        generator_mode=False,
                        cv_on=False,
                        test_data_location=None,
@@ -566,7 +592,12 @@ def run_train_pipeline(model_type,
     data_matrix = None
     test_matrix = None
     if text_data_mode_on:
-        data_matrix = PP_BERT_Data(load_tweetDF()[:10], classes=[0,1], max_seq_length=max_seq_length)
+        data_matrix = PP_BERT_Data(load_tweetDF(), classes=[0,1], max_seq_length=max_seq_length,
+                                   prediction_mode=prediction_mode)
+        if prediction_mode:
+            data_matrix = PP_BERT_Data(load_testDF(),classes=[0,1], max_seq_length=max_seq_length,
+                                   prediction_mode=prediction_mode )
+            data_matrix = data_matrix.pred_x
     if not text_data_mode_on and not generator_mode:
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']

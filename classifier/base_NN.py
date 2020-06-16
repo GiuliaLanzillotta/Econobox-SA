@@ -41,10 +41,29 @@ class BaseNN(ClassifierBase):
                                                                             momentum=momentum)
         return optimizer
 
+    #taken from https://github.com/kpe/bert-for-tf2/blob/master/examples/gpu_movie_reviews.ipynb
+    def create_learning_rate_scheduler(self,max_learn_rate,end_learn_rate,
+                                       warmup_epoch_count,total_epoch_count):
+
+        def lr_scheduler(epoch):
+            if epoch < warmup_epoch_count:
+                res = (max_learn_rate / warmup_epoch_count) * (epoch + 1)
+            else:
+                res = max_learn_rate * math.exp(
+                    math.log(end_learn_rate / max_learn_rate) * (epoch - warmup_epoch_count + 1) / (
+                            total_epoch_count - warmup_epoch_count + 1))
+            return float(res)
+
+        learning_rate_scheduler = tf.keras.callbacks.LearningRateScheduler(lr_scheduler, verbose=1)
+
+        return learning_rate_scheduler
+
+
     @abstractmethod
     def build(self, **kwargs):
         """Build the net here."""
         pass
+
 
     def train(self, x, y, **kwargs):
         """
@@ -59,6 +78,10 @@ class BaseNN(ClassifierBase):
         earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
                                                               min_delta=0.0001,
                                                               patience=1)
+        learning_rate_scheduler = self.create_learning_rate_scheduler(max_learn_rate=1e-5,
+                                       end_learn_rate=1e-7,
+                                       warmup_epoch_count=20,
+                                       total_epoch_count=10)
         if not generator_mode:
             y_train = y
             if use_categorical: y_train = tf.keras.utils.to_categorical(y)
@@ -66,7 +89,7 @@ class BaseNN(ClassifierBase):
                                       epochs=epochs,
                                       batch_size=batch_size,
                                       validation_split=validation_split,
-                                      callbacks=[earlystop_callback],
+                                      callbacks=[earlystop_callback, learning_rate_scheduler],
                                       shuffle=True)
         else:
             # extracting relevant arguments
@@ -93,14 +116,16 @@ class BaseNN(ClassifierBase):
                                                                    aggregation_fun=sentence_embedding.no_embeddings,
                                                                    input_entries=input_entries,
                                                                    sentence_dimesion=max_len),
-                                          callbacks=[earlystop_callback],
+                                          callbacks=[earlystop_callback, learning_rate_scheduler],
                                           epochs=epochs, steps_per_epoch =n_steps,
                                           validation_data=validation_data)
         self.plot_history()
 
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
+        print(type(x))
         preds = self.model.predict(x)
+        print("made it here")
         preds_classes = np.argmax(preds, axis=-1).astype("int")
         preds_classes[preds_classes == 0] = -1
         if save: self.save_predictions(preds_classes)
@@ -185,3 +210,5 @@ class BaseNN(ClassifierBase):
         path = models_store_path+self.name+"/"
         abs_path = os.path.abspath(os.path.dirname(__file__))
         self.model.load_weights(os.path.join(abs_path,path))
+
+        tf.keras.layers.Layer._la
