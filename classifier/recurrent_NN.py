@@ -47,6 +47,60 @@ class recurrent_NN(BaseNN):
             return tf.keras.layers.LSTM
         raise NotImplementedError("cell type "+cell_name+" not supported!")
 
+    @staticmethod
+    def build_convolutions(dilation_rate,
+                           initial_filter_size,
+                           window_size,
+                           input_length,
+                           threshold_channels=600,
+                           num_layers=None):
+        """Builds the convolution segment in the network.
+            :param threshold_channels: maximum number of channels
+            :param num_layers: number of convolutions to perform
+            :param dilation_rate: (float) dilation rate to use in the convolution
+            :param initial_filter_size: (int) first convolution layer number of output filters.
+                    For each layer this number will be doubled.
+            :param window_size: (int) the convolution layer window size.
+            :param input_length: (int) length of the input
+            -----------------
+            About convolution:
+            # CONVOLUTION LAYERS (to use instead of flattening)
+            # we now have a [batch_size x heads x hidden_dim*2 ] vector, where each of the
+            # heads dimensions can be thought of as a channel in the signal (like we have
+            # RGB for images we have our heads-channels for the text).
+            # We can perform a series of 1d convolutions on each channel to extract more
+            # info from this representation, before passing it to the dense layers.
+            # Note: we want to convolve the input until the third dimension becomes one
+                (so that we obtain a flattening of the sequence)
+            """
+        # a few calculations to get the number of layers given the rest
+        # since we're diving by 2 the dimension at each layer we need
+        if not num_layers: num_layers = int(math.log2(input_length))
+        convolutions = []
+        channels = initial_filter_size
+        padding = "same"
+        for l in range(num_layers):
+            if channels<threshold_channels//2 : channels = channels * 2
+            layer = tf.keras.layers.Conv1D(filters=channels,
+                                           kernel_size=window_size,
+                                           strides=2,
+                                           padding=padding,
+                                           dilation_rate=dilation_rate,
+                                           activation="relu",
+                                           data_format="channels_first",  # data format : [batch, channels, signal]
+                                           name='convolution{}'.format(str(l + 1)))
+            convolutions.append(layer)
+        # Flattening to 2D
+        # Input shape:
+        #     - If `data_format='channels_last'`:
+        #       3D tensor with shape:
+        #       `(batch_size, steps, features)`
+        #   Output shape:
+        #     2D tensor with shape `(batch_size, features)`.
+        pooling = tf.keras.layers.GlobalAveragePooling1D(data_format="channels_first")
+        convolutions.append(pooling)
+        return convolutions
+
     def build(self, **kwargs):
         #TODO: add support for list of hidden sizes
         print("Building model.")
@@ -59,52 +113,77 @@ class recurrent_NN(BaseNN):
         num_layers = kwargs.get("num_layers",1)  # number of recurrent layers
         hidden_size = kwargs.get("hidden_size",64)  # size of hidden representation
         train_embedding = kwargs.get("train_embedding",False)  # whether to train the Embedding layer to the model
-        use_pretrained_embedding = kwargs.get("use_pretrained_embedding",False)
+        use_pretrained_embedding = kwargs.get("use_pretrained_embedding",True)
         dropout_rate = kwargs.get("dropout_rate",0.0) # setting the dropout to 0 is equivalent to not using it
         use_normalization = kwargs.get("use_normalization",False)
         activation = kwargs.get("activation","relu")
         metrics = kwargs.get("metrics",['accuracy'])
         optim = kwargs.get("optimizer","sgd")
+        # CONVOLUTION parameters [only used is use_convolution is True]
+        use_convolution = kwargs.get("use_convolution", True)
+        num_conv_layers = kwargs.get("num_conv_layers")
+        threshold_channels = kwargs.get("threshold_channels",600)
+        dilation_rate = kwargs.get("dilation_rate", 1)  # note: dilation_rate = 1 means no dilation
+
         ## ---------------------
-        model = tf.keras.models.Sequential()
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
-        model.add(tf.keras.layers.Input(shape=(None,), dtype='int32'))
+        inputs = tf.keras.layers.Input(shape=(50,), dtype='int32')
         weights = None
         if use_pretrained_embedding: weights = [self.embedding_matrix]
-        model.add(tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
-                                            output_dim=self.input_dim,
-                                            weights=weights,
-                                            mask_zero=True,
-                                            trainable=train_embedding))
-        model.add(tf.keras.layers.Masking(mask_value=0))
-        ## Recurrent layer -------
-        ## This part of the model is responsible for processing the sequence
-        recurrent = self.get_cell(cell_type)
+        embedding = tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
+                                              output_dim=self.input_dim,
+                                              weights=weights,
+                                              mask_zero=True,
+                                              trainable=train_embedding)
+        masking = tf.keras.layers.Masking(mask_value=0)
+        recurrent_cell = self.get_cell(cell_type)
         # Stacking num_layers recurrent layers
-        for l in range(num_layers-1):
-            # Note: forcing the recurrent layer to be Bidirectional
-            model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size,
-                                                              return_sequences=True,
-                                                              recurrent_dropout=dropout_rate),
-                                                    name="Recurrent"+str(l)))
-        model.add(tf.keras.layers.Bidirectional(recurrent(hidden_size),
-                                                name="Recurrent"+str(num_layers-1)))
+        recurrent_layer = tf.keras.layers.Bidirectional(recurrent_cell(hidden_size,
+                                                                       return_sequences=True,
+                                                                       recurrent_dropout=dropout_rate),
+                                                        merge_mode="concat",
+                                                        name="RecurrentLayer")
+        if use_convolution:
+            convolutions = self.build_convolutions(dilation_rate=dilation_rate,
+                                                   initial_filter_size=hidden_size*2,
+                                                   window_size=(hidden_size // 10),
+                                                   input_length=50,
+                                                   num_layers=num_conv_layers,
+                                                   threshold_channels=threshold_channels)
+
         ## Dense head --------
         ## This last part of the model is responsible for mapping
         ## back the output of the recurrent layer to a binary value,
         ## which will indeed be our prediction
-        model.add(tf.keras.layers.Dropout(rate=dropout_rate))
-        model.add(tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1"))
-        if use_normalization: model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.Dense(2, name="Dense2"))
-        self.model = model
+        dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+        dense1 = tf.keras.layers.Dense(hidden_size, activation=activation, name="Dense1")
+        if use_normalization: norm = tf.keras.layers.BatchNormalization()
+        dense2 = tf.keras.layers.Dense(2, name="Dense2")
+        ## CONNECTING THE GRAPH
+        embedded_inputs = embedding(inputs)
+        masked_inputs = masking(embedded_inputs)
+        recurrent_output = recurrent_layer(masked_inputs)
+        dropped_out = dropout(recurrent_output)
+        flattened = tf.reshape(dropped_out, shape=[-1, hidden_size*2])
+        if use_convolution:
+            conv_result = dropped_out
+            for conv_layer in convolutions:
+                conv_result = conv_layer(conv_result)
+            # the output of the last convolution layer will have size
+            # [batch_size x num_channels]
+            flattened = conv_result
+        dense1_out = dense1(flattened)
+        if use_normalization: dense1_out = norm(dense1_out)
+        dense2_out = dense2(dense1_out)
+        self.model = tf.keras.Model(inputs=inputs, outputs=dense2_out)
         optimizer = self.get_optimizer(optim)
         loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         self.model.compile(loss=loss,
                            optimizer=optimizer,
-                           metrics=metrics)
-        print(self.model.summary())
+                           metrics=metrics,
+                           experimental_run_tf_function=False)
+        self.model.summary()
 
 class attention_NN(recurrent_NN):
     """Extends the recurrent model with self-attention.
@@ -125,55 +204,6 @@ class attention_NN(recurrent_NN):
                          name=name,
                          embedding_matrix=embedding_matrix)
 
-    @staticmethod
-    def build_convolutions(dilation_rate,
-                           initial_filter_size,
-                           window_size,
-                           input_length):
-        """Builds the convolution segment in the network.
-            :param dilation_rate: (float) dilation rate to use in the convolution
-            :param initial_filter_size: (int) first convolution layer number of output filters.
-                    For each layer this number will be doubled.
-            :param window_size: (int) the convolution layer window size.
-            :param input_length: (int) length of the input
-            -----------------
-            About convolution:
-            # CONVOLUTION LAYERS (to use instead of flattening)
-            # we now have a [batch_size x heads x hidden_dim*2 ] vector, where each of the
-            # heads dimensions can be thought of as a channel in the signal (like we have
-            # RGB for images we have our heads-channels for the text).
-            # We can perform a series of 1d convolutions on each channel to extract more
-            # info from this representation, before passing it to the dense layers.
-            # Note: we want to convolve the input until the third dimension becomes one
-                (so that we obtain a flattening of the sequence)
-            """
-        # a few calculations to get the number of layers given the rest
-        # since we're diving by 2 the dimension at each layer we need
-        num_layers = int(math.log2(input_length))
-        convolutions = []
-        channels = initial_filter_size
-        padding = "same"
-        for l in range(num_layers):
-            channels = channels * 2
-            layer = tf.keras.layers.Conv1D(filters=channels,
-                                           kernel_size=window_size,
-                                           strides=2,
-                                           padding=padding,
-                                           dilation_rate=dilation_rate,
-                                           activation="relu",
-                                           data_format="channels_first", # data format : [batch, channels, signal]
-                                           name='convolution{}'.format(str(l + 1)))
-            convolutions.append(layer)
-        # Flattening to 2D
-        # Input shape:
-        #     - If `data_format='channels_last'`:
-        #       3D tensor with shape:
-        #       `(batch_size, steps, features)`
-        #   Output shape:
-        #     2D tensor with shape `(batch_size, features)`.
-        pooling = tf.keras.layers.GlobalAveragePooling1D(data_format="channels_first")
-        convolutions.append(pooling)
-        return convolutions
 
     def build(self, **kwargs):
         """Builds the attention NN computational graph"""

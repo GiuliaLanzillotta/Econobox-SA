@@ -312,7 +312,7 @@ represented through the Stanford embedding.
 - **Trained embedding further**: False
 - **Input text replacement**: Stanford replacer
 - **Input text lemmatization**:False
-- **P** : 0.52480
+- **Kaggle lederboard score** : 0.52480 - we should double check here, there might be something wrong with the experiment.
 - **Performance - batch size = 1024**: 
 <div>
 <img alt="accuracy" src="../data/assets/CONV3_acc.png" width="400"/>
@@ -346,3 +346,91 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             "use_normalization":True,
                             "optimizer":"adam"
                             }
+                            
+                            
+
+#### Experiment 7 : "GRU_128_conv"
+
+Using a bidirectional recurrent net and convolving the sequence outputs to get 
+a representation for the sequence to use for classification. 
+
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.52480 - we should double check here, there might be something wrong with the experiment.
+- **Performance - batch size = 1024**: 
+<div>
+<img alt="accuracy" src="../data/assets/GRU_CONV_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/GRU_CONV_loss.png" width="400"/>
+</div>  
+
+- **Test results** : 
+        
+        
+            Accuracy: 0.856787
+            Precision: 0.857193
+            Recall: 0.812661
+            F1 score: 0.834333
+            Cohens kappa: 0.708371
+            ROC AUC: 0.941086
+            Confusion matrix: 
+                [[37212  4506]
+                 [ 6235 27047]]
+                 
+- **Model worst mistakes**:<br>
+
+| False negatives  | Confidence | False positives  |  Confidence |
+| ------------- | ------------- | ------------- | ------------- |
+| ( ( ( going to prom with a <number> better prom date ever > > > |  0.9999643564224243  | <hashtag> lt my twinn should know my whole name too )      | 0.9999666213989258  |
+| <user> you can download from youtube with ( <url> or the website save youtube ( <url> | 0.9999662637710571  |a smile can hide everything but u smile forever  | 0.9999697208404541  |
+| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml  | 0.9999881982803345  |im listening to co jams  | 0.9999762773513794|
+| heartbreak brit hate to see em ' so sad | 0.999991774559021  |bouta play music & think about my girl '| 0.9999829530715942 |
+| i feel hurt really hurt | 0.9999985694885254  |hey waiting guy with the cute smile| 0.9999871253967285 |
+
+False negatives:<br>
+
+                         
+><user> you can download from youtube with ( <url> or the website save youtube ( <url>                                  
+
+>>mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml                                       
+
+>>heartbreak brit hate to see em ' so sad                                         
+
+>>i feel hurt really hurt                                             
+
+
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)
+            
+            train_params = {"epochs":10,
+                            "batch_size":128,
+                            "validation_split":0.2,
+                            "use_categorical":True}
+            
+                         
+- **Other build details**: 
+
+            build_params = {"train_embedding":False,
+                            "use_pretrained_embedding":True,
+                            "cell_type": "GRU",
+                            "num_layers": 1,
+                            "hidden_size": 64,
+                            "optimizer": "adam",
+                            "use_convolution":True,
+                            "num_conv_layers":6,
+                            "threshold_channels":600,
+                            "penalization":False,
+                            "use_attention":False,
+                            "dropout_rate": 0.4,
+                            "use_normalization": True}
+                            
+- **Trainable params**: 7,292,738
+
+                          
