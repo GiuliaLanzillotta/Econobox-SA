@@ -205,31 +205,70 @@ Same as the above, including penalization for the weight matrix A to encourage d
 > Thus we need a penalization term to encourage the diversity of summation 
 > weight vectors across different hops of attention. 
 
-            build_params = {
-                    "cell_type":"GRU",
-                    "num_layers":1,
-                    "hidden_size":64,
-                    "optimizer":"adam",
-                    "dropout_rate":0.4,
-                    "use_normalization":True,
-                    "use_attention":True,
-                    "heads":5, 
-                    "penalization":True ## this is the difference
-                }
-                
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.83480
+- **Performance - batch size = 1024**: 
+<div>
+<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss.png" width="400"/>
+</div>  
+
+
+- **Test results** : 
+        
+     
+    Testing model
+    Accuracy: 0.853253
+    Precision: 0.801892
+    Recall: 0.888919
+    F1 score: 0.843166
+    Cohens kappa: 0.705972
+    ROC AUC: 0.937159
+    Confusion matrix>
+        [[34409  7309]
+         [ 3697 29585]]
+                 
+- **Model worst mistakes**:<br>
+
+| False negatives  | False positives  |
+| ------------- | ------------- | 
+| and the winner of ' nowruz giveaway ' is . <repeat> lorri davey ! congrats lorri ( it let me tag . <repeat> <url>   | hey waiting guy with the cute smile |
+| i feel hurt really hurt  | 0.9999662637710571  | beautiful day to . <repeat> mow the lawn . yea . i am so thrilled . |
+| textin and driving ( the ultimate death trap | im listening to co jams|
+| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml | <user> thank you , very sweet .   |
+| heartbreak brit hate to see em ' so sad  | now following <user> follow bakk n m ur lucky <number> th follower lol  |
+                                       
+- **Build params**:                         
+
+           build_params = {"train_embedding": False,
+                            "use_pretrained_embedding": True,
+                            "cell_type": "GRU",
+                            "num_layers": 1,
+                            "hidden_size": 64,
+                            "optimizer": "adam",
+                            "use_convolution": False,
+                            "num_conv_layers": 6,
+                            "threshold_channels": 600,
+                            "penalization": True,
+                            "gamma":0.1,
+                            "use_attention": True,
+                            "heads":5,
+                            "dropout_rate": 0.4,
+                            "use_normalization": True}
+                                    
             # More on penalization:
             # we are penalizing the distance from the identity matrix
             # of the dot product of our weight matrix by itself: 
             # we are encouraging the dot product of two different 
             # attention heads to be 0  
             --> disentangling the different factors of attention
-   
-- **Performance - batch size = 128**: 
- 
-<div>
-<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_acc.png" width="400"/>
-<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_loss.png" width="400"/>
-</div>   
+
+- **Trainable params**: 152,066
 
 - **Visualization**: 
 <div>

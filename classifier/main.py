@@ -11,31 +11,34 @@ from classifier.pipeline import run_train_pipeline
 
 
 if __name__ == "__main__":
+
         build_params = {"train_embedding": False,
                     "use_pretrained_embedding": True,
-                    "use_pooling": True,
-                    "pooling_type": "max",
-                    "num_convolutions": 3,
-                    "window_size": 5,
-                    "dilation_rate": 1,  # no dilation
-                    "pool_size": 2,
-                    "hidden_size": 128,
+                    "cell_type": "GRU",
+                    "num_layers": 1,
+                    "hidden_size": 64,
+                    "optimizer": "adam",
+                    "use_convolution": False,
+                    "num_conv_layers": 6,
+                    "threshold_channels": 600,
+                    "penalization": True,
+                    "gamma":0.1,
+                    "use_attention": True,
+                    "heads":5,
                     "dropout_rate": 0.4,
-                    "use_normalization": True,
-                    "optimizer": "adam"
-                    }
+                    "use_normalization": True}
     
         train_params = {"epochs":10,
-                        "batch_size":128,
+                        "batch_size":1024,
                         "validation_split":0.2,
                         "use_categorical":True}
     
-        run_train_pipeline("BERT_NN",
-                           "BERT_notrain",
-                           load_model=False,
-                           prediction_mode=False,
-                           text_data_mode_on=True,
-                           data_location=tweetDF_location,
+        run_train_pipeline("recurrent_NN",
+                           "Attention_GRU_5heads_penalized",
+                           load_model=True,
+                           prediction_mode=True,
+                           text_data_mode_on=False,
+                           data_location=replaced_zero_matrix_test_location,
                            max_seq_length=100,
                            cv_on=False,
                            choose_randomly=False,

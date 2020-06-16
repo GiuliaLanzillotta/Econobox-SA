@@ -37,7 +37,12 @@ classifiers/Attention_GRU_5heads_2/
 classifiers/Attention_GRU_10heads_full/
 classifiers/Attention_GRU_5heads_full2/
 classifiers/convolution_3_pool
-classifiers/*
+classifiers/Attention_GRU_5heads_penalized/
+classifiers/GRU_128_conv/
+
+
+
+
 ## -----------------------------
 ## FLOYD STUFF
 .floydexpt
