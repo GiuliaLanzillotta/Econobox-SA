@@ -371,15 +371,15 @@ a representation for the sequence to use for classification.
 - **Test results** : 
         
         
-            Accuracy: 0.856787
-            Precision: 0.857193
-            Recall: 0.812661
-            F1 score: 0.834333
-            Cohens kappa: 0.708371
-            ROC AUC: 0.941086
-            Confusion matrix: 
-                [[37212  4506]
-                 [ 6235 27047]]
+    Accuracy: 0.856787
+    Precision: 0.857193
+    Recall: 0.812661
+    F1 score: 0.834333
+    Cohens kappa: 0.708371
+    ROC AUC: 0.941086
+    Confusion matrix: 
+        [[37212  4506]
+         [ 6235 27047]]
                  
 - **Model worst mistakes**:<br>
 
@@ -390,18 +390,7 @@ a representation for the sequence to use for classification.
 | mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml  | 0.9999881982803345  |im listening to co jams  | 0.9999762773513794|
 | heartbreak brit hate to see em ' so sad | 0.999991774559021  |bouta play music & think about my girl '| 0.9999829530715942 |
 | i feel hurt really hurt | 0.9999985694885254  |hey waiting guy with the cute smile| 0.9999871253967285 |
-
-False negatives:<br>
-
-                         
-><user> you can download from youtube with ( <url> or the website save youtube ( <url>                                  
-
->>mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml                                       
-
->>heartbreak brit hate to see em ' so sad                                         
-
->>i feel hurt really hurt                                             
-
+                                       
 
 - **Training details**:     
 Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 

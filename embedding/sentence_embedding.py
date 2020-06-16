@@ -36,8 +36,7 @@ def no_embeddings(sentence, embedding, **kwargs):
     """
     assert issubclass(embedding.__class__, EmbeddingBase), "embedding should be an instance of EmbeddingBase"
     vocabulary = embedding.vocabulary
-    max_len = kwargs.get("max_len")
-    if not max_len: max_len = 100
+    max_len = kwargs.get("max_len",100)
     # Here we filter out the words that are not in the vocabulary
     sentence = tokenize_text(sentence)
     sentence_filtered = [t for t in sentence if t in vocabulary.keys()]

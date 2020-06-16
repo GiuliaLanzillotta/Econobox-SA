@@ -22,6 +22,7 @@ embeddings/glove.twitter.27B.zip
 embeddings/glove.twitter.27B.200d.txt
 embeddings/only_stanford.npz
 embeddings/necessary_stanford.npz
+data/uncased_L-12_H-768_A-12
 ## ------------------------------
 ## VOCABULARIES
 vocabularies/stanford_vocab.pkl
@@ -35,6 +36,8 @@ classifiers/Attention_GRU_5heads_conv_full/
 classifiers/Attention_GRU_5heads_2/
 classifiers/Attention_GRU_10heads_full/
 classifiers/Attention_GRU_5heads_full2/
+classifiers/convolution_3_pool
+classifiers/*
 ## -----------------------------
 ## FLOYD STUFF
 .floydexpt

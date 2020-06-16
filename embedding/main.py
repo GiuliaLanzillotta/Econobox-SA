@@ -18,7 +18,7 @@ if __name__ == "__main__":
     #get_BERT_EMBEDDING()
     input_files = [replaced_test_location]
     run_embedding_pipeline(no_embedding=True,
-                           prediction_mode=False,
+                           prediction_mode=True,
                            input_entries=test_dimension,
                            input_files=input_files,
                            output_location=replaced_zero_matrix_test_location)
