@@ -172,6 +172,7 @@ Same as the above experiment, using 5 attention heads instead of 1.
                 "heads":5, # number extracted from section 4.4.2 of the paper
                 "penalization":False
             }
+            
 - **Performance**: 
  
 <div>
@@ -220,28 +221,40 @@ Same as the above, including penalization for the weight matrix A to encourage d
 
 
 - **Test results** : 
-        
      
-    Testing model
-    Accuracy: 0.853253
-    Precision: 0.801892
-    Recall: 0.888919
-    F1 score: 0.843166
-    Cohens kappa: 0.705972
-    ROC AUC: 0.937159
-    Confusion matrix>
-        [[34409  7309]
-         [ 3697 29585]]
+            Testing model
+            Accuracy: 0.853253
+            Precision: 0.801892
+            Recall: 0.888919
+            F1 score: 0.843166
+            Cohens kappa: 0.705972
+            ROC AUC: 0.937159
+            Confusion matrix>
+                [[34409  7309]
+                 [ 3697 29585]]
+                 
                  
 - **Model worst mistakes**:<br>
 
 | False negatives  | False positives  |
 | ------------- | ------------- | 
 | and the winner of ' nowruz giveaway ' is . <repeat> lorri davey ! congrats lorri ( it let me tag . <repeat> <url>   | hey waiting guy with the cute smile |
-| i feel hurt really hurt  | 0.9999662637710571  | beautiful day to . <repeat> mow the lawn . yea . i am so thrilled . |
+| i feel hurt really hurt  | beautiful day to . <repeat> mow the lawn . yea . i am so thrilled . |
 | textin and driving ( the ultimate death trap | im listening to co jams|
 | mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml | <user> thank you , very sweet .   |
 | heartbreak brit hate to see em ' so sad  | now following <user> follow bakk n m ur lucky <number> th follower lol  |
+               
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)      
+            
+            
+            train_params = {"epochs":10,
+                            "batch_size":128,
+                            "validation_split":0.2,
+                            "use_categorical":True}         
                                        
 - **Build params**:                         
 
@@ -361,23 +374,23 @@ represented through the Stanford embedding.
 
 - **Test results** : 
         
-        
-    Accuracy: 0.850000
-    Precision: 0.855470
-    Recall: 0.796557
-    F1 score: 0.824963
-    Cohens kappa: 0.694025
-    ROC AUC: 0.937990
-    Confusion matrix: 
-        [[37239  4479]
-         [ 6771 26511]]
+            Accuracy: 0.850000
+            Precision: 0.855470
+            Recall: 0.796557
+            F1 score: 0.824963
+            Cohens kappa: 0.694025
+            ROC AUC: 0.937990
+            Confusion matrix: 
+                [[37239  4479]
+                 [ 6771 26511]]
+                 
                  
 - **Model worst mistakes**:<br>
 
 | False negatives  | False positives  |
 | ------------- | ------------- | 
 | when worst comes to worst talk to your dog   |  <user> great hope it improves later , thanks ! |
-| i feel hurt really hurt  | 0.9999662637710571  | <number> / <number> rt <user> i absolutely love my view , <number> / <number> . <repeat> your view ? hahahaha . |
+| i feel hurt really hurt  |<number> / <number> rt <user> i absolutely love my view , <number> / <number> . <repeat> your view ? hahahaha . |
 | i over slept woke up ate now back in bed feels good not going to school lol buh i gotta go tomorow <hashtag> fml  | royals like and spread our official account in fb ! <url> po kasi yung ntin|
 | mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml | <user> thank you , very sweet .   |
 | have to admit , and i mean this constructively , surprised by how sterile getting ( relative to other great cities . <repeat> | now following <user> follow bakk n m ur lucky <number> th follower lol  |
@@ -438,16 +451,15 @@ a representation for the sequence to use for classification.
 
 - **Test results** : 
         
-        
-    Accuracy: 0.856787
-    Precision: 0.857193
-    Recall: 0.812661
-    F1 score: 0.834333
-    Cohens kappa: 0.708371
-    ROC AUC: 0.941086
-    Confusion matrix: 
-        [[37212  4506]
-         [ 6235 27047]]
+            Accuracy: 0.856787
+            Precision: 0.857193
+            Recall: 0.812661
+            F1 score: 0.834333
+            Cohens kappa: 0.708371
+            ROC AUC: 0.941086
+            Confusion matrix: 
+                [[37212  4506]
+                 [ 6235 27047]]
                  
 - **Model worst mistakes**:<br>
 
