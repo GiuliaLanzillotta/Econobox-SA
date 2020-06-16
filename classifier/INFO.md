@@ -467,7 +467,7 @@ a representation for the sequence to use for classification.
 | ------------- | ------------- | ------------- | ------------- |
 | ( ( ( going to prom with a <number> better prom date ever > > > |  0.9999643564224243  | <hashtag> lt my twinn should know my whole name too )      | 0.9999666213989258  |
 | <user> you can download from youtube with ( <url> or the website save youtube ( <url> | 0.9999662637710571  |a smile can hide everything but u smile forever  | 0.9999697208404541  |
-| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml  | 0.9999881982803345  |im listening to co jams  | 0.9999762773513794|
+| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml  | im listening to co jams  | 0.9999762773513794|
 | heartbreak brit hate to see em ' so sad | 0.999991774559021  |bouta play music & think about my girl '| 0.9999829530715942 |
 | i feel hurt really hurt | 0.9999985694885254  |hey waiting guy with the cute smile| 0.9999871253967285 |
                                        
