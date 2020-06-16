@@ -18,7 +18,7 @@ from data import bert_ckpt_file_location
 from data import bert_config_file_location
 from data import bert_vocab_location
 from preprocessing.tweetDF import load_tweetDF
-
+abs_path = os.path.abspath(os.path.dirname(__file__))
 
 
 class PP_BERT_Data():
@@ -28,16 +28,14 @@ class PP_BERT_Data():
     def __init__(self, train, classes, max_seq_length):
         self.max_seq_length = max_seq_length
         self.classes = classes
-        self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=True)
-        self.tokenizer = FullTokenizer(vocab_file=bert_vocab_location)
-
+        self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=False)
+        self.tokenizer = FullTokenizer(vocab_file=os.path.join(abs_path,bert_vocab_location))
         self.train_x, self.train_y = self._prepare(train)
-        print(type(train))
-
         print("max seq_len", self.max_seq_length)
         self.train_x = self._pad(self.train_x)
 
     def _prepare(self, df):
+        print("Preparing dataframe...")
         x, y = [], []
 
         for _, row in tqdm(df.iterrows()):
@@ -69,40 +67,43 @@ class BERT_NN(BaseNN):
         super().__init__(embedding_dimension, name=name)
         self.history = None
         self.model = None
-        self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=True)
+        self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=False)
         self.max_seq_length = max_seq_length
         self.classes = [0,1]
 
 
-    def build(self, bert_ckpt_file, **kwargs):
+    def build(self, bert_ckpt_file=bert_ckpt_file_location, **kwargs):
 
-
-        with tf.io.gfile.GFile(bert_config_file_location, "r") as reader:
+        print("Building model...")
+        with tf.io.gfile.GFile(os.path.join(abs_path,bert_config_file_location), "r") as reader:
             bc = StockBertConfig.from_json_string(reader.read())
             bert_params = map_stock_config_to_params(bc)
             bert_params.adapter_size = None
             bert = BertModelLayer.from_params(bert_params, name="bert")
 
         input_ids = tf.keras.layers.Input(shape=(self.max_seq_length,), dtype='int32', name="input_ids")
-        bert_output = bert(input_ids)
-
-        print("bert shape", bert_output.shape)
-
+        masking = tf.keras.layers.Masking(mask_value=0)
+        masked_input = masking(input_ids)
+        bert_output = bert(masked_input, training=False)
         cls_out = tf.keras.layers.Lambda(lambda seq: seq[:, 0, :])(bert_output)
         cls_out = tf.keras.layers.Dropout(0.5)(cls_out)
-        logits = tf.keras.layers.Dense(units=768, activation="tanh")(cls_out)
-        logits = tf.keras.layers.Dropout(0.5)(logits)
-        logits = tf.keras.layers.Dense(units=len(self.classes), activation="softmax")(logits)
+        dense_out1 = tf.keras.layers.Dense(units=768, activation="tanh")(cls_out)
+        dense_out1 = tf.keras.layers.Dropout(0.5)(dense_out1)
+        dense_out2 = tf.keras.layers.Dense(units=200, activation="tanh")(dense_out1)
+        dense_out2 = tf.keras.layers.Dropout(0.5)(dense_out2)
+        logits = tf.keras.layers.Dense(units=len(self.classes), activation="softmax")(dense_out2)
 
         self.model = tf.keras.Model(inputs=input_ids, outputs=logits)
         self.model.build(input_shape=(None, self.max_seq_length))
-        load_stock_weights(bert, bert_ckpt_file)
+        load_stock_weights(bert, os.path.join(abs_path,bert_ckpt_file))
 
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(1e-5),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="acc")]
         )
+
+        self.model.summary()
 
 
 #BERT1 = BERT_NN(max_seq_length=128, embedding_dimension=200,name="BERT_NN")

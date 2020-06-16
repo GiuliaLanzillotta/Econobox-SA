@@ -590,8 +590,8 @@ def run_train_pipeline(model_type,
     model = function(model_name,
                     train_data=data_matrix,
                     load_model=load_model,
-                    train_model=False,
-                    save_model=False,
+                    train_model=not (prediction_mode or cv_on),
+                    save_model=not (prediction_mode or cv_on),
                     test_data=test_matrix,
                     build_params=build_params,
                     train_params=train_params,
@@ -603,7 +603,9 @@ def run_train_pipeline(model_type,
                     load_embedding=True,
                     embedding_location ="necessary_stanford.npz",
                     generator_mode=generator_mode,
-                    max_len=100)
+                    max_len=100,
+                    # parameter for BERT
+                    max_seq_length= max_seq_length)
     if prediction_mode:
        model.make_predictions(data_matrix, save=True)
     return model
