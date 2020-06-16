@@ -1,0 +1,21 @@
+The following embeddings are retrievable through the following link: 
+https://drive.google.com/drive/u/0/folders/1n_OvFfyvcGJp9k081ZKx1iZ2X4ov-0K3
+All the embedding matrices herebelow have been built starting off from the Standford embedding matrix.
+
+ Embeddings:
+
+emb_10_full_12656.npz : created using the homonymous vocabulary and cooc matrix.
+
+emb_full_21175.npz : created using the homonymous vocabulary and cooc matrix.
+
+emb_lemm_18082.npz : created using the homonymous vocabulary and cooc matrix.
+
+emb_lemm_rep_10_10810.npz : created using the homonymous vocabulary and cooc matrix.
+
+emb_lemm_rep_17891_5.npz : created using the homonymous vocabulary and cooc matrix.
+
+emb_lemm_stop_17543.npz: created using the homonymous vocabulary and cooc matrix.
+
+emb_negation_5.npz: created using the vocabulary and cooc matrix related to the negation-marked texts.
+
+emb_negation_10.npz: created using the vocabulary and cooc matrix related to the negation-marked texts.
