@@ -316,39 +316,73 @@ directly fed into the dense head.<br>
 - **Trained embedding further**: False
 - **Input text replacement**: Stanford replacer
 - **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.8410
 - **Performance - batch size = 1024**: 
 <div>
-<img alt="accuracy" src="../data/assets/ATT_GRU_5heads_pen_conv_acc.png" width="400"/>
-<img alt="loss" src="../data/assets/ATT_GRU_5heads_pen_conv_loss.png" width="400"/>
+<img alt="accuracy" src="../data/assets/GRU_CONV_acc.png" width="400"/>
+<img alt="loss" src="../data/assets/GRU_CONV_loss.png" width="400"/>
 </div>  
 
-- **Training details**:     
+- **Test results** : 
+        
+            Accuracy: 0.856573
+            Precision: 0.836888
+            Recall: 0.840635
+            F1 score: 0.838757
+            Cohens kappa: 0.709602
+            ROC AUC: 0.938773
+            [[36265  5453]
+             [ 5304 27978]]
+                             
+- **Model worst mistakes**:<br>
 
-            train_params={"epochs":15,
-                         "batch_size":128,
-                         "validation_split":0.3}
+| False negatives  | False positives  |
+| ------------- | ------------- | 
+| t r ( e a t ] her right ! <hashtag> perfectly imperfect . <repeat>   |  <hashtag> food , sleeping , breathing , bears and the <hashtag> epic face ) |
+| i feel hurt really hurt  |trend <hashtag> beliebers have a new video today " boyfriend " and directioners <user>  |
+| luggage handed in ! officially ready for disney ( ( ( <hashtag> cannotwait <hashtag> disney <number> | hey waiting guy with the cute smile  |
+| mean girls and coffee . <hashtag> sick <hashtag> waah <hashtag> fml | now following <user> follow bakk n m ur lucky <number> th follower lol |
+| have to admit , and i mean this constructively , surprised by how sterile getting ( relative to other great cities . <repeat> | is very good for the health . )     |
+                                       
+                            
+
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)
+            
+            train_params = {"epochs":10,
+                            "batch_size":128,
+                            "validation_split":0.2,
+                            "use_categorical":True}
+            
                          
 - **Other build details**: 
 
-            build_params = {
-                    "cell_type":"GRU",
-                    "num_layers":1,
-                    "hidden_size":64,
-                    "optimizer":"adam",
-                    "dropout_rate":0.4,
-                    "use_normalization":True,
-                    "use_attention":True,
-                    "heads":5,
-                    "penalization":True,
-                    "use_convolution":True,
-                    "dilation_rate":1
-                } 
-
+            build_params = {"train_embedding": False,
+                            "use_pretrained_embedding": True,
+                            "cell_type": "GRU",
+                            "num_layers": 1,
+                            "hidden_size": 64,
+                            "optimizer": "adam",
+                            "use_convolution": True,
+                            "num_conv_layers": 6,
+                            "threshold_channels": 600,
+                            "penalization": True,
+                            "gamma":0.1,
+                            "use_attention": True,
+                            "heads":5,
+                            "dropout_rate": 0.4,
+                            "use_normalization": True}
+                            
 - **Visualization**: 
 <div>
 <img alt="positive sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_conv_heatmap_pos.png" width="400"/>
 <img alt="negative sentence heatmap" src="../data/assets/ATT_GRU_5heads_pen_conv_heatmap_neg.png" width="400"/>
 </div>                    
+
+- **Trainable params**: 1,156,436
 
 --- 
 
@@ -501,5 +535,15 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             "use_normalization": True}
                             
 - **Trainable params**: 7,292,738
+
+#### Experiment 8 "conv_ATT"
+
+- **Idea**: plugging a *self-attention* mechanism on  top of a convolutional network. <br>
+Given the limited resources at our disposal and given the fact that the recurrent models are often
+slow for both training and inference due to their recurrent nature (especially for long texts) it seems 
+reasonable to adopt convolutional network. <br>
+The idea is taken from [this paper](https://arxiv.org/pdf/1804.09541.pdf). 
+> The key motivation behind the design of our model is the following: convolution captures the local
+structure of the text, while the self-attention learns the global interaction between each pair of words.
 
                           

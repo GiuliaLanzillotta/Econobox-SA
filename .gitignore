@@ -39,6 +39,8 @@ classifiers/Attention_GRU_5heads_full2/
 classifiers/convolution_3_pool
 classifiers/Attention_GRU_5heads_penalized/
 classifiers/GRU_128_conv/
+classifiers/Attention_GRU_penalised_convolution/
+
 
 
 
