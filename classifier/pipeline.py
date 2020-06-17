@@ -25,7 +25,7 @@ from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
 from classifier.BERT_NN import PP_BERT_Data
 from preprocessing.tweetDF import load_tweetDF
-from preprocessing.tweetDF import load_testDF
+#from preprocessing.tweetDF import load_testDF
 
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 

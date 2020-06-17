@@ -18,8 +18,6 @@ class convolutional_NN(BaseNN):
     Convolutional NN classifier
     This class wraps a classifier based on 1D convolutions.
     ---------
-    Parameters :
-    -
     """
 
     def __init__(self,

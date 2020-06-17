@@ -22,12 +22,8 @@ abs_path = os.path.abspath(os.path.dirname(__file__))
 import math
 
 
+#HELPER FUNCTIONS FOR ADAPTER BERT
 
-#freezes all the parameters from the BERT layer
-def bert_complete_freeze(l_bert):
-    l_bert.trainable = False
-
-#helper function for freeze_bert_layers
 def flatten_layers(root_layer):
     if isinstance(root_layer, tf.keras.layers.Layer):
         yield root_layer
@@ -35,14 +31,14 @@ def flatten_layers(root_layer):
         for sub_layer in flatten_layers(layer):
             yield sub_layer
 
-#could be used to fine tune a part of the BERT layer
+
 def freeze_bert_layers(l_bert):
     """
     Freezes all but LayerNorm and adapter layers - see arXiv:1902.00751.
     """
     for layer in flatten_layers(l_bert):
         if layer.name in ["LayerNorm", "adapter-down", "adapter-up"]:
-            layer.trainable = False
+            layer.trainable = True
         elif len(layer._layers) == 0:
             layer.trainable = False
         l_bert.embeddings_layer.trainable = False
@@ -126,17 +122,21 @@ class BERT_NN(BaseNN):
         adapter_size = kwargs.get("adapter_size", 64)
         dropout_rate = kwargs.get('dropout_rate', 0.5)
 
-        with tf.io.gfile.GFile(os.path.join(abs_path, bert_config_file_location), "r") as reader:
+
+        # adapter_size = 64  # see - arXiv:1902.00751
+
+        # create the bert layer
+        with tf.io.gfile.GFile(os.path.join(abs_path,bert_config_file_location), "r") as reader:
             bc = StockBertConfig.from_json_string(reader.read())
             bert_params = map_stock_config_to_params(bc)
-            bert_params.adapter_size = None
+            bert_params.adapter_size = adapter_size
             bert = BertModelLayer.from_params(bert_params, name="bert")
 
         input_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype='int32', name="input_ids")
-        bert_output = bert(input_ids)
+        output = bert(input_ids)
 
-        print("bert shape", bert_output.shape)
-        cls_out = tf.keras.layers.Lambda(lambda seq: seq[:, 0, :])(bert_output)
+        print("bert shape", output.shape)
+        cls_out = tf.keras.layers.Lambda(lambda seq: seq[:, 0, :])(output)
         cls_out = tf.keras.layers.Dropout(0.5)(cls_out)
         dense_out_1 = tf.keras.layers.Dense(units=768, activation="tanh")(cls_out)
         dense_out_1 = tf.keras.layers.Dropout(dropout_rate)(dense_out_1)
@@ -148,22 +148,17 @@ class BERT_NN(BaseNN):
         self.model.build(input_shape=(None, max_seq_length))
 
         # load the pre-trained model weights
-        print(os.path.join(abs_path, bert_ckpt_file))
         load_stock_weights(bert, os.path.join(abs_path, bert_ckpt_file))
-        #print(bert.trainable_weights)
-        # print(bert.non_trainable_weights)
-
-        bert_complete_freeze(bert)
 
         # freeze weights if adapter-BERT is used
+        if adapter_size is not None:
+            freeze_bert_layers(bert)
+
         self.model.compile(optimizer=optimizer,
-                           loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                           metrics=metrics)
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=metrics)
 
         self.model.summary()
-
-
-        return self.model
 
 
 
