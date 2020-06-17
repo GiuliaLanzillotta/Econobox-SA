@@ -541,7 +541,7 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
 - **Structure**: a mix between [this paper](https://arxiv.org/pdf/1804.09541.pdf) and [this paper](https://arxiv.org/pdf/1901.11117.pdf). <br>
 In its basic form, it uses 3 evolved transformer blocks to process the input sequence. 
 <div>
-<img alt="et block diagram" src="../data/assets/et_block.png" height="500"/>
+<img alt="et block diagram" src="../data/assets/et_block.png" height="300"/>
 </div>  
 
 Note: experiment still in fieri. 
