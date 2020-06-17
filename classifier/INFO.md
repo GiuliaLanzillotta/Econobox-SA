@@ -536,14 +536,15 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             
 - **Trainable params**: 7,292,738
 
-#### Experiment 8 "conv_ATT"
+#### Experiment 8 "ET"
 
-- **Idea**: plugging a *self-attention* mechanism on  top of a convolutional network. <br>
-Given the limited resources at our disposal and given the fact that the recurrent models are often
-slow for both training and inference due to their recurrent nature (especially for long texts) it seems 
-reasonable to adopt convolutional network. <br>
-The idea is taken from [this paper](https://arxiv.org/pdf/1804.09541.pdf). 
-> The key motivation behind the design of our model is the following: convolution captures the local
-structure of the text, while the self-attention learns the global interaction between each pair of words.
+- **Structure**: a mix between [this paper](https://arxiv.org/pdf/1804.09541.pdf) and [this paper](https://arxiv.org/pdf/1901.11117.pdf). <br>
+In its basic form, it uses 3 evolved transformer blocks to process the input sequence. 
+<div>
+<img alt="et block diagram" src="../data/assets/et_block.png" height="500"/>
+</div>  
+
+Note: experiment still in fieri. 
+
 
                           
