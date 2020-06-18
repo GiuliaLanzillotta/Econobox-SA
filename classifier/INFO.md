@@ -544,7 +544,31 @@ In its basic form, it uses 3 evolved transformer blocks to process the input seq
 <img alt="et block diagram" src="../data/assets/et_block.png" height="400"/>
 </div>  
 
-Note: experiment still in fieri. 
+Note: still not able to run it : OOM error. 
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)
+            
+            train_params = {"epochs": 10,
+                            "batch_size": 1024,
+                            "validation_split": 0.2,
+                            "use_categorical": True}
+            
+                         
+- **Other build details**: 
+
+            build_params = {"optimizer": 'adam',
+                            "metrics": ['accuracy'],
+                            "adapter_size": 1,
+                            "train_embedding": False,
+                            "use_pretrained_embedding": True,
+                            "num_et_blocks":1,
+                            "max_len":50} # maximum length in the sequece
+                            
+-**Total params**: 41,207,642
+-**Trainable params**: 6,600,442
 
 
                           

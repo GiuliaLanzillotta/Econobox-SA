@@ -42,8 +42,9 @@ class BaseNN(ClassifierBase):
         return optimizer
 
     #taken from https://github.com/kpe/bert-for-tf2/blob/master/examples/gpu_movie_reviews.ipynb
-    def create_learning_rate_scheduler(self,max_learn_rate,end_learn_rate,
-                                       warmup_epoch_count,total_epoch_count):
+    @staticmethod
+    def create_learning_rate_scheduler(max_learn_rate, end_learn_rate,
+                                       warmup_epoch_count, total_epoch_count):
 
         def lr_scheduler(epoch):
             if epoch < warmup_epoch_count:
@@ -78,10 +79,10 @@ class BaseNN(ClassifierBase):
         earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
                                                               min_delta=0.0001,
                                                               patience=1)
-        learning_rate_scheduler = self.create_learning_rate_scheduler(max_learn_rate=1e-5,
-                                       end_learn_rate=1e-7,
-                                       warmup_epoch_count=20,
-                                       total_epoch_count=10)
+        learning_rate_scheduler = self.create_learning_rate_scheduler(max_learn_rate=1e-3,
+                                                                      end_learn_rate=1e-7,
+                                                                      warmup_epoch_count=20,
+                                                                      total_epoch_count=10)
         if not generator_mode:
             y_train = y
             if use_categorical: y_train = tf.keras.utils.to_categorical(y)

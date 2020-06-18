@@ -27,7 +27,7 @@ class etransformer_NN(BaseNN):
         self.num_embeddings = number_of_embeddings
 
     @staticmethod
-    def get_GLU(inputs, filters):
+    def get_GLU(inputs):
         """
         Builds a Gated Linear Unit, according to
         https://michaelauli.github.io/papers/gcnn.pdf.
@@ -35,12 +35,12 @@ class etransformer_NN(BaseNN):
         :param inputs: the input to the unit
         :return:
         """
-        conv = tf.keras.layers.Conv1D(filters=filters,
+        conv = tf.keras.layers.Conv1D(filters=256,
                                       kernel_size=3,
                                       padding="same",
-                                      data_format="cannels_last")
+                                      data_format="channels_last")
         X = conv(inputs)
-        gates = tf.keras.activations.sigmoid()
+        gates = tf.keras.activations.sigmoid
         out = X*gates(X)
         return out
 
@@ -63,7 +63,7 @@ class etransformer_NN(BaseNN):
         # sub-block 1
         sub1_in = inputs
         normalized = norm(inputs)
-        GLU = lambda x: self.get_GLU(x, filters=tf.shape(inputs)[-1])
+        GLU = lambda x: self.get_GLU(x)
         GLU_res = GLU(normalized)
         sub1_out = sub1_in + GLU_res
         ## ---------
@@ -83,7 +83,8 @@ class etransformer_NN(BaseNN):
         conv1_out = conv1(normalized)
         conv2_out = conv2(normalized)
         # stacking the results of the two convolutions
-        convs_out=tf.stack([conv1_out,conv2_out], axis=2)
+        convs_out=tf.concat([conv1_out,conv2_out], axis=2)
+        norm = tf.keras.layers.LayerNormalization(axis=-1)
         normalized = norm(convs_out)
         sep_conv = tf.keras.layers.SeparableConv1D(filters=256,
                                                    kernel_size=9,
@@ -95,6 +96,7 @@ class etransformer_NN(BaseNN):
         ## -----------
         # sub-block 3
         sub3_in = sub2_out
+        norm = tf.keras.layers.LayerNormalization(axis=-1)
         normalized = norm(sub3_in)
         attention = lambda x: self.get_Attention(x)
         attention_applied = attention(normalized)
@@ -102,6 +104,7 @@ class etransformer_NN(BaseNN):
         ## -----------
         # sub-block 4
         sub4_in = sub3_out
+        norm = tf.keras.layers.LayerNormalization(axis=-1)
         normalized = norm(sub4_in)
         deepen = tf.keras.layers.Conv1D(filters=2040,
                                         kernel_size=1,
@@ -116,7 +119,8 @@ class etransformer_NN(BaseNN):
                                         padding="same",
                                         data_format="channels_last")
         shallowed = shallow(deepened)
-        sub4_out = sub4_in + shallowed
+        dense256 = tf.keras.layers.Dense(256)
+        sub4_out = sub4_in + dense256(shallowed)
         return sub4_out
 
     def build(self, **kwargs):
@@ -126,6 +130,7 @@ class etransformer_NN(BaseNN):
         train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
         use_pretrained_embedding = kwargs.get("use_pretrained_embedding", True)
         num_et_blocks = kwargs.get("num_et_blocks",3)
+        timesteps = kwargs.get("max_len",50)
         optim = kwargs.get("optimizer", "sgd")
         metrics = kwargs.get("metrics", ['accuracy'])
         ## -------------------
@@ -139,9 +144,9 @@ class etransformer_NN(BaseNN):
                                               mask_zero=True,
                                               trainable=train_embedding)
         masking = tf.keras.layers.Masking(mask_value=0)
-        dense1 = tf.keras.layers.Dense(512, activation="linear") # increase dimension to match et block dimension
+        dense1 = tf.keras.layers.Dense(256, activation="linear") # increase dimension to match et block dimension
         et_block = self.get_et_block
-        dense2 = tf.keras.layers.Dense(250, activation="relu")
+        dense2 = tf.keras.layers.Dense(256, activation="relu")
         dense_final = tf.keras.layers.Dense(2, activation="linear")
         ## -------------------
         ## CONNECTING THE NODES
@@ -150,8 +155,7 @@ class etransformer_NN(BaseNN):
         et_inputs = dense1(masked_inputs)
         for i in range(num_et_blocks):
             et_inputs = et_block(et_inputs)
-        timesteps = tf.shape(inputs)[1]
-        flattened = tf.reshape(et_inputs, shape=[-1,512*timesteps])
+        flattened = tf.reshape(et_inputs, shape=[-1,256*timesteps])
         dense2_out = dense2(flattened)
         outputs = dense_final(dense2_out)
         ## -------------------
