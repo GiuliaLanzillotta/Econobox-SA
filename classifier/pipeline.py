@@ -330,7 +330,6 @@ def get_convolutional_model(model_name,
 
 
 def get_ET_model(model_name,
-                 embedding_dim=None,
                  train_data=None,
                  load_model=False,
                  train_model=False,
@@ -382,15 +381,15 @@ def get_ET_model(model_name,
     # -------------------
     # Building the model
     if number_of_embeddings == 1:
-        my_transformer = etransformer_NN(embedding_dimension=embedding_dim,
+        my_transformer = etransformer_NN(embedding_dimension=embeddings[0].shape[1],
                                          vocabulary_dimension=get_vocab_dimension(vocabularies[0]),
                                          embedding_matrices=embeddings[0],
-                                         number_of_embeddings=1,
+                                         number_of_embeddings=number_of_embeddings,
                                          name=model_name)
     else:
-        my_transformer = metransformer_NN(embedding_dimension=embedding_dim,
+        my_transformer = metransformer_NN(embedding_dimension=-1,
                                           embedding_matrices=embeddings,
-                                          number_of_embeddings=1,
+                                          number_of_embeddings=number_of_embeddings,
                                           name=model_name)
     my_transformer.build(**build_params)
     if load_model:my_transformer.load()
@@ -723,14 +722,14 @@ def run_train_pipeline(model_type,
                                embedding_dim=embedding.embedding_dim, model_name=model_name,
                                build_params=build_params, train_params=train_params)
     model = function(model_name,
-                    train_data=data_matrix,
-                    load_model=load_model,
-                    train_model=not (prediction_mode or cv_on),
-                    save_model=not (prediction_mode or cv_on),
-                    test_data=test_matrix,
-                    build_params=build_params,
-                    train_params=train_params,
-                    **model_specific_params)
+                     train_data=data_matrix,
+                     load_model=load_model,
+                     train_model=not (prediction_mode or cv_on),
+                     save_model=not (prediction_mode or cv_on),
+                     test_data=test_matrix,
+                     build_params=build_params,
+                     train_params=train_params,
+                     **model_specific_params)
     if prediction_mode:
        model.make_predictions(data_matrix, save=True)
     return model

@@ -26,9 +26,9 @@ bert_specific_params = {
 }
 
 et_specific_params = {
-    "number_of_embeddings":1,
-    "vocabularies":["full_vocab_in_stanford.pkl"],
-    "embedding_locations":["necessary_stanford.npz"]
+    "number_of_embeddings":2,
+    "vocabularies":["full_vocab_in_stanford.pkl","vocab.pkl"],
+    "embedding_locations":["necessary_stanford.npz","glove+stanford.npz"]
 }
 
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         "use_categorical": True}
 
         run_train_pipeline("ET_NN",
-                           "ET_1",
+                           "ET_2",
                            load_model=False,
                            prediction_mode=False,
                            text_data_mode_on=False,

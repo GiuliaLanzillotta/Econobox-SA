@@ -217,24 +217,24 @@ class metransformer_NN(etransformer_NN):
             embedded_inputs = embedding(inputs)
             masked_inputs = masking(embedded_inputs)
             et_inputs = dense1(masked_inputs)
-            for i in range(num_et_blocks):
+            for j in range(num_et_blocks):
                 et_inputs = et_block(et_inputs)
-            routes_res[i] = et_inputs
+            routes_res.append(et_inputs)
         # Now convolving the results and passing them through a final et_block
         # each of the elements in the list 'routes_res' has now dimension
-        # [ batch size x timesteps x 256 ]
+        # [ batch size x 8 x 256 ]
         routes_out=tf.concat(routes_res, axis=1) # concatenating on the time axis
-        conv1 = tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=2,
-                                          padding="valid", data_format="channels_last",
+        conv1 = tf.keras.layers.Conv1D(filters=16, kernel_size=5, strides=1,
+                                          padding="valid", data_format="channels_first",
                                           dilation_rate=2,activation="relu")
-        conv2 = tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=2,
-                                          padding="valid", data_format="channels_last",
+        conv2 = tf.keras.layers.Conv1D(filters=32, kernel_size=5, strides=1,
+                                          padding="valid", data_format="channels_first",
                                           dilation_rate=2,activation="relu")
         conv_res = conv1(routes_out)
         conv_res = conv2(conv_res)
         # And finally passing the result of the convolution through a
         # dense head to make predictions
-        flattened = tf.reshape(conv_res, shape=[-1, 256 * timesteps])
+        flattened = tf.reshape(conv_res, shape=[-1, 32 * 240])
         dense2 = tf.keras.layers.Dense(256, activation="relu")
         dense_final = tf.keras.layers.Dense(2, activation="linear")
         dense2_out = dense2(flattened)
