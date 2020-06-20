@@ -585,6 +585,10 @@ def get_SVM_model(model_name,
     return oursvm
 
 
+def get_ensemble():
+    #TODO: implement ensemble model.
+    pass
+
 def cross_validation(train_data, model_fun,
                      embedding_dim, model_name,
                      build_params, train_params):
