@@ -83,6 +83,16 @@ class BaseNN(ClassifierBase):
                                                                       end_learn_rate=1e-7,
                                                                       warmup_epoch_count=20,
                                                                       total_epoch_count=10)
+
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = models_store_path+self.name+"/logs/"
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=os.path.join(abs_path,path),
+                                                              histogram_freq=1,
+                                                              write_graph=True,
+                                                              write_images=False,
+                                                              update_freq=100,
+                                                              profile_batch=2,
+                                                              embeddings_freq=0)
         if not generator_mode:
             y_train = y
             if use_categorical: y_train = tf.keras.utils.to_categorical(y)
@@ -90,7 +100,7 @@ class BaseNN(ClassifierBase):
                                       epochs=epochs,
                                       batch_size=batch_size,
                                       validation_split=validation_split,
-                                      callbacks=[earlystop_callback, learning_rate_scheduler],
+                                      callbacks=[earlystop_callback, learning_rate_scheduler, tensorboard_callback],
                                       shuffle=True)
         else:
             # extracting relevant arguments
@@ -117,7 +127,7 @@ class BaseNN(ClassifierBase):
                                                                    aggregation_fun=sentence_embedding.no_embeddings,
                                                                    input_entries=input_entries,
                                                                    sentence_dimesion=max_len),
-                                          callbacks=[earlystop_callback, learning_rate_scheduler],
+                                          callbacks=[earlystop_callback, learning_rate_scheduler, tensorboard_callback],
                                           epochs=epochs, steps_per_epoch =n_steps,
                                           validation_data=validation_data)
         self.plot_history()
@@ -177,7 +187,8 @@ class BaseNN(ClassifierBase):
                          predicted_classes=prediction_classes,
                          predicted_probabilities=prediction_probs)
 
-        self.analyse_worst_predictions(x,y,prediction_probs,idx2word,n=5)
+        if idx2word:
+            self.analyse_worst_predictions(x,y,prediction_probs,idx2word,n=5)
 
     def plot_history(self):
         # summarize history for accuracy

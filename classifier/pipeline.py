@@ -4,7 +4,7 @@ from classifier.BERT_NN import BERT_NN
 from classifier.recurrent_NN import recurrent_NN, attention_NN
 from classifier.convolutional_NN import convolutional_NN
 from classifier.SVM_classi import SVM_classi
-from classifier.ET_NN import etransformer_NN
+from classifier.ET_NN import etransformer_NN, metransformer_NN
 from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
@@ -330,7 +330,7 @@ def get_convolutional_model(model_name,
 
 
 def get_ET_model(model_name,
-                 embedding_dim=embedding.embedding_dim,
+                 embedding_dim=None,
                  train_data=None,
                  load_model=False,
                  train_model=False,
@@ -361,52 +361,55 @@ def get_ET_model(model_name,
         - :arg vocabulary: (str) vocabulary in use
     :return: an instance of Vanilla_NN class
     """
-    vocabulary = kwargs.get("vocabulary")
-    if not vocabulary: vocabulary = standard_vocab_name
-    vocab_dim = get_vocab_dimension(vocabulary)
+    number_of_embeddings = kwargs.get("number_of_embeddings")
+    vocabularies = kwargs.get("vocabularies")
+    embedding_locations = kwargs.get("embedding_locations")
+    assert not vocabularies is None and not number_of_embeddings is None and not embedding_locations is None, \
+        "Usage error. To use the met network you need to specify the embeddings and vocabularies to use."
     # --------------------
     # Opening pre-trained embedding matrix
-    load_embedding = kwargs.get("load_embedding")
-    embedding_name = kwargs.get("embedding_location","glove_emb.npz")
-    generator_mode = kwargs.get("generator_mode", False)
-    #TODO: handle more than one embedding
-    if load_embedding:
-        glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
-                                              load_from_file=True,
-                                              load_Stanford=False, #no need to reload the stanford embedding when we already load the embedding matrix from file
-                                              file_name=embedding_name,
-                                              train=False,
-                                              save=False)
-        embedding_matrix = glove_embedding.embedding_matrix
+    embeddings = []
+    for i in range(number_of_embeddings):
+        #Note: the "get glove embedding matrix can load multiple embeddings"
+        emb = get_glove_embedding(vocabulary_file=vocabularies[i],
+                                  load_from_file=True,
+                                  load_Stanford=False, #no need to reload the stanford embedding when we already load the embedding matrix from file
+                                  file_name=embedding_locations[i],
+                                  train=False,
+                                  save=False)
+        embedding_matrix = emb.embedding_matrix
+        embeddings.append(embedding_matrix)
     # -------------------
     # Building the model
-    etransformer = etransformer_NN(embedding_dimension=embedding_dim,
-                                   vocabulary_dimension=vocab_dim,
-                                   embedding_matrices=embedding_matrix,
-                                   number_of_embeddings=1,
-                                   name=model_name)
-    etransformer.build(**build_params)
-    if load_model:etransformer.load()
+    if number_of_embeddings == 1:
+        my_transformer = etransformer_NN(embedding_dimension=embedding_dim,
+                                         vocabulary_dimension=get_vocab_dimension(vocabularies[0]),
+                                         embedding_matrices=embeddings[0],
+                                         number_of_embeddings=1,
+                                         name=model_name)
+    else:
+        my_transformer = metransformer_NN(embedding_dimension=embedding_dim,
+                                          embedding_matrices=embeddings,
+                                          number_of_embeddings=1,
+                                          name=model_name)
+    my_transformer.build(**build_params)
+    if load_model:my_transformer.load()
     # ----------------
     # Training, testing and saving
     if train_model:
-        x_train, y_train = None, None
-        if not generator_mode:
-            x_train = train_data[:, 0:-1]
-            y_train = train_data[:, -1]
-
-        etransformer.train(x_train, y_train,
-                            generator_mode=generator_mode,
-                            **train_params)
-
-    if save_model: etransformer.save()
-    if test_data is not None:
-        idx2word = load_inverse_vocab(vocabulary)
+        x_train = train_data[:, 0:-1]
+        y_train = train_data[:, -1]
+        my_transformer.train(x_train, y_train,
+                             generator_mode=False,
+                             **train_params)
+    if save_model: my_transformer.save()
+    if test_data:
+        idx2word = None
+        if number_of_embeddings==1: idx2word = load_inverse_vocab(vocabularies[0])
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
-        etransformer.test(x_test,y_test, idx2word=idx2word)
-
-    return etransformer
+        my_transformer.test(x_test,y_test, idx2word=idx2word)
+    return my_transformer
 
 
 
@@ -610,12 +613,31 @@ def grid_search():
     # a dictionary of parameters as input
     pass
 
+def random_split(data, train_p, test_p):
+    """
+    Helper function to randomly split the data matrix into test and training.
+    :param data: data matrix (numpy)
+    :param train_p: percentage of samples to use as training set.
+    :param test_p: percentage of samples to use as testing set.
+    Note: not all the matrix has to be used.
+    :return:
+    """
+    train_size = int(train_p * data.shape[0])
+    test_size = int(test_p * data.shape[0])
+    print("Randomly picking ", train_size, " indices to train on and ", test_size, " indices to test on.")
+    random_indices = np.random.choice(data.shape[0], train_size + test_size, replace=False)
+    train_indices = random_indices[:train_size]
+    test_indices = random_indices[train_size:]
+    test_matrix = data[test_indices, :]
+    data_matrix = data[train_indices, :]
+    return data_matrix, test_matrix
+
+
 def run_train_pipeline(model_type,
                        model_name,
                        prediction_mode=False,
                        load_model=False,
                        text_data_mode_on = True,
-                       max_seq_length = 128,
                        choose_randomly=False,
                        random_percentage=0.1,
                        data_location=testDF_location,
@@ -623,7 +645,8 @@ def run_train_pipeline(model_type,
                        cv_on=False,
                        test_data_location=None,
                        build_params=None,
-                       train_params=None):
+                       train_params=None,
+                       model_specific_params=None):
     """
     By default, this function created a new instance of 'model_type' model,  trains it
     from scratch (no loading) and saves it.
@@ -649,6 +672,8 @@ def run_train_pipeline(model_type,
     :param test_data_location: (str/path).
     :param build_params: (dict). Dictionary of build parameter. The entries depend on your specific model.
     :param train_params: (dict). DIctionary of trainin parameters. // //
+    :param model_specific_params: Dictionary where to put all other parameters used in the model function
+        (those accessed as kwargs)
     :return: an instance of the model
     """
     if build_params is None:
@@ -671,10 +696,12 @@ def run_train_pipeline(model_type,
 
     abs_path = os.path.abspath(os.path.dirname(__file__))
 
-    ## DATA LOADING
+    ## ------------------------
+    # DATA LOADING
     data_matrix = None
     test_matrix = None
     if text_data_mode_on:
+        max_seq_length = model_specific_params.get("max_seq_length",128)
         data_matrix = PP_BERT_Data(load_tweetDF(), classes=[0,1], max_seq_length=max_seq_length,
                                    prediction_mode=prediction_mode)
         if prediction_mode:
@@ -685,18 +712,12 @@ def run_train_pipeline(model_type,
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         if choose_randomly and not prediction_mode:
-            train_size = int(random_percentage * data_matrix.shape[0])
-            test_size = int(0.1 * train_size)
-            print("Randomly picking ", train_size, " indices to train on and ", test_size, " indices to test on.")
-            random_indices = np.random.choice(data_matrix.shape[0], train_size + test_size, replace=False)
-            train_indices = random_indices[:train_size]
-            test_indices = random_indices[train_size:]
-            test_matrix = data_matrix[test_indices, :]
-            data_matrix = data_matrix[train_indices, :]
+            data_matrix, test_matrix = random_split(data_matrix, random_percentage, random_percentage*0.1)
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
 
-    ## MODEL FUNCTIONS
+    ## -----------------------
+    # MODEL FUNCTIONS
     function = model_pipeline_fun[model_type]
     if cv_on: cross_validation(train_data=data_matrix, model_fun=function,
                                embedding_dim=embedding.embedding_dim, model_name=model_name,
@@ -709,19 +730,10 @@ def run_train_pipeline(model_type,
                     test_data=test_matrix,
                     build_params=build_params,
                     train_params=train_params,
-                    # Nota bene:
-                    # don't worry about the next arguments
-                    # if you're not using the recurrent net :
-                    # they will be automatically ignored by all other functions
-                    vocabulary="full_vocab_in_stanford.pkl",
-                    load_embedding=True,
-                    embedding_location ="necessary_stanford.npz",
-                    generator_mode=generator_mode,
-                    max_len=100,
-                    # parameter for BERT
-                    max_seq_length= max_seq_length)
+                    **model_specific_params)
     if prediction_mode:
        model.make_predictions(data_matrix, save=True)
     return model
+
 
 

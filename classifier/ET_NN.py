@@ -23,7 +23,7 @@ class etransformer_NN(BaseNN):
                          vocabulary_dimension=vocabulary_dimension,
                          name=name,
                          embedding_matrix=e_matrix)
-        #TODO: handle more than one embedding
+        if number_of_embeddings>1: self.embedding_matrices = embedding_matrices
         self.num_embeddings = number_of_embeddings
 
     @staticmethod
@@ -156,6 +156,87 @@ class etransformer_NN(BaseNN):
         for i in range(num_et_blocks):
             et_inputs = et_block(et_inputs)
         flattened = tf.reshape(et_inputs, shape=[-1,256*timesteps])
+        dense2_out = dense2(flattened)
+        outputs = dense_final(dense2_out)
+        ## -------------------
+        ## COMPILING THE MODEL
+        self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        optimizer = self.get_optimizer(optim)
+        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        self.model.compile(loss=loss,
+                           optimizer=optimizer,
+                           metrics=metrics,
+                           experimental_run_tf_function=False)
+        self.model.summary()
+
+
+class metransformer_NN(etransformer_NN):
+    """ Multiple-Evolved-Transformer
+    Version of etransformer network that accepts and combines
+    multiple embeddings together."""
+    def __init__(self,
+                 embedding_dimension,
+                 vocabulary_dimension=-1,
+                 embedding_matrices=None,
+                 number_of_embeddings=1,
+                 name="metransformer_NN"):
+        super().__init__(embedding_dimension=embedding_dimension,
+                         vocabulary_dimension=vocabulary_dimension,
+                         embedding_matrices=embedding_matrices,
+                         number_of_embeddings=number_of_embeddings,
+                         name=name)
+
+    def build(self, **kwargs):
+        print("Building model.")
+        ## -------------------
+        ## EXTRACTING ARGUMENTS
+        train_embedding = kwargs.get("train_embedding", False)  # whether to train the Embedding layer to the model
+        num_et_blocks = kwargs.get("num_et_blocks", 3)
+        timesteps = kwargs.get("max_len", 50)
+        optim = kwargs.get("optimizer", "sgd")
+        metrics = kwargs.get("metrics", ['accuracy'])
+        ## -------------------
+        # For the multiple evolved transformer network we need to build
+        # multiple routes for the input
+        inputs = tf.keras.layers.Input(shape=(None,), dtype='int32')
+        routes_res = []
+        for i in range(self.num_embeddings):
+            # passing the input through different embedding and et blocks
+            ## CREATING THE NODES FIRST
+            weights = [self.embedding_matrices[i]] # note that this network only uses pretrained embeddings
+            v,e = self.embedding_matrices[i].shape
+            embedding = tf.keras.layers.Embedding(input_dim=v,
+                                                  output_dim=e,
+                                                  weights=weights,
+                                                  mask_zero=True,
+                                                  trainable=train_embedding)
+            masking = tf.keras.layers.Masking(mask_value=0)
+            dense1 = tf.keras.layers.Dense(256, activation="linear")  # increase dimension to match et block dimension
+            et_block = self.get_et_block
+            ## CONNECTING THE NODES
+            embedded_inputs = embedding(inputs)
+            masked_inputs = masking(embedded_inputs)
+            et_inputs = dense1(masked_inputs)
+            for i in range(num_et_blocks):
+                et_inputs = et_block(et_inputs)
+            routes_res[i] = et_inputs
+        # Now convolving the results and passing them through a final et_block
+        # each of the elements in the list 'routes_res' has now dimension
+        # [ batch size x timesteps x 256 ]
+        routes_out=tf.concat(routes_res, axis=1) # concatenating on the time axis
+        conv1 = tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=2,
+                                          padding="valid", data_format="channels_last",
+                                          dilation_rate=2,activation="relu")
+        conv2 = tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=2,
+                                          padding="valid", data_format="channels_last",
+                                          dilation_rate=2,activation="relu")
+        conv_res = conv1(routes_out)
+        conv_res = conv2(conv_res)
+        # And finally passing the result of the convolution through a
+        # dense head to make predictions
+        flattened = tf.reshape(conv_res, shape=[-1, 256 * timesteps])
+        dense2 = tf.keras.layers.Dense(256, activation="relu")
+        dense_final = tf.keras.layers.Dense(2, activation="linear")
         dense2_out = dense2(flattened)
         outputs = dense_final(dense2_out)
         ## -------------------

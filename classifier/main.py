@@ -9,6 +9,28 @@ from data import tweetDF_location
 from classifier.pipeline import run_train_pipeline
 
 
+## ----------------
+#Saving here the model specific parameters to pass to the
+#model pipeline function.
+
+recurrent_specific_params = {
+    "vocabulary":"full_vocab_in_stanford.pkl",
+    "load_embedding":True,
+    "embedding_location":"necessary_stanford.npz",
+    "generator_mode":False,
+    "max_len":100
+}
+
+bert_specific_params = {
+    "max_seq_length":50
+}
+
+et_specific_params = {
+    "number_of_embeddings":1,
+    "vocabularies":["full_vocab_in_stanford.pkl"],
+    "embedding_locations":["necessary_stanford.npz"]
+}
+
 
 if __name__ == "__main__":
 
@@ -31,11 +53,11 @@ if __name__ == "__main__":
                            prediction_mode=False,
                            text_data_mode_on=False,
                            data_location=replaced_zero_matrix_full_train_location,
-                           max_seq_length=128,
                            cv_on=False,
                            choose_randomly=True,
                            random_percentage=0.3,
                            test_data_location=None,
+                           generator_mode=False,
                            build_params=build_params,
                            train_params=train_params,
-                           generator_mode=False)
+                           model_specific_params=et_specific_params)
