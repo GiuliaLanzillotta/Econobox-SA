@@ -596,9 +596,11 @@ def get_ensemble(models, data, models_names,
     we'll only load them here.
     :param models: List of the sub-models' pipeline functions.
         :type models: list
-    :param data: the data matrix to use to test the ensemble or to
-        make predictions.
-        :type data: numpy.ndarray
+    :param data: the data matrices to use to test the ensemble or to
+        make predictions. Each model has its own data matrix.
+        Note: the data matrices should be different transformations of the
+        same input data.
+        :type data: list(numpy.ndarray)
     :param models_fun_params: list of dictionaries with the params to
         pass to the model in the 'build' function.
         :type models_fun_params: list(dict)
@@ -632,12 +634,7 @@ def get_ensemble(models, data, models_names,
         _models.append(model)
     ## ----------
     # Extracting the data
-    x = data
-    if not prediction_mode:
-        print("Testing the ensemble.")
-        # extracting the data
-        x = data[:, 0:-1]
-        y = data[:, -1]
+    print("Making predictions.")
     ## ---------
     # Extracting predictions with MAJORITY VOTE
     # I want to store the predictions in a categorical vector
@@ -645,6 +642,12 @@ def get_ensemble(models, data, models_names,
     # of the classes in each example
     predictions = np.zeros(shape=(y.shape[0],2))
     for i in range(n_models):
+        # extracting the data
+        matrix = data[i]
+        x = matrix
+        if not prediction_mode:
+            x = matrix[:, 0:-1]
+            y = matrix[:, -1]
         model = _models[i]
         # making predictions
         y_pred = model.predict(x)
@@ -661,6 +664,7 @@ def get_ensemble(models, data, models_names,
     ## --------------
     if prediction_mode:
         # Saving predictions and exiting
+        print("Saving predictions.")
         from classifier import predictions_folder
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = predictions_folder + ensemble_name + "_predictions.csv"
@@ -725,6 +729,47 @@ def random_split(data, train_p, test_p):
     return data_matrix, test_matrix
 
 
+model_pipeline_fun = {
+        "vanilla_NN": get_vanilla_model,
+        "recurrent_NN":get_recurrent_model,
+        "SVM_classi": get_SVM_model,
+        "LR_classi": get_LR_model,
+        "Adaboost_classi":get_Adaboost_model,
+        "RF_classi": get_RandomForest_model,
+        "BERT_NN": get_BERT_model,
+        "convolutional_NN":get_convolutional_model,
+        "ET_NN":get_ET_model,
+        "": lambda : None # empty function
+    }
+
+def run_ensemble_pipeline(models,
+                          models_names,
+                          data_locations,
+                          models_build_params,
+                          models_fun_params,
+                          prediction_mode,
+                          ensemble_name="ensemble"):
+    #checks first
+    assert len(data_locations)==len(models), \
+        "Usage error: you need to provide one data path for each model"
+    #loading data
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    print("Loading data")
+    data = []
+    for data_location in data_locations:
+        data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
+        data.append(data_matrix)
+    #loading model functions
+    models_funcs = [model_pipeline_fun[model] for model in models]
+    #getting the ensemble model
+    get_ensemble(models=models_funcs,
+                 data=data,
+                 models_names=models_names,
+                 models_build_params=models_build_params,
+                 models_fun_params=models_fun_params,
+                 prediction_mode=prediction_mode,
+                 ensemble_name=ensemble_name)
+
 def run_train_pipeline(model_type,
                        model_name,
                        prediction_mode=False,
@@ -772,19 +817,6 @@ def run_train_pipeline(model_type,
         build_params = {}
     if train_params is None:
         train_params = {}
-
-    model_pipeline_fun = {
-        "vanilla_NN": get_vanilla_model,
-        "recurrent_NN":get_recurrent_model,
-        "SVM_classi": get_SVM_model,
-        "LR_classi": get_LR_model,
-        "Adaboost_classi":get_Adaboost_model,
-        "RF_classi": get_RandomForest_model,
-        "BERT_NN": get_BERT_model,
-        "convolutional_NN":get_convolutional_model,
-        "ET_NN":get_ET_model,
-        "": lambda : None # empty function
-    }
 
     abs_path = os.path.abspath(os.path.dirname(__file__))
 

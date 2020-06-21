@@ -89,7 +89,7 @@ Same experiment as above, using LSTM cells instead of GRU.
                     "use_normalization":True}
 
 
-#### Experiment 3 : "Attention_GRU_5heads_full"
+#### Experiment 3 : "Attention_GRU_full"
 
 The idea comes from [this](https://arxiv.org/pdf/1703.03130.pdf) paper. <br>
 > Self-Attention (SA), a variant of the attention mechanism, 
