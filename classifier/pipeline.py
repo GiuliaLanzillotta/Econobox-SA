@@ -592,6 +592,7 @@ def get_ensemble(models, data, models_names,
                  prediction_mode=False,
                  ensemble_name="ensemble"):
     """
+    #TODO allow ensemble with same classifier but trained on different data
     Builds ensemble model of other sub-models.
     Note: the sub-models need to be already trained and saved, as
     we'll only load them here.
@@ -639,8 +640,9 @@ def get_ensemble(models, data, models_names,
     # Extracting the data
     data_size = data[0].shape[0]
     split_size = int(data_size*random_percentage)
-    random_indices = np.random.choice(data_size, split_size, replace=False)
-    print("Using ",split_size," samples.")
+    if not prediction_mode:
+        random_indices = np.random.choice(data_size, split_size, replace=False)
+        print("Using ",split_size," samples.")
     ## ---------
     # Extracting predictions with MAJORITY VOTE
     # I want to store the predictions in a categorical vector
@@ -651,7 +653,7 @@ def get_ensemble(models, data, models_names,
     for i in range(n_models):
         # extracting the data
         matrix = data[i]
-        x = matrix[random_indices,:] # selecting the first split only
+        x = matrix
         if not prediction_mode:
             x = matrix[random_indices, 0:-1]
             y = matrix[random_indices, -1]
@@ -675,6 +677,7 @@ def get_ensemble(models, data, models_names,
         from classifier import predictions_folder
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = predictions_folder + ensemble_name + "_predictions.csv"
+        prediction_classes[prediction_classes == 0] = -1
         to_save_format = np.dstack((np.arange(1, prediction_classes.size + 1), prediction_classes))[0]
         np.savetxt(os.path.join(abs_path, path), to_save_format, "%d,%d",
                    delimiter=",", header="Id,Prediction", comments='')

@@ -571,4 +571,31 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
 -**Trainable params**: 6,600,442
 
 
+
+#### Experiment 9 "CONVATT_ensemble"
+
+The first ensemble experiment. This was mainly a test of the ensemble function.<br>
+Note: the ensemble models can only be made of trained and saved models.
+
+- **Models used**: 
+
+        models_names = ["convolution_3_pool",
+                        "Attention_GRU_5heads_full"]
+                        
+- **Test results**: 
+    
+            Accuracy: 0.861653
+            Precision: 0.915895
+            Recall: 0.756796
+            F1 score: 0.828779
+            Cohens kappa: 0.714467
+            Confusion matrix: 
+            [[39512  2306]
+             [ 8070 25112]]
+             
+- **Kaggle lederboard score** : 0.83380
+
+    
+
+
                           
