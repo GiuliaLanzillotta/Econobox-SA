@@ -59,7 +59,7 @@ def ensemble_main():
         {
             "cell_type":"GRU",
             "num_layers":1,
-            "hidden_size":64,
+            "hidden_size":128,
             "optimizer":"adam",
             "dropout_rate":0.4,
             "use_normalization":True,
@@ -75,12 +75,14 @@ def ensemble_main():
                           data_locations,
                           models_build_params,
                           models_fun_params,
+                          random_percentage=0.03,
                           prediction_mode=False,
                           ensemble_name="CONVATT_ensemble")
 
 
 if __name__ == "__main__":
-
+    ensemble_main()
+    """
     build_params = {"optimizer": 'adam',
                     "metrics": ['accuracy'],
                     "adapter_size": 1,
@@ -108,4 +110,5 @@ if __name__ == "__main__":
                        build_params=build_params,
                        train_params=train_params,
                        model_specific_params=et_specific_params)
+                       """
 

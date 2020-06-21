@@ -588,6 +588,7 @@ def get_SVM_model(model_name,
 def get_ensemble(models, data, models_names,
                  models_build_params,
                  models_fun_params,
+                 random_percentage=1,
                  prediction_mode=False,
                  ensemble_name="ensemble"):
     """
@@ -609,6 +610,8 @@ def get_ensemble(models, data, models_names,
         :type models_build_params: list(dict)
     :param models_names: The names by which the models were stored.
         :type models_names: list(str)
+    :param random_percentage: the percentage of the data to use.
+        :type random_percentage: float in [0,1]
     :param ensemble_name: Unique identifier for the ensemble model.
     :param prediction_mode: Whether to load load the ensemble model to
         make (and save) predictions or to simply test it.
@@ -634,23 +637,27 @@ def get_ensemble(models, data, models_names,
         _models.append(model)
     ## ----------
     # Extracting the data
-    print("Making predictions.")
+    data_size = data[0].shape[0]
+    split_size = int(data_size*random_percentage)
+    random_indices = np.random.choice(data_size, split_size, replace=False)
+    print("Using ",split_size," samples.")
     ## ---------
     # Extracting predictions with MAJORITY VOTE
     # I want to store the predictions in a categorical vector
     # so that I can keep track of how many models voted for each
     # of the classes in each example
-    predictions = np.zeros(shape=(y.shape[0],2))
+    print("Making predictions.")
+    predictions = np.zeros(shape=(split_size,2))
     for i in range(n_models):
         # extracting the data
         matrix = data[i]
-        x = matrix
+        x = matrix[random_indices,:] # selecting the first split only
         if not prediction_mode:
-            x = matrix[:, 0:-1]
-            y = matrix[:, -1]
+            x = matrix[random_indices, 0:-1]
+            y = matrix[random_indices, -1]
         model = _models[i]
         # making predictions
-        y_pred = model.predict(x)
+        y_pred = model.model.predict(x)
         y_pred = np.reshape(y_pred, (x.shape[0],-1))
         if y_pred.shape[1]==2:
             # in this case we have probabilities for each class
@@ -748,6 +755,7 @@ def run_ensemble_pipeline(models,
                           models_build_params,
                           models_fun_params,
                           prediction_mode,
+                          random_percentage=1,
                           ensemble_name="ensemble"):
     #checks first
     assert len(data_locations)==len(models), \
@@ -767,6 +775,7 @@ def run_ensemble_pipeline(models,
                  models_names=models_names,
                  models_build_params=models_build_params,
                  models_fun_params=models_fun_params,
+                 random_percentage=random_percentage,
                  prediction_mode=prediction_mode,
                  ensemble_name=ensemble_name)
 

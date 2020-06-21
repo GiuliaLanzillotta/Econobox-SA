@@ -220,5 +220,3 @@ class BaseNN(ClassifierBase):
         path = models_store_path+self.name+"/"
         abs_path = os.path.abspath(os.path.dirname(__file__))
         self.model.load_weights(os.path.join(abs_path,path))
-
-        tf.keras.layers.Layer._la

@@ -164,7 +164,7 @@ Same as the above experiment, using 5 attention heads instead of 1.
         build_params = {
                 "cell_type":"GRU",
                 "num_layers":1,
-                "hidden_size":64,
+                "hidden_size":128,
                 "optimizer":"adam",
                 "dropout_rate":0.4,
                 "use_normalization":True,
