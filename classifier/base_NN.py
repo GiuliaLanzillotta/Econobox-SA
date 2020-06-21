@@ -134,9 +134,7 @@ class BaseNN(ClassifierBase):
 
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
-        print(type(x))
         preds = self.model.predict(x)
-        print("made it here")
         preds_classes = np.argmax(preds, axis=-1).astype("int")
         preds_classes[preds_classes == 0] = -1
         if save: self.save_predictions(preds_classes)

@@ -585,9 +585,98 @@ def get_SVM_model(model_name,
     return oursvm
 
 
-def get_ensemble():
-    #TODO: implement ensemble model.
-    pass
+def get_ensemble(models, data, models_names,
+                 models_build_params,
+                 models_fun_params,
+                 prediction_mode=False,
+                 ensemble_name="ensemble"):
+    """
+    Builds ensemble model of other sub-models.
+    Note: the sub-models need to be already trained and saved, as
+    we'll only load them here.
+    :param models: List of the sub-models' pipeline functions.
+        :type models: list
+    :param data: the data matrix to use to test the ensemble or to
+        make predictions.
+        :type data: numpy.ndarray
+    :param models_fun_params: list of dictionaries with the params to
+        pass to the model in the 'build' function.
+        :type models_fun_params: list(dict)
+    :param models_build_params: list of dictionaries with the params to
+        pass to the models' pipeline functions.
+        :type models_build_params: list(dict)
+    :param models_names: The names by which the models were stored.
+        :type models_names: list(str)
+    :param ensemble_name: Unique identifier for the ensemble model.
+    :param prediction_mode: Whether to load load the ensemble model to
+        make (and save) predictions or to simply test it.
+    :return: None
+    """
+    n_models = len(models)
+    assert n_models > 1, "Usage error: to make an ensemble you need more than one model"
+    ## ---------
+    # loading the models here
+    print("Loading the models to put in the ensemble.")
+    _models = []
+    for i in range(n_models):
+        model_fun = models[i]
+        model = model_fun(models_names[i],
+                          train_data=None,
+                          load_model=True,
+                          train_model=False,
+                          save_model=False,
+                          test_data=None,
+                          build_params=models_build_params[i],
+                          train_params=None,
+                          **models_fun_params[i])
+        _models.append(model)
+    ## ----------
+    # Extracting the data
+    x = data
+    if not prediction_mode:
+        print("Testing the ensemble.")
+        # extracting the data
+        x = data[:, 0:-1]
+        y = data[:, -1]
+    ## ---------
+    # Extracting predictions with MAJORITY VOTE
+    # I want to store the predictions in a categorical vector
+    # so that I can keep track of how many models voted for each
+    # of the classes in each example
+    predictions = np.zeros(shape=(y.shape[0],2))
+    for i in range(n_models):
+        model = _models[i]
+        # making predictions
+        y_pred = model.predict(x)
+        y_pred = np.reshape(y_pred, (x.shape[0],-1))
+        if y_pred.shape[1]==2:
+            # in this case we have probabilities for each class
+            # but what we want is the predicted class
+            y_pred = np.argmax(y_pred, axis=-1).astype("int")
+        from tensorflow.keras.utils import to_categorical
+        y_pred = to_categorical(y_pred)
+        predictions += y_pred
+    # Now extracting the majority vote simply using an argmax
+    prediction_classes = np.argmax(predictions, axis=-1).astype("int")
+    ## --------------
+    if prediction_mode:
+        # Saving predictions and exiting
+        from classifier import predictions_folder
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = predictions_folder + ensemble_name + "_predictions.csv"
+        to_save_format = np.dstack((np.arange(1, prediction_classes.size + 1), prediction_classes))[0]
+        np.savetxt(os.path.join(abs_path, path), to_save_format, "%d,%d",
+                   delimiter=",", header="Id,Prediction", comments='')
+        return 0
+    ## --------------
+    # Arrive here only if prediction_mode is off
+    # Finally testing
+    from classifier_base import ClassifierBase
+    ClassifierBase.score_model(true_classes=y,
+                               predicted_classes=prediction_classes,
+                               predicted_probabilities=None)
+
+
 
 def cross_validation(train_data, model_fun,
                      embedding_dim, model_name,

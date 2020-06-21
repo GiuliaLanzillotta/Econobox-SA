@@ -62,10 +62,12 @@ class ClassifierBase(object):
         kappa = cohen_kappa_score(true_classes, predicted_classes)
         print('Cohens kappa: %f' % kappa)
         # ROC AUC
-        auc = roc_auc_score(to_categorical(true_classes), predicted_probabilities)
-        print('ROC AUC: %f' % auc)
+        if not predicted_probabilities is None:
+            auc = roc_auc_score(to_categorical(true_classes), predicted_probabilities)
+            print('ROC AUC: %f' % auc)
         # confusion matrix
         matrix = confusion_matrix(true_classes, predicted_classes)
+        print("Confusion matrix: ")
         print(matrix)
 
 
@@ -81,7 +83,7 @@ class ClassifierBase(object):
         path = predictions_folder + self.name + "_predictions.csv"
         to_save_format = np.dstack((np.arange(1, predictions_array.size + 1), predictions_array))[0]
         np.savetxt(os.path.join(abs_path,path), to_save_format, "%d,%d",
-                   delimiter=",", header="Id,Prediction")
+                   delimiter=",", header="Id,Prediction", comments='')
 
 
     @abstractmethod
