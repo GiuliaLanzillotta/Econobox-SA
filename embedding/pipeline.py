@@ -150,9 +150,9 @@ def build_training_matrix(label,
                           embedding,
                           input_files=None,
                           label_values=None,
-                          aggregation_fun=sentence_embedding.sum_embeddings,
+                          aggregation_fun=sentence_embedding.embedize,
                           input_entries=sample_dimension,
-                          sentence_dimesion = embedding_dim,
+                          sentence_dimesion = 768,
                           output_location = matrix_train_location):
     """
     Builds a matrix that associates each tweet to its embedding representation.
@@ -194,12 +194,12 @@ def build_training_matrix(label,
                 if not label: line = line[3:] #cutting the first 3 characters if we're making
                 # predictions since the test data has enumerated lines.
 
-                sentence_emb = aggregation_fun(line,embedding,
-                                               max_len=sentence_dimesion).reshape(1, -1)
+                sentence_emb = aggregation_fun(line,embedding)
                                                             # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
                 if not label:output[counter, :] = sentence_emb
-                else:output[counter, :] = np.column_stack((sentence_emb, label_value))
+                else:
+                output[counter, :] = np.append(sentence_emb, np.array(label_value))
                 if l % 10000 == 0:
                     print(l)
                 counter += 1
@@ -249,7 +249,7 @@ def run_embedding_pipeline(no_embedding=False,
                            input_entries=sample_dimension,
                            output_location=matrix_train_location,
                            prediction_mode=False,
-                           glove=True):
+                           glove=False):
     """
     :param input_files: (list(str)) relative paths to the input files
     :param glove: (bool) whether to use Glove embedding (for now the only available one)
@@ -263,14 +263,14 @@ def run_embedding_pipeline(no_embedding=False,
     this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
-    glove = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
-                                load_from_file=True,
-                                load_Stanford=False,
-                                file_name="necessary_stanford.npz",
-                                train=False,
-                                save=True)
-    embedding_function = None # default parameter will be used
-    max_len = None          # //          //
+    #glove = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+    #                            load_from_file=True,
+    #                            load_Stanford=False,
+    #                            file_name="necessary_stanford.npz",
+    #                            train=False,
+    #                            save=True)
+    embedding_function = sentence_embedding.embedize # default parameter will be used
+    max_len = 768         # //          //
     if no_embedding:
         embedding_function = sentence_embedding.no_embeddings
         max_len = 50
@@ -283,7 +283,7 @@ def run_embedding_pipeline(no_embedding=False,
     input_paths = [os.path.join(abs_path,f) for f in input_files]
 
     build_training_matrix(label=not prediction_mode,
-                          embedding=glove,
+                          embedding='roberta-base',
                           aggregation_fun=embedding_function,
                           sentence_dimesion=max_len,
                           output_location=output_path,
