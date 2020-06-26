@@ -100,7 +100,7 @@ class etransformer_NN(BaseNN):
         normalized = norm(sub3_in)
         attention = lambda x: self.get_Attention(x)
         attention_applied = attention(normalized)
-        sub3_out = sub3_in + attention_applied
+        sub3_out = attention_applied
         ## -----------
         # sub-block 4
         sub4_in = sub3_out
@@ -119,8 +119,9 @@ class etransformer_NN(BaseNN):
                                         padding="same",
                                         data_format="channels_last")
         shallowed = shallow(deepened)
-        dense256 = tf.keras.layers.Dense(256)
+        dense256 = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(256))
         sub4_out = sub4_in + dense256(shallowed)
+
         return sub4_out
 
     def build(self, **kwargs):
@@ -144,7 +145,7 @@ class etransformer_NN(BaseNN):
                                               mask_zero=True,
                                               trainable=train_embedding)
         masking = tf.keras.layers.Masking(mask_value=0)
-        dense1 = tf.keras.layers.Dense(256, activation="linear") # increase dimension to match et block dimension
+        dense1 = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(256, activation="linear")) # increase dimension to match et block dimension
         et_block = self.get_et_block
         dense2 = tf.keras.layers.Dense(256, activation="relu")
         dense_final = tf.keras.layers.Dense(2, activation="linear")
@@ -155,7 +156,8 @@ class etransformer_NN(BaseNN):
         et_inputs = dense1(masked_inputs)
         for i in range(num_et_blocks):
             et_inputs = et_block(et_inputs)
-        flattened = tf.reshape(et_inputs, shape=[-1,256*timesteps])
+        print(tf.shape(et_inputs))
+        flattened = tf.reshape(et_inputs, shape=[-1,256*8])
         dense2_out = dense2(flattened)
         outputs = dense_final(dense2_out)
         ## -------------------

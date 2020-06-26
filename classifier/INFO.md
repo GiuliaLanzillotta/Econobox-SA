@@ -544,7 +544,14 @@ In its basic form, it uses 3 evolved transformer blocks to process the input seq
 <img alt="et block diagram" src="../data/assets/et_block.png" height="400"/>
 </div>  
 
-Note: still not able to run it : OOM error. 
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.83800
 - **Training details**:     
 Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
 <br>Also, trained with *Early Stopping* on. 
@@ -566,7 +573,32 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             "use_pretrained_embedding": True,
                             "num_et_blocks":1,
                             "max_len":50} # maximum length in the sequece
-                            
+-**Training performance**: 
+        600000/600000 [==============================] - 158s 263us/sample - loss: 0.3871 - accuracy: 0.8104 - val_loss: 0.3247 - val_accuracy: 0.8407
+        Epoch 2/10
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.3166 - accuracy: 0.8452 - val_loss: 0.3087 - val_accuracy: 0.8483
+        Epoch 3/10
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2994 - accuracy: 0.8554 - val_loss: 0.3032 - val_accuracy: 0.8541
+        Epoch 4/10
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2859 - accuracy: 0.8635 - val_loss: 0.2994 - val_accuracy: 0.8558
+        Epoch 5/10
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2727 - accuracy: 0.8710 - val_loss: 0.3015 - val_accuracy: 0.8568
+        Epoch 6/10
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2594 - accuracy: 0.8785 - val_loss: 0.3093 - val_accuracy: 0.8538                         
+
+
+- **Test results** : 
+        
+            Accuracy: 0.855693
+            Precision: 0.803328
+            Recall: 0.893576
+            F1 score: 0.846052
+            Cohens kappa: 0.710971
+            ROC AUC: 0.938761
+            Confusion matrix:
+                [[34437  7281]
+                 [ 3542 29740]]
+                                               
 -**Total params**: 41,207,642
 -**Trainable params**: 6,600,442
 

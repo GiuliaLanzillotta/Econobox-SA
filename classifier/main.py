@@ -27,9 +27,9 @@ bert_specific_params = {
 }
 
 et_specific_params = {
-    "number_of_embeddings":2,
-    "vocabularies":["full_vocab_in_stanford.pkl","vocab.pkl"],
-    "embedding_locations":["necessary_stanford.npz","glove+stanford.npz"]
+    "number_of_embeddings":1,
+    "vocabularies":["full_vocab_in_stanford.pkl"],
+    "embedding_locations":["necessary_stanford.npz"],
 }
 
 
@@ -81,8 +81,7 @@ def ensemble_main():
 
 
 if __name__ == "__main__":
-    ensemble_main()
-    """
+    #ensemble_main()
     build_params = {"optimizer": 'adam',
                     "metrics": ['accuracy'],
                     "adapter_size": 1,
@@ -97,18 +96,16 @@ if __name__ == "__main__":
                     "use_categorical": True}
 
     run_train_pipeline("ET_NN",
-                       "ET_2",
-                       load_model=False,
-                       prediction_mode=False,
+                       "ET_1",
+                       load_model=True,
+                       prediction_mode=True,
                        text_data_mode_on=False,
-                       data_location=replaced_zero_matrix_full_train_location,
+                       data_location=replaced_zero_matrix_test_location,
                        cv_on=False,
-                       choose_randomly=True,
+                       choose_randomly=False,
                        random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
                        build_params=build_params,
                        train_params=train_params,
                        model_specific_params=et_specific_params)
-                       """
-

@@ -79,7 +79,7 @@ class BaseNN(ClassifierBase):
         earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',
                                                               min_delta=0.0001,
                                                               patience=1)
-        learning_rate_scheduler = self.create_learning_rate_scheduler(max_learn_rate=1e-3,
+        learning_rate_scheduler = self.create_learning_rate_scheduler(max_learn_rate=1e-1,
                                                                       end_learn_rate=1e-7,
                                                                       warmup_epoch_count=20,
                                                                       total_epoch_count=10)
@@ -100,7 +100,9 @@ class BaseNN(ClassifierBase):
                                       epochs=epochs,
                                       batch_size=batch_size,
                                       validation_split=validation_split,
-                                      callbacks=[earlystop_callback, learning_rate_scheduler, tensorboard_callback],
+                                      callbacks=[earlystop_callback,
+                                                 #learning_rate_scheduler,
+                                                 tensorboard_callback],
                                       shuffle=True)
         else:
             # extracting relevant arguments

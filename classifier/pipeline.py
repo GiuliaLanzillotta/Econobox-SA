@@ -342,7 +342,6 @@ def get_ET_model(model_name,
     Creates a new instance of convolutional_NN
     Parameters:
     :param model_name: (str) the name of the model to create, or the name of the model to load.
-    :param embedding_dim: (int) dimension of the embedding space
     :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
             the embedding.pipeline.build_embedding_matrix method
     :param load_model: (bool) whether to load the model from file.
@@ -351,14 +350,6 @@ def get_ET_model(model_name,
     :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
     :param build_params: (dict) dictionary of parameters to pass to build the model
     :param train_params: (dict) dictionary of parameters to pass to build the model
-    :param kwargs: additional arguments
-        Arguments accepted:
-        - :arg load_embedding: (bool) whether to load an embedding matrix into the classifier
-            (if false, the classifier will learn the embedding from scratch)
-        - :arg embedding_location: (str) - only used if the above parameter is true- path to the
-            file that stores the embedding matrix
-        - :arg vocabulary: (str) vocabulary in use
-    :return: an instance of Vanilla_NN class
     """
     number_of_embeddings = kwargs.get("number_of_embeddings")
     vocabularies = kwargs.get("vocabularies")
@@ -402,7 +393,7 @@ def get_ET_model(model_name,
                              generator_mode=False,
                              **train_params)
     if save_model: my_transformer.save()
-    if test_data:
+    if test_data is not None:
         idx2word = None
         if number_of_embeddings==1: idx2word = load_inverse_vocab(vocabularies[0])
         x_test = test_data[:, 0:-1]
