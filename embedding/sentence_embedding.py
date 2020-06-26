@@ -83,7 +83,7 @@ def embedize(sentence, embedding):
     embedding = TransformerDocumentEmbeddings(embedding)
     embedding.embed(tweet)
     tweet_emb = tweet.get_embedding()
-    tweet_emb_np = tweet_emb.detach().numpy()
+    tweet_emb_np = tweet_emb.cpu().detach().numpy()
     return(tweet_emb_np)
 
 

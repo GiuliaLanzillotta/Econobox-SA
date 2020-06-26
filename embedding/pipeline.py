@@ -199,7 +199,7 @@ def build_training_matrix(label,
                 # Save the tweet in the output matrix
                 if not label:output[counter, :] = sentence_emb
                 else:
-                output[counter, :] = np.append(sentence_emb, np.array(label_value))
+                    output[counter, :] = np.append(sentence_emb, np.array(label_value))
                 if l % 10000 == 0:
                     print(l)
                 counter += 1
@@ -244,17 +244,29 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
     if save: gloVe_embedding.save_embedding()
     return gloVe_embedding
 
-def run_embedding_pipeline(no_embedding=False,
+embedding_funcs = {
+    "no_embedding":sentence_embedding.no_embeddings,
+    "sum_embeddings":sentence_embedding.sum_embeddings,
+    "transformer_emb":sentence_embedding.embedize
+}
+
+
+def run_embedding_pipeline(embedding_fun,
                            input_files=None,
                            input_entries=sample_dimension,
                            output_location=matrix_train_location,
                            prediction_mode=False,
-                           glove=False):
+                           glove=False,
+                           **kwargs):
     """
+    :param embedding_fun: (str) the name of the embedding function to use.
+        Only supported values at the moment:
+            - "no_embedding"
+            - "sum_embeddings"
+            - "transformer_emb"
     :param input_files: (list(str)) relative paths to the input files
     :param glove: (bool) whether to use Glove embedding (for now the only available one)
     :param output_location: (str) where to save the output matrix
-    :param no_embedding: (bool) whether to use the zero embedding function
     :param input_entries: (int) dimension of the input file
     :param prediction_mode : (bool) whether the system is in prediction mode (i.e. loading
             the test data)
@@ -263,34 +275,34 @@ def run_embedding_pipeline(no_embedding=False,
     this parameter can be used to switch btw the two."""
     # Get the embedding
     print("Embedding pipeline")
-    #glove = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
-    #                            load_from_file=True,
-    #                            load_Stanford=False,
-    #                            file_name="necessary_stanford.npz",
-    #                            train=False,
-    #                            save=True)
-    embedding_function = sentence_embedding.embedize # default parameter will be used
-    max_len = 768         # //          //
-    if no_embedding:
-        embedding_function = sentence_embedding.no_embeddings
-        max_len = 50
+    max_len = kwargs.get("max_len")
+    embedding_function = embedding_funcs[embedding_fun]
+    ## 1. extracting the embedding to use
+    if embedding_fun!="transformer_emb":
+        embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+                                        load_from_file=True,
+                                        load_Stanford=False,
+                                        file_name="necessary_stanford.npz",
+                                        train=False,
+                                        save=True)
+    else: embedding=kwargs.get("embedding", "roberta-base")
+    ## 2. resolving paths
     if prediction_mode:
         input_files = [test_location]
         input_entries = test_dimension
-    # resolving paths
     abs_path = os.path.abspath(os.path.dirname(__file__))
     output_path = os.path.join(abs_path,output_location)
     input_paths = [os.path.join(abs_path,f) for f in input_files]
 
     build_training_matrix(label=not prediction_mode,
-                          embedding='roberta-base',
+                          embedding=embedding,
                           aggregation_fun=embedding_function,
                           sentence_dimesion=max_len,
                           output_location=output_path,
                           input_entries=input_entries,
                           input_files=input_paths)
 
-    if no_embedding:
+    if embedding_fun=="no_embedding":
         print("Number of sentence cut-offs: ",sentence_embedding.count)
         print("Average frequency of in-vocabulary words: ", sentence_embedding.frequency/input_entries)
 
