@@ -17,6 +17,7 @@ bert_vocab_location= '../data/uncased_L-12_H-768_A-12/vocab.txt'
 bert_ckpt_file_location = "../data/uncased_L-12_H-768_A-12/bert_model.ckpt"
 bert_config_file_location = "../data/uncased_L-12_H-768_A-12/bert_config.json"
 
+predictions_folder = "../data/predictions/"
 sample_dimension = 200000
 full_dimension = 1250000*2
 test_dimension = 10000

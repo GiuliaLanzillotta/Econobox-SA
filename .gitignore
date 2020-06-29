@@ -10,11 +10,11 @@ venv
 ## ------------------------------
 ## DATA
 matrices
-train_matrix.npz
-replaced_zero_embedding_test_matrix.npz
-replaced_zero_embedding_train_matrix.npz
-zero_embedding_full_train_matrix.npz
-replaced_zero_embedding_full_train_matrix.npz
+data/training_matrices/train_matrix.npz
+data/training_matrices/replaced_zero_embedding_test_matrix.npz
+data/training_matrices/replaced_zero_embedding_train_matrix.npz
+data/training_matrices/zero_embedding_full_train_matrix.npz
+data/training_matrices/replaced_zero_embedding_full_train_matrix.npz
 data/twitter-datasets/
 ## ------------------------------
 ## EMBEDDINGS
@@ -41,16 +41,5 @@ classifiers/Attention_GRU_5heads_penalized/
 classifiers/GRU_128_conv/
 classifiers/Attention_GRU_penalised_convolution/
 classifiers/
-
-
-
-
-
-## -----------------------------
-## FLOYD STUFF
-.floydexpt
-.floydignore
-floyd.yml
-floyd_requirements.txt
 
 

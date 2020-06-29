@@ -138,9 +138,10 @@ class recurrent_NN(BaseNN):
                                               trainable=train_embedding)
         masking = tf.keras.layers.Masking(mask_value=0)
         recurrent_cell = self.get_cell(cell_type)
-        # Stacking num_layers recurrent layers
+        # recurrent layer
+        # we return the entire sequence only if we want to convolve it
         recurrent_layer = tf.keras.layers.Bidirectional(recurrent_cell(hidden_size,
-                                                                       return_sequences=True,
+                                                                       return_sequences=use_convolution,
                                                                        recurrent_dropout=dropout_rate),
                                                         merge_mode="concat",
                                                         name="RecurrentLayer")

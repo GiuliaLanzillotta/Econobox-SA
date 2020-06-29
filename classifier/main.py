@@ -82,30 +82,33 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-    build_params = {"optimizer": 'adam',
-                    "metrics": ['accuracy'],
-                    "adapter_size": 1,
-                    "train_embedding": False,
-                    "use_pretrained_embedding": True,
-                    "num_et_blocks":1,
-                    "max_len":50} # maximum length in the sequece
+
+    build_params = {
+        "cell_type": "GRU",
+        "num_layers": 1,
+        "hidden_size": 64,
+        "optimizer": "adam",
+        "dropout_rate": 0.4,
+        "use_normalization": True,
+        "use_attention":False,
+        "use_convolution":False}
 
     train_params = {"epochs": 10,
                     "batch_size": 1024,
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("ET_NN",
-                       "ET_1",
-                       load_model=True,
-                       prediction_mode=True,
+    run_train_pipeline("recurrent_NN",
+                       "recurrent_try",
+                       load_model=False,
+                       prediction_mode=False,
                        text_data_mode_on=False,
-                       data_location=replaced_zero_matrix_test_location,
+                       data_location=replaced_zero_matrix_full_train_location,
                        cv_on=False,
-                       choose_randomly=False,
+                       choose_randomly=True,
                        random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
                        build_params=build_params,
                        train_params=train_params,
-                       model_specific_params=et_specific_params)
+                       model_specific_params=recurrent_specific_params)
