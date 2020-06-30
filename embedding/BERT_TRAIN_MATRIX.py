@@ -29,7 +29,7 @@ class BERT_TM_PP():
     BERT neural network classifier"""
 
     def __init__(self, datalist, max_seq_length):
-        self.max_seq_length = max_seq_length
+        self.max_seq_len = max_seq_len
         self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=False)
         self.vocab_file = self.bert_layer.resolved_object.vocab_file.asset_path.numpy()
         self.do_lower_case = self.bert_layer.resolved_object.do_lower_case.numpy()
@@ -44,8 +44,8 @@ class BERT_TM_PP():
         self.input_segments = list(map(self.get_segments, self.stokenssep))
 
     def truncate_seqlength(self, stokenslist):
-        if (len(stokenslist) > self.max_seq_length):
-            stokenslist = stokenslist[:self.max_seq_length -2]
+        if (len(stokenslist) > self.max_seq_len):
+            stokenslist = stokenslist[:self.max_seq_len -2]
         return(stokenslist)
 
 
@@ -56,14 +56,14 @@ class BERT_TM_PP():
 
     def get_masks(self, stokenssep):
         """Mask for padding"""
-        if len(stokenssep) > self.max_seq_length:
+        if len(stokenssep) > self.max_seq_len:
             print(len(stokenssep))
             raise IndexError("Token length more than max seq length!")
-        return [1] * len(self.stokenssep) + [0] * (self.max_seq_length - len(self.stokenssep))
+        return [1] * len(self.stokenssep) + [0] * (self.max_seq_len - len(self.stokenssep))
 
     def get_segments(self, stokenssep):
         """Segments: 0 for the first sequence, 1 for the second"""
-        if len(stokenssep) > self.max_seq_length:
+        if len(stokenssep) > self.max_seq_len:
             raise IndexError("Token length more than max seq length!")
         segments = []
         current_segment_id = 0
@@ -71,12 +71,12 @@ class BERT_TM_PP():
             segments.append(current_segment_id)
             if token == "[SEP]":
                 current_segment_id = 1
-        return segments + [0] * (self.max_seq_length - len(stokenssep))
+        return segments + [0] * (self.max_seq_len - len(stokenssep))
 
     def get_ids(self, stokenssep):
         """Token ids from Tokenizer vocab"""
         token_ids = self.tokenizer.convert_tokens_to_ids(stokenssep)
-        input_ids = token_ids + [0] * (self.max_seq_length - len(token_ids))
+        input_ids = token_ids + [0] * (self.max_seq_len - len(token_ids))
         return input_ids
 
 
@@ -131,6 +131,6 @@ def get_BERT_TM(data, output_location, batch_size, max_seq_length=128):
 
 
 
-data = load_tweetDF()
+#data = load_tweetDF()
 
-get_BERT_TM(data, bert_matrix_train_location2, batch_size=100, max_seq_length=128)
+#get_BERT_TM(data, bert_matrix_train_location2, batch_size=100, max_seq_length=128)
