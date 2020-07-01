@@ -184,7 +184,7 @@ def build_training_matrix(label,
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # INITIALIZE ----------
-            num_lines = sum(1 for _ in f)
+            with open(file, encoding="utf8") as f2: num_lines = sum(1 for _ in f2)
             output = np.zeros((num_lines, out_dim1))
             # look at each line (=tweet)
             for l, line in enumerate(f):
