@@ -6,41 +6,40 @@ import os
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
 
-import embedding
+import data
 
 
-def random_split(input_path, split, shuffle=True):
+def random_split(input_path, split):
     """
-    Helper function to randomly split the data matrix into test and training.
-        The matrices will be saved as:
+    Helper function to randomly split a file into splits of size split*file_size.
+        The files will be saved as:
         input_path_split1 , ... , input_path_splitn,
         where n = round(1/split_size)
-    :param shuffle: boolean, whether to shuffle the data before splitting
     :param split: float btw 0 and 1 indicating the size of each split
     :param input_path: path to the input matrix (numpy compressed format)
     Note: not all the matrix has to be used.
     :return: None
     """
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    matrix = np.load(os.path.join(abs_path,input_path))['arr_0']
+    f = open(os.path.join(abs_path,input_path), encoding='utf8')
+    lines = f.readlines()
     # compute the size of the split
-    m = matrix.shape[0]
+    m = len(lines)
     split_size = int(split * m)
     n_splits = int(1/split)
-    print("Splitting the data in ",n_splits," splits, each with size ",split_size)
+    remainder = m%n_splits!=0
+    if remainder: n_splits+=1
+    print("Splitting the data in ",n_splits," splits, each with ",split_size, " lines.")
     # shuffling
-    indices = range(m)
-    if shuffle: indices = np.random.choice(m, m, replace=False)
     # creating the splts
     start = 0
-    for s in range(n_splits+1):
-        end = start+split_size
-        if s==n_splits: split_indices = indices[start:] # no cutting for the last split
-        else : split_indices = indices[start:end]
-        split_data = matrix[split_indices, : ]
-        # saving the data
-        name=input_path[:-4]+"_split{0}".format(s)+".npz"
-        np.savez(os.path.join(abs_path,name), split_data)
+    for s in range(n_splits):
+        if s==n_splits and remainder: new_lines = lines[int(start):] # no cutting for the last split
+        else : new_lines = lines[int(start):int(start + split_size)]
+        # saving the new_lines
+        name=input_path[:-4]+"_split{0}".format(s)+".txt"
+        with open(os.path.join(abs_path,name), mode="w") as f_out:
+            f_out.writelines(new_lines)
         # sliding the start pointer
         start += split_size
 
@@ -48,7 +47,7 @@ def random_split(input_path, split, shuffle=True):
 
 
 if __name__ =="__main__":
-    random_split(embedding.replaced_zero_matrix_full_train_location,split=0.2)
+    random_split(data.replaced_train_full_positive_location,split=0.2)
 
 
 

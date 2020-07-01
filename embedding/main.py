@@ -10,12 +10,14 @@ import embedding
 import data
 
 if __name__ == "__main__":
-    input_files = [data.replaced_train_full_negative_location,
-                   data.replaced_train_full_positive_location]
+    input_files = [data.replaced_train_full_negative_location[:-4]+"_split{0}".format(s)+".txt" for s in range(6)] +\
+                  [data.replaced_train_full_positive_location[:-4]+"_split{0}".format(s)+".txt" for s in range(5)]
+
     run_embedding_pipeline(embedding_fun="transformer_emb",
                            prediction_mode=False,
                            input_entries=data.full_dimension,
                            input_files=input_files,
+                           input_labels=[0 for i in range(6)] + [1 for i in range(5)],
                            output_location=embedding.roberta_full_matrix_train_location,
                            embedding="roberta-base",
                            max_len=768) # 768 for roberta, 50 for the no embedding function

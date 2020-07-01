@@ -73,8 +73,8 @@ def generate_training_matrix(embedding,
         for lv in label_values: labels+=[lv]*chunksize
         # embedding the sentence
         sentences_emb = [aggregation_fun(line, embedding,
-            max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
-                            # we reshape to make sure it is a row vector
+                                         max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
+        # we reshape to make sure it is a row vector
         # shuffling
         temp = list(zip(sentences_emb, labels))
         random.shuffle(temp)
@@ -134,8 +134,8 @@ def get_validation_data(embedding,
     for lv in label_values: labels+=[lv]*validation_size
     # embedding the sentence
     sentences_emb = [aggregation_fun(line, embedding,
-        max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
-                        # we reshape to make sure it is a row vector
+                                     max_len=sentence_dimesion).reshape(1, -1) for line in sentences]
+    # we reshape to make sure it is a row vector
     # shuffling
     temp = list(zip(sentences_emb, labels))
     random.shuffle(temp)
@@ -174,17 +174,18 @@ def build_training_matrix(label,
     if input_files is None:
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
-    # INITIALIZE ----------
+
     if label: out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
-    output = np.zeros((input_entries, out_dim1))
-
     # PROCESS THE FILES ----------
     counter = 0
     for i, file in enumerate(input_files):
         label_value = label_values[i]
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
+            # INITIALIZE ----------
+            num_lines = sum(1 for _ in f)
+            output = np.zeros((num_lines, out_dim1))
             # look at each line (=tweet)
             for l, line in enumerate(f):
                 # Get the tweet embedding from an helper function
@@ -195,18 +196,18 @@ def build_training_matrix(label,
                 # predictions since the test data has enumerated lines.
 
                 sentence_emb = aggregation_fun(line,embedding)
-                                                            # we reshape to make sure it is a row vector
+                # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
                 if not label:output[counter, :] = sentence_emb
-                else:
-                    output[counter, :] = np.append(sentence_emb, np.array(label_value))
+                else: output[counter, :] = np.append(sentence_emb, np.array(label_value))
+                # Save the output
+                output_name = output_location+"_{0}.{1}".format(i,label_value)
+                print("Saving ",output_name)
+                np.savez(output_name, output)
                 if l % 10000 == 0:
                     print(l)
                 counter += 1
     print("Number of lines read:",counter)
-    # Save the output
-    np.savez(output_location, output)
-    return output
 
 def get_glove_embedding(vocabulary_file="vocab.pkl",
                         cooc_file="cooc.pkl",
@@ -253,12 +254,14 @@ embedding_funcs = {
 
 def run_embedding_pipeline(embedding_fun,
                            input_files=None,
+                           input_labels=None,
                            input_entries=sample_dimension,
                            output_location=matrix_train_location,
                            prediction_mode=False,
                            glove=False,
                            **kwargs):
     """
+    :param input_labels: (list of ints) list of input labels
     :param embedding_fun: (str) the name of the embedding function to use.
         Only supported values at the moment:
             - "no_embedding"
@@ -274,6 +277,8 @@ def run_embedding_pipeline(embedding_fun,
     embedding is implemented. When a new embedding will be at disposal
     this parameter can be used to switch btw the two."""
     # Get the embedding
+    if input_labels is None:
+        input_labels = [0, 1]
     print("Embedding pipeline")
     max_len = kwargs.get("max_len")
     embedding_function = embedding_funcs[embedding_fun]
@@ -295,6 +300,7 @@ def run_embedding_pipeline(embedding_fun,
     input_paths = [os.path.join(abs_path,f) for f in input_files]
 
     build_training_matrix(label=not prediction_mode,
+                          label_values=input_labels,
                           embedding=embedding,
                           aggregation_fun=embedding_function,
                           sentence_dimesion=max_len,
