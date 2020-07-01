@@ -20,5 +20,5 @@ if __name__ == "__main__":
                            input_labels=[0 for i in range(6)] + [1 for i in range(5)],
                            output_location=embedding.roberta_full_matrix_train_location,
                            embedding="roberta-base",
-                           max_len=768) # 768 for roberta, 50 for the no embedding function
+                           max_len=200) # 768 for roberta, 50 for the no embedding function, 200 Glove
     exit(0)

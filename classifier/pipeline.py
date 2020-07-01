@@ -16,8 +16,11 @@ from embedding import bert_matrix_train_location
 from embedding.sentence_embedding import  no_embeddings
 from data import replaced_train_negative_location, replaced_train_positive_location, \
     full_dimension
+from data import train_positive_location, train_negative_location
+from data import replaced_train_full_negative_location, replaced_train_full_positive_location
 from data import tweetDF_location
-from data import testDF_location
+from preprocessing.tweetDF import load_predDF
+from preprocessing.tweetDF import get_tweet_df
 import embedding
 import numpy as np
 import os
@@ -82,7 +85,7 @@ def get_vanilla_model(model_name,
 
 def get_BERT_model(model_name,
                    embedding_dim = embedding.embedding_dim,
-                   max_seq_length = 128,
+                   max_seq_len = 128,
                    train_data=None,
                    load_model=False,
                    train_model=False,
@@ -116,9 +119,10 @@ def get_BERT_model(model_name,
         :return: an instance of BERT_NN class
         """
 
-    ourBERT = BERT_NN(max_seq_length,embedding_dim,model_name)
+    ourBERT = BERT_NN(max_seq_len,embedding_dim,model_name)
     ourBERT.build(**build_params)
     if load_model: ourBERT.load()
+    print("train model", train_model)
     if train_model:
         x_train = train_data.train_x
         y_train = train_data.train_y
@@ -187,7 +191,7 @@ def get_recurrent_model(model_name,
     # Opening pre-trained embedding matrix
     load_embedding = kwargs.get("load_embedding")
     embedding_name = kwargs.get("embedding_location","glove_emb.npz")
-    generator_mode = kwargs.get("generator_mode", False)
+    generator_mode = kwargs.get("generator_mode", True)
     max_len = kwargs.get("max_len",100)
     if load_embedding:
         glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
@@ -212,13 +216,14 @@ def get_recurrent_model(model_name,
     # Training, testing and saving
     if train_model:
         x_train, y_train = None, None
+        print("generator mode ", generator_mode)
         if not generator_mode:
             x_train = train_data[:, 0:-1]
             y_train = train_data[:, -1]
 
         generator_params = {
             "embedding": glove_embedding,
-            "input_files":[replaced_train_negative_location,replaced_train_positive_location],
+            "input_files":[train_negative_location,train_positive_location],
             "input_entries":full_dimension,
             "max_len":max_len
         }
@@ -435,6 +440,7 @@ def get_LR_model(model_name,
     ourLR = LR_classi(embedding_dim, model_name)
     ourLR.build(**build_params)
     if load_model: ourLR.load()
+
     if train_model:
         x_train = train_data[:, 0:-1]
         y_train = train_data[:, -1]
@@ -449,8 +455,8 @@ def get_LR_model(model_name,
 def get_RandomForest_model(model_name,
                   embedding_dim=embedding.embedding_dim,
                   train_data=None,
-                  load_model=False,
-                  train_model=True,
+                  load_model=True,
+                  train_model=False,
                   save_model=True,
                   test_data=None,
                   build_params=None,
@@ -475,19 +481,58 @@ def get_RandomForest_model(model_name,
                Example : {validation_split:0.2}
        :return: an instance of RF_classi class
        """
+
+    vocabulary = kwargs.get("vocabulary")
+    if not vocabulary: vocabulary = standard_vocab_name
+    vocab_dim = get_vocab_dimension(vocabulary)
+
+    load_embedding = kwargs.get("load_embedding",True)
+    embedding_name = kwargs.get("embedding_location", "glove_emb.npz")
+    generator_mode = kwargs.get("generator_mode", True)
+    max_len = kwargs.get("max_len", 100)
+    if load_embedding:
+        glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
+                                              load_from_file=True,
+                                              load_Stanford=False,
+                                              # no need to reload the stanford embedding when we already load the embedding matrix from file
+                                              file_name=embedding_name,
+                                              train=False,
+                                              save=False)
+        embedding_matrix = glove_embedding.embedding_matrix
+
     ourRF = RF_classi(embedding_dim, model_name)
+
     ourRF.build(**build_params)
     if load_model: ourRF.load()
+
     if train_model:
-        x_train = train_data[:, 0:-1]
-        y_train = train_data[:, -1]
-        ourRF.train(x_train, y_train)
+        print("train_model", train_model)
+        x_train, y_train = None, None
+        if not generator_mode:
+            print(generator_mode)
+            x_train = train_data[:, 0:-1]
+            y_train = train_data[:, -1]
+
+        generator_params = {
+            "embedding": glove_embedding,
+            "input_files": [replaced_train_negative_location, replaced_train_positive_location],
+            "input_entries": full_dimension,
+            "max_len": max_len
+        }
+
+        ourRF.train(x_train, y_train,
+                        generator_mode=generator_mode,
+                        **generator_params,
+                        **train_params)
+    if save_model: ourRF.save()
+
     if test_data is not None:
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
         ourRF.test(x_test, y_test)
     if save_model: ourRF.save()
     return ourRF
+
 
 def get_Adaboost_model(model_name,
                   embedding_dim=embedding.embedding_dim,
@@ -775,12 +820,12 @@ def run_ensemble_pipeline(models,
 
 def run_train_pipeline(model_type,
                        model_name,
-                       prediction_mode=False,
-                       load_model=False,
+                       prediction_mode=True,
+                       load_model=True,
                        text_data_mode_on = True,
                        choose_randomly=False,
                        random_percentage=0.1,
-                       data_location=testDF_location,
+                       data_location=None,
                        generator_mode=False,
                        cv_on=False,
                        test_data_location=None,
@@ -827,18 +872,21 @@ def run_train_pipeline(model_type,
     # DATA LOADING
     data_matrix = None
     test_matrix = None
+    print("prediction mode", prediction_mode)
+    print("text_data_mode", text_data_mode_on)
     if text_data_mode_on:
-        max_seq_length = model_specific_params.get("max_seq_length",128)
-        data_matrix = PP_BERT_Data(load_tweetDF(), classes=[0,1], max_seq_length=max_seq_length,
+        max_seq_len = model_specific_params.get("max_seq_len",128)
+        data_matrix = PP_BERT_Data(get_tweet_df(inputfiles=[train_positive_location, train_negative_location], random_percentage=0.3), classes=[0,1], max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode)
         if prediction_mode:
-            data_matrix = PP_BERT_Data(load_testDF(),classes=[0,1], max_seq_length=max_seq_length,
+            data_matrix = PP_BERT_Data(load_predDF(),classes=[0,1], max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode )
             data_matrix = data_matrix.pred_x
     if not text_data_mode_on and not generator_mode:
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         if choose_randomly and not prediction_mode:
+
             data_matrix, test_matrix = random_split(data_matrix, random_percentage, random_percentage*0.1)
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']
@@ -859,7 +907,8 @@ def run_train_pipeline(model_type,
                      train_params=train_params,
                      **model_specific_params)
     if prediction_mode:
-       model.make_predictions(data_matrix, save=True)
+        print(type(model))
+        model.make_predictions(data_matrix, save=True)
     return model
 
 

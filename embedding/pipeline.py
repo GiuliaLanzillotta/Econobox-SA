@@ -1,5 +1,5 @@
 # Offers the embedding pipeline methods
-from embedding import embedding_dim, matrix_train_location
+from embedding import embedding_dim, matrix_train_location, matrix_test_location
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
@@ -49,6 +49,7 @@ def generate_training_matrix(embedding,
     aggregation function will require the same dimensionality of the embeddings.
     :return: a tuple (x, y)
     """
+    print("in generate train matrix")
     if label_values is None:
         label_values = [0, 1]
     if input_files is None:
@@ -152,7 +153,7 @@ def build_training_matrix(label,
                           label_values=None,
                           aggregation_fun=sentence_embedding.embedize,
                           input_entries=sample_dimension,
-                          sentence_dimesion = 768,
+                          sentence_dimesion = 200,
                           output_location = matrix_train_location):
     """
     Builds a matrix that associates each tweet to its embedding representation.
@@ -232,6 +233,7 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
     :param train_eta: training learning rate
     :return:
     """
+    print("In get glove embedding")
     vocab = load_vocab(vocabulary_file)
     if file_name is None: file_name = "glove_emb.npz"
     gloVe_embedding = GloVeEmbedding(file_name,
@@ -256,9 +258,9 @@ def run_embedding_pipeline(embedding_fun,
                            input_files=None,
                            input_labels=None,
                            input_entries=sample_dimension,
-                           output_location=matrix_train_location,
-                           prediction_mode=False,
-                           glove=False,
+                           output_location=matrix_test_location,
+                           prediction_mode=True,
+                           glove=True,
                            **kwargs):
     """
     :param input_labels: (list of ints) list of input labels
@@ -283,6 +285,7 @@ def run_embedding_pipeline(embedding_fun,
     max_len = kwargs.get("max_len")
     embedding_function = embedding_funcs[embedding_fun]
     ## 1. extracting the embedding to use
+    print(embedding_fun)
     if embedding_fun!="transformer_emb":
         embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
                                         load_from_file=True,

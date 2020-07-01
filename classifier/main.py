@@ -4,7 +4,9 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
 from embedding import zero_matrix_train_location, zero_matrix_test_location, \
     zero_matrix_full_train_location, replaced_zero_matrix_full_train_location, \
-    replaced_zero_matrix_test_location, replaced_zero_matrix_train_location
+    replaced_zero_matrix_test_location, replaced_zero_matrix_train_location,\
+    matrix_train_location, matrix_test_location
+from embedding import matrix_test_location2
 from data import tweetDF_location
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline
 
@@ -17,13 +19,17 @@ recurrent_specific_params = {
     "vocabulary":"full_vocab_in_stanford.pkl",
     "load_embedding":True,
     "embedding_location":"necessary_stanford.npz",
-    "generator_mode":False,
+    "generator_mode":True,
     "max_len":100
 }
 
 
 bert_specific_params = {
-    "max_seq_length":50
+    "max_seq_len":128
+}
+
+rf_specific_params = {
+
 }
 
 et_specific_params = {
@@ -82,33 +88,31 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-
-    build_params = {
-        "cell_type": "GRU",
-        "num_layers": 1,
-        "hidden_size": 64,
-        "optimizer": "adam",
-        "dropout_rate": 0.4,
-        "use_normalization": True,
-        "use_attention":False,
-        "use_convolution":False}
+    build_params = {"optimizer": 'adam',
+                    "metrics": ['accuracy'],
+                    "adapter_size": 1,
+                    "train_embedding": False,
+                    "use_pretrained_embedding": True,
+                    "cell_type":"GRU",
+                    "num_et_blocks":1,
+                    "max_len":128} # maximum length in the sequece
 
     train_params = {"epochs": 10,
                     "batch_size": 1024,
                     "validation_split": 0.2,
-                    "use_categorical": True}
+                    "use_categorical": False}
 
-    run_train_pipeline("recurrent_NN",
-                       "recurrent_try",
-                       load_model=False,
-                       prediction_mode=False,
+    run_train_pipeline("LR_classi",
+                       "ourLR1",
+                       load_model=True,
+                       prediction_mode=True,
                        text_data_mode_on=False,
-                       data_location=replaced_zero_matrix_full_train_location,
+                       data_location=matrix_test_location2,
                        cv_on=False,
-                       choose_randomly=True,
+                       choose_randomly=False,
                        random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
                        build_params=build_params,
-                       train_params=train_params,
-                       model_specific_params=recurrent_specific_params)
+                       train_params=None,
+                       model_specific_params=rf_specific_params)

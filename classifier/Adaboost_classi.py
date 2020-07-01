@@ -55,15 +55,14 @@ class Adaboost_classi(ClassifierBase):
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
         preds = self.model.predict(x)
-        preds_classes = np.argmax(preds, axis=-1).astype("int")
-        preds_classes[preds_classes == 0] = -1
-        if save: self.save_predictions(preds_classes)
+        preds[preds == 0] = -1
+        if save: self.save_predictions(preds)
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self, 'ourADA.pkl')
+        _joblib.dump(self.model, 'ourADA.pkl')
 
     def load(self, **kwargs):
         print("Loading model")

@@ -52,11 +52,19 @@ class LR_classi(ClassifierBase):
         score = f1_score(y, y_pred)
         return(score)
 
+    def make_predictions(self, x, save=True, **kwargs):
+        print("Making predictions")
+        preds = self.model.predict(x)
+        preds[preds == 0] = -1
+        if save: self.save_predictions(preds)
+
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self, 'ourLR.pkl')
+        _joblib.dump(self.model, 'ourLR.pkl')
+
+
 
     def load(self, **kwargs):
         print("Loading model")

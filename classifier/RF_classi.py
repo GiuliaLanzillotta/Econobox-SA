@@ -6,6 +6,8 @@ from sklearn.utils import _joblib
 import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
+from embedding.pipeline import generate_training_matrix
+from embedding.pipeline import get_glove_embedding
 
 class RF_classi(ClassifierBase):
     """Random Forest classifier"""
@@ -50,10 +52,24 @@ class RF_classi(ClassifierBase):
         """
         Training the model and saving the history of training
         """
+        generator_mode = kwargs.get("generator_mode")
         print("Training model")
-        self.history = self.model.fit(x,y)
-        crosvalscore = cross_val_score(self.model, x, y, cv=5)
-        print(crosvalscore)
+
+        if generator_mode:
+            embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+                                            load_from_file=True,
+                                            load_Stanford=False,
+                                            file_name="necessary_stanford.npz",
+                                            train=False,
+                                            save=True)
+            for chunk in generate_training_matrix(embedding=embedding):
+                self.history = self.model.fit(chunk[0],chunk[1])
+
+
+        else:
+            self.history = self.model.fit(x,y)
+            crossvalscore = cross_val_score(self.model,x,y, cv=5)
+            print(crossvalscore)
 
     def test(self, x,y, **kwargs):
         print("Testing model")
@@ -64,17 +80,17 @@ class RF_classi(ClassifierBase):
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
         preds = self.model.predict(x)
-        preds_classes = np.argmax(preds, axis=-1).astype("int")
-        preds_classes[preds_classes == 0] = -1
-        if save: self.save_predictions(preds_classes)
+        preds[preds == 0] = -1
+        if save: self.save_predictions(preds)
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self, 'ourRF.pkl')
+        _joblib.dump(self.model, 'ourRF.pkl')
 
     def load(self, **kwargs):
         print("Loading model")
         path = models_store_path+self.name
         self.model = _joblib.load('ourRF.pkl')
+        print(type(self.model))
