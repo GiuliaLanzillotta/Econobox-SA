@@ -128,7 +128,7 @@ class recurrent_NN(BaseNN):
         ## ---------------------
         # Note the shape parameter must not include the batch size
         # Here None stands for the timesteps
-        inputs = tf.keras.layers.Input(shape=(50,), dtype='int32')
+        inputs = tf.keras.layers.Input(shape=(None,), dtype='int32')
         weights = None
         if use_pretrained_embedding: weights = [self.embedding_matrix]
         embedding = tf.keras.layers.Embedding(input_dim=self.vocabulary_dim,
@@ -139,12 +139,20 @@ class recurrent_NN(BaseNN):
         masking = tf.keras.layers.Masking(mask_value=0)
         recurrent_cell = self.get_cell(cell_type)
         # recurrent layer
+        recurrents = []
+        for i in range(num_layers-1):
+            layer = tf.keras.layers.Bidirectional(recurrent_cell(hidden_size,
+                                                                 return_sequences=True,
+                                                                 recurrent_dropout=dropout_rate),
+                                                  merge_mode="concat",
+                                                  name="RecurrentLayer{0}".format((i+1)))
+            recurrents.append(layer)
         # we return the entire sequence only if we want to convolve it
         recurrent_layer = tf.keras.layers.Bidirectional(recurrent_cell(hidden_size,
                                                                        return_sequences=use_convolution,
                                                                        recurrent_dropout=dropout_rate),
                                                         merge_mode="concat",
-                                                        name="RecurrentLayer")
+                                                        name="RecurrentLayer{0}".format(num_layers))
         if use_convolution:
             convolutions = self.build_convolutions(dilation_rate=dilation_rate,
                                                    initial_filter_size=hidden_size*2,
@@ -164,7 +172,10 @@ class recurrent_NN(BaseNN):
         ## CONNECTING THE GRAPH
         embedded_inputs = embedding(inputs)
         masked_inputs = masking(embedded_inputs)
-        recurrent_output = recurrent_layer(masked_inputs)
+        recurrent_in = masked_inputs
+        for i in range(num_layers-1):
+            recurrent_in = recurrents[i](recurrent_in)
+        recurrent_output = recurrent_layer(recurrent_in)
         dropped_out = dropout(recurrent_output)
         flattened = tf.reshape(dropped_out, shape=[-1, hidden_size*2])
         if use_convolution:

@@ -886,7 +886,6 @@ def run_train_pipeline(model_type,
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         if choose_randomly and not prediction_mode:
-
             data_matrix, test_matrix = random_split(data_matrix, random_percentage, random_percentage*0.1)
     if test_data_location is not None:
         test_matrix = np.load(os.path.join(abs_path, test_data_location))['arr_0']

@@ -69,6 +69,40 @@ training.
                     "dropout_rate":0.4,
                     "use_normalization":True}
 
+#### Experiment 1.2 : "Recurrent_2L_GRU"
+- **Structure**: same as above, just using 2 recurrent layers. 
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.83800
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+        np.random.seed(42)
+        
+        train_params = {"epochs": 10,
+                        "batch_size": 1024,
+                        "validation_split": 0.2,
+                        "use_categorical": True}
+                        
+- **Other build details**: 
+
+        build_params = {"train_embedding": False,
+                        "use_pretrained_embedding": True,
+                        "cell_type":"GRU",
+                        "num_layers":2,
+                        "hidden_size":64,
+                        "optimizer":"adam",
+                        "dropout_rate":0.4,
+                        "use_normalization":True
+                        }
+
+
+
 #### Experiment 2 : "Recurrent_1L_LSTM"
 Same experiment as above, using LSTM cells instead of GRU.
 - **Performance**: 
@@ -461,7 +495,58 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
  
  - **Trainable params**: 852,386
 
-                            
+
+#### Experiment 6.2 : "convolution_10_pool"
+
+Same as above, with 10 convolutions.
+
+
+- **Vocabulary used**: full_vocab_in_stanford.pkl
+- **Embedding**: Necessary Stanford
+- **Using pre-trained embedding**: True
+- **Trained embedding further**: False
+- **Input text replacement**: Stanford replacer
+- **Input text lemmatization**:False
+- **Kaggle lederboard score** : 0.52480 - we should double check here, there might be something wrong with the experiment.
+- **Performance - batch size = 1024**: 
+
+- **Test results** : Still running 
+        
+     
+- **Model worst mistakes**:<br>
+
+
+- **Training details**:     
+Trained on 600000 samples, validated against 150000 samples and tested against 75000 samples. 
+<br>Also, trained with *Early Stopping* on. 
+
+            np.random.seed(42)
+            
+            train_params = {"epochs":10,
+                            "batch_size":128,
+                            "validation_split":0.2,
+                            "use_categorical":True}
+            
+                         
+- **Other build details**: 
+
+            build_params = {"train_embedding": False,
+                            "use_pretrained_embedding": True,
+                            "use_pooling": True,
+                            "pooling_type": "max",
+                            "num_convolutions": 10,
+                            "window_size": 5,
+                            "dilation_rate": 1,  # no dilation
+                            "pool_size": 2,
+                            "hidden_size": 128,
+                            "dropout_rate": 0.4,
+                            "use_normalization": True,
+                            "optimizer": "adam"
+                            }
+ 
+ - **Trainable params**: 852,386
+
+                                          
                             
 
 #### Experiment 7 : "GRU_128_conv"
@@ -573,6 +658,7 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             "use_pretrained_embedding": True,
                             "num_et_blocks":1,
                             "max_len":50} # maximum length in the sequece
+
 -**Training performance**: 
         600000/600000 [==============================] - 158s 263us/sample - loss: 0.3871 - accuracy: 0.8104 - val_loss: 0.3247 - val_accuracy: 0.8407
         Epoch 2/10

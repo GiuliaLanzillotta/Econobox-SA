@@ -6,7 +6,6 @@ from embedding import zero_matrix_train_location, zero_matrix_test_location, \
     zero_matrix_full_train_location, replaced_zero_matrix_full_train_location, \
     replaced_zero_matrix_test_location, replaced_zero_matrix_train_location,\
     matrix_train_location, matrix_test_location
-from embedding import matrix_test_location2
 from data import tweetDF_location
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline
 
@@ -88,31 +87,33 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-    build_params = {"optimizer": 'adam',
-                    "metrics": ['accuracy'],
-                    "adapter_size": 1,
-                    "train_embedding": False,
+
+    build_params = {"train_embedding": False,
                     "use_pretrained_embedding": True,
                     "cell_type":"GRU",
-                    "num_et_blocks":1,
-                    "max_len":128} # maximum length in the sequece
+                    "num_layers":2,
+                    "hidden_size":64,
+                    "optimizer":"adam",
+                    "dropout_rate":0.4,
+                    "use_normalization":True
+                    } # maximum length in the sequece
 
     train_params = {"epochs": 10,
                     "batch_size": 1024,
                     "validation_split": 0.2,
-                    "use_categorical": False}
+                    "use_categorical": True}
 
-    run_train_pipeline("LR_classi",
-                       "ourLR1",
-                       load_model=True,
-                       prediction_mode=True,
+    run_train_pipeline("recurrent_NN",
+                       "Recurrent_2L_GRU",
+                       load_model=False,
+                       prediction_mode=False,
                        text_data_mode_on=False,
-                       data_location=matrix_test_location2,
+                       data_location=replaced_zero_matrix_full_train_location,
                        cv_on=False,
-                       choose_randomly=False,
+                       choose_randomly=True,
                        random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
                        build_params=build_params,
                        train_params=None,
-                       model_specific_params=rf_specific_params)
+                       model_specific_params=recurrent_specific_params)
