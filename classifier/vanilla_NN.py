@@ -36,6 +36,7 @@ class vanilla_NN(ClassifierBase):
 
 
         self.model = Sequential()
+        
         self.model.add(Dense(units=64, activation=activation,
                              input_dim=self.input_dim, name="Dense1"))
         self.model.add(Dense(units=64, activation=activation,

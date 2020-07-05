@@ -41,8 +41,10 @@ class TweetDataset():
                  buffer_size=1000,
                  vocabulary=None,
                  max_len=100,
-                 validation_size=1000):
+                 validation_size=1000,
+                 encode_text=False):
         """
+        :param encode_text: (bool)
         :param max_len: maximum length of the input sequence
             :type max_len: int
         :param validation_size
@@ -64,9 +66,10 @@ class TweetDataset():
         self.buffer_size = buffer_size
         self.labels = labels
         self.dataset = self.load_dataset(labels)
-        if not vocabulary: vocabulary=standard_vocab_name
-        self.vocab = get_vocabulary(vocabulary)
-        self.encode_text(self.vocab)
+        if encode_text:
+            if not vocabulary: vocabulary=standard_vocab_name
+            self.vocab = get_vocabulary(vocabulary)
+            self.encode_text(self.vocab)
         if self.labels:
             train, validate = self.split_dataset(batch_size, validation_size, max_len)
             print("Caching.")

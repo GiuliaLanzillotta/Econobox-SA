@@ -120,7 +120,7 @@ class recurrent_NN(BaseNN):
         metrics = kwargs.get("metrics",['accuracy'])
         optim = kwargs.get("optimizer","sgd")
         # CONVOLUTION parameters [only used is use_convolution is True]
-        use_convolution = kwargs.get("use_convolution", True)
+        use_convolution = kwargs.get("use_convolution", False)
         num_conv_layers = kwargs.get("num_conv_layers")
         threshold_channels = kwargs.get("threshold_channels",600)
         dilation_rate = kwargs.get("dilation_rate", 1)  # note: dilation_rate = 1 means no dilation
