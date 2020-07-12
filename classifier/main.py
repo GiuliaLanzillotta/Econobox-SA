@@ -109,8 +109,8 @@ if __name__ == "__main__":
 
     run_train_pipeline("HF_BERT_NN",
                        "HF_BERT_NN_T2",
-                       load_model=False,
-                       prediction_mode=False,
+                       load_model=True,
+                       prediction_mode=True,
                        text_data_mode_on=False,
                        data_location=None,
                        cv_on=False,

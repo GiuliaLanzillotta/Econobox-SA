@@ -932,8 +932,10 @@ def run_train_pipeline(model_type,
     print("prediction mode", prediction_mode)
     print("text_data_mode", text_data_mode_on)
     if tensorflow_dataset_mode_on:
-        data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location, train_negative_location], labels=[0,1], encode_text=False, do_padding=False)
-
+        if prediction_mode:
+            pass
+        else:
+            data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location, train_negative_location], labels=[0,1], encode_text=False, do_padding=False)
 
     if text_data_mode_on:
         max_seq_len = model_specific_params.get("max_seq_len",128)
