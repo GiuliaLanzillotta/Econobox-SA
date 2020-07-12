@@ -91,7 +91,7 @@ class TweetDataset():
             if self.do_padding:
                 self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
             else:
-                self.dataset =
+                self.pred_data = self.dataset.shuffle(self.buffer_size)
 
     def load_dataset(self, labels):
         """
@@ -104,32 +104,33 @@ class TweetDataset():
         print("Loading the dataset.")
         ## READING TEXT FILES
         abs_path = os.path.abspath(os.path.dirname(__file__))
+        print('before crash')
+        for f in self.input_files:
+            print(f)
         paths = [os.path.join(abs_path, f) for f in self.input_files]
+        print('after crash')
         datasets = []
         for path in paths:
             datasets.append(tf.data.TextLineDataset(path))
             #print(type(tf.data.TextLineDataset(path)))
         ## ADDING LABELS (if requested)
+        print("labels", labels)
         if labels:
             assert len(labels) == len(self.input_files)
             for i in range(len(datasets)):
                 datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0), tf.expand_dims(tf.one_hot(labels[i], 2), axis=0)))
-        ##MERGING the datasets
-        dataset_final = datasets[0]
-        #for dataset in datasets:
-        #    print(dataset)
-        #    dataset_final = dataset_final.concatenate(dataset)
-        #dataset_final = datasets[0]
-        if len(datasets) != 1:
+
+            dataset_final = datasets[0]
             dataset_final = dataset_final.concatenate(datasets[1])
-        ##SHUFFLE
-        dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
-        #for num, _ in enumerate(dataset_final):
-        #    pass
+            dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
+            return dataset_final
 
-        #print(f'Number of elements: {num}')
 
-        return dataset_final
+        if labels==None:
+            dataset_final = datasets[0]
+            dataset_final = dataset_final.map(lambda line: (tf.expand_dims(line, axis=0)))
+            dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
+            return dataset_final
 
     def encode_text(self, vocabulary):
         """Helper function to transform string tokens into integers."""
@@ -191,10 +192,10 @@ class TweetDataset():
                test_data.prefetch(self.buffer_size)
 
 
-cool_dataset = TweetDataset(input_files=[test_location], labels=None, encode_text=False, do_padding=False)
+#cool_dataset = TweetDataset(input_files=[test_location], labels=None, encode_text=False, do_padding=False)
 
 
-for num, _ in enumerate(cool_dataset):
-    pass
+#for num, _ in enumerate(cool_dataset.pred_data):
+#    pass
 
-print(f'Number of elements: {num}')
+#print(f'Number of elements: {num}')
