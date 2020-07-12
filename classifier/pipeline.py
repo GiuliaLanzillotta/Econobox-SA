@@ -1,6 +1,7 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
-from classifier.BERT_NN import BERT_NN
+#from classifier.BERT_NN import BERT_NN
+from classifier.HUGGINGFACE_BERT_NN import HF_BERT_NN
 from classifier.recurrent_NN import recurrent_NN, attention_NN
 from classifier.convolutional_NN import convolutional_NN
 from classifier.SVM_classi import SVM_classi
@@ -19,6 +20,7 @@ from data import replaced_train_negative_location, replaced_train_positive_locat
 from data import train_positive_location, train_negative_location
 from data import replaced_train_full_negative_location, replaced_train_full_positive_location
 from data import tweetDF_location
+from data import tweets_data
 from preprocessing.tweetDF import load_predDF
 from preprocessing.tweetDF import get_tweet_df
 import embedding
@@ -134,6 +136,59 @@ def get_BERT_model(model_name,
     if save_model: ourBERT.save()
     return ourBERT
 
+def get_HF_BERT_model(model_name,
+                      embedding_dim=embedding.embedding_dim,
+                      max_len = 50,
+                      train_data=None,
+                      load_model=False,
+                      train_model=True,
+                      save_model=False,
+                      test_data=False,
+                      build_params=None,
+                      train_params=None,
+                      **kwargs):
+    """
+            Creates a new instance of HF_BERT_NN
+            Parameters:
+            :param model_name: (str) the name of the model to create, or the name of the model to load.
+            :param embedding_dim: (int) dimension of the embedding space
+            (this is actually not needed, but because this model inherits from base_NN we need it)
+            :param train_data : A tensorflow dataset. Existing of my_dataset.train (training data)
+                                my_dataset.validate (validation data)
+                                my_dataset.test (test data)
+            colum1= the tweets, column2 = the sentiment
+            :param load_model: (bool) whether to load the model from file.
+            :param train_model: (bool) whether to train the model.
+            :param save_model: (bool) whether to save the model
+            :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+            :param build_params: (dict) dictionary of parameters to pass to build the model
+                    Example : {optimizer:'adam',
+                              metrics:accuracy,
+                              adapter_size: 64,
+                              dropout_rate = 0.5}
+            Note that if adapter_size = 0, all of the parameters of BERT are fine tuned
+            :param train_params: (dict) dictionary of parameters to pass to build the model
+                    Example : {epochs:10,
+                                batch_size:32,
+                                validation_split:0.2}
+            :return: an instance of HF_BERT_NN class
+            """
+    ourHF_BERT = HF_BERT_NN(max_len, embedding_dim, model_name)
+    ourHF_BERT.build(**build_params)
+    print("finished building")
+    if load_model: ourHF_BERT.load()
+    print("train model", train_model)
+    print("train_data", train_data)
+    print("validation_data", train_data.validate)
+    print("train_model", train_model)
+    if train_model:
+        ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate, **train_params)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        ourHF_BERT.test(x_test, y_test, **train_params)
+    if save_model: ourHF_BERT.save()
+    return ourHF_BERT
 
 
 
@@ -785,6 +840,7 @@ model_pipeline_fun = {
         "BERT_NN": get_BERT_model,
         "convolutional_NN":get_convolutional_model,
         "ET_NN":get_ET_model,
+        "HF_BERT_NN": get_HF_BERT_model,
         "": lambda : None # empty function
     }
 
@@ -820,9 +876,10 @@ def run_ensemble_pipeline(models,
 
 def run_train_pipeline(model_type,
                        model_name,
-                       prediction_mode=True,
-                       load_model=True,
-                       text_data_mode_on = True,
+                       prediction_mode= False,
+                       load_model=False,
+                       text_data_mode_on = False,
+                       tensorflow_dataset_mode_on = True,
                        choose_randomly=False,
                        random_percentage=0.1,
                        data_location=None,
@@ -874,6 +931,10 @@ def run_train_pipeline(model_type,
     test_matrix = None
     print("prediction mode", prediction_mode)
     print("text_data_mode", text_data_mode_on)
+    if tensorflow_dataset_mode_on:
+        data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location, train_negative_location], labels=[0,1], encode_text=False, do_padding=False)
+
+
     if text_data_mode_on:
         max_seq_len = model_specific_params.get("max_seq_len",128)
         data_matrix = PP_BERT_Data(get_tweet_df(inputfiles=[train_positive_location, train_negative_location], random_percentage=0.3), classes=[0,1], max_seq_len=max_seq_len,
@@ -882,7 +943,7 @@ def run_train_pipeline(model_type,
             data_matrix = PP_BERT_Data(load_predDF(),classes=[0,1], max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode )
             data_matrix = data_matrix.pred_x
-    if not text_data_mode_on and not generator_mode:
+    if not text_data_mode_on and not generator_mode and not tensorflow_dataset_mode_on:
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         if choose_randomly and not prediction_mode:

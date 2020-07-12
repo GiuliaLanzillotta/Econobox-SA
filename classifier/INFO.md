@@ -713,7 +713,39 @@ Note: the ensemble models can only be made of trained and saved models.
              
 - **Kaggle lederboard score** : 0.83380
 
-    
+#### Experiment 10: BERT neural network with dropout
+
+- Structure: The BERT model layer (bert-base-cased). This model is pretrained 
+and we keep these weights constant. This "layer" consists of 12 layers with 12 attention
+heads, and it produces an embedding of each tweet of dimension 768. This is followed by 
+dense 768 -> dropout(0.5) -> dense 200 -> dropout(0.5) -> dense 2
+
+- Training details: trained on the full dataset (2479999 for training, 1000 validation, 1000 test)
+  Trained with early stopping on 
+  
+<div>
+<img alt="BERT accuracy" src="../data/assets/BERT_HF_2dropout_accuracy.png" height="400"/>
+</div> 
+
+<div>
+<img alt="BERT accuracy" src="../data/assets/BERT_HF_2dropout_loss.png" height="400"/>
+</div>
+
+- Training Performance
+
+<div>
+<img alt="Training performance" src="../data/assets/epochsinfo.png.png" height="110"/>
+</div>
+
+- **Training Params**:
+         train_params = {"epochs": 10,
+                    "batch_size": 2048,
+                    "validation_split": 0.2,
+                    "use_categorical": True}
+                    
+- **Total num params** = 109,055,066
+- **Trainable params** = 744,794
+- **Non-trainable params** = 108,310,272
 
 
                           
