@@ -3,8 +3,8 @@
 from embedding.embedding_base import EmbeddingBase
 from preprocessing.tokenizer import tokenize_text
 import numpy as np
-from flair.embeddings import TransformerDocumentEmbeddings
-from flair.data import Sentence
+#from flair.embeddings import TransformerDocumentEmbeddings
+#from flair.data import Sentence
 
 """
 NOTA BENE: every embedding function to use in the pipeline method as *aggregation_fun*
@@ -78,12 +78,12 @@ def sum_embeddings(sentence, embedding, **kwargs):
         sentence_emb += embedding_matrix[vocabulary.get(word) + 1]
     return sentence_emb
 
-def embedize(sentence, embedding):
-    tweet = Sentence(sentence)
-    embedding = TransformerDocumentEmbeddings(embedding)
-    embedding.embed(tweet)
-    tweet_emb = tweet.get_embedding()
-    tweet_emb_np = tweet_emb.cpu().detach().numpy()
-    return(tweet_emb_np)
+#def embedize(sentence, embedding):
+#    tweet = Sentence(sentence)
+#    embedding = TransformerDocumentEmbeddings(embedding)
+#    embedding.embed(tweet)
+#    tweet_emb = tweet.get_embedding()
+#    tweet_emb_np = tweet_emb.cpu().detach().numpy()
+#    return(tweet_emb_np)
 
 

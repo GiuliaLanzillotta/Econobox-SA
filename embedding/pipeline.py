@@ -151,7 +151,7 @@ def build_training_matrix(label,
                           embedding,
                           input_files=None,
                           label_values=None,
-                          aggregation_fun=sentence_embedding.embedize,
+                          aggregation_fun=sentence_embedding.sum_embeddings,
                           input_entries=sample_dimension,
                           sentence_dimesion = 200,
                           output_location = matrix_train_location):
@@ -249,8 +249,8 @@ def get_glove_embedding(vocabulary_file="vocab.pkl",
 
 embedding_funcs = {
     "no_embedding":sentence_embedding.no_embeddings,
-    "sum_embeddings":sentence_embedding.sum_embeddings,
-    "transformer_emb":sentence_embedding.embedize
+    "sum_embeddings":sentence_embedding.sum_embeddings
+    #"transformer_emb":sentence_embedding.embedize
 }
 
 
