@@ -2,11 +2,6 @@ import sys
 import os
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
-#from embedding import zero_matrix_train_location, zero_matrix_test_location, \
-#    zero_matrix_full_train_location, replaced_zero_matrix_full_train_location, \
-#    replaced_zero_matrix_test_location, replaced_zero_matrix_train_location,\
-#    matrix_train_location, matrix_test_location
-#from data import tweetDF_location
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline
 
 

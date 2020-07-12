@@ -29,10 +29,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from preprocessing import standard_vocab_name
 from preprocessing.pipeline import get_vocabulary
-from data import input_files_location
-from data import train_negative_sample_location, train_positive_sample_location
-from data import train_positive_location, train_negative_location
-import numpy as np
+import data
 import os
 
 
@@ -48,7 +45,9 @@ class TweetDataset():
                  validation_size=10000,
                  test_size=10000,
                  encode_text=False,
-                 do_padding=False):
+                 do_padding=False,
+                 caching=False,
+                 size = data.full_dimension):
         """
         :param encode_text: (bool)
         :param max_len: maximum length of the input sequence
@@ -73,21 +72,25 @@ class TweetDataset():
         self.labels = labels
         self.dataset = self.load_dataset(labels)
         self.do_padding = do_padding
+        self.steps_per_epoch = None
+        self.size = size
         if encode_text:
             if not vocabulary: vocabulary = standard_vocab_name
             self.vocab = get_vocabulary(vocabulary)
             self.encode_text(self.vocab)
         if self.labels:
-            train, validate, test = self.split_dataset(batch_size, validation_size, test_size, max_len)
+            self.train, self.validate, self.test = self.split_dataset(batch_size, validation_size,
+                                                                      test_size, max_len)
+        else:
+            self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
+        if caching:
             print("Caching.")
             abs_path = os.path.abspath(os.path.dirname(__file__))
             paths = [os.path.join(abs_path, f) for f in
                      ["../data/train_data", "../data/valid_data", "../data/test_data"]]
-            self.train = train.cache(paths[0])
-            self.validate = validate.cache(paths[1])
-            self.test = test.cache(paths[2])
-        else:
-            self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
+            self.train = self.train.cache(paths[0])
+            self.validate = self.validate.cache(paths[1])
+            self.test = self.test.cache(paths[2])
 
     def load_dataset(self, labels):
         """
@@ -104,7 +107,6 @@ class TweetDataset():
         datasets = []
         for path in paths:
             datasets.append(tf.data.TextLineDataset(path))
-            #print(type(tf.data.TextLineDataset(path)))
         ## ADDING LABELS (if requested)
         if labels:
             assert len(labels) == len(self.input_files)
@@ -112,18 +114,9 @@ class TweetDataset():
                 datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0), tf.expand_dims(tf.one_hot(labels[i], 2), axis=0)))
         ##MERGING the datasets
         dataset_final = datasets[0]
-        #for dataset in datasets:
-        #    print(dataset)
-        #    dataset_final = dataset_final.concatenate(dataset)
-        #dataset_final = datasets[0]
         dataset_final = dataset_final.concatenate(datasets[1])
         ##SHUFFLE
         dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
-        #for num, _ in enumerate(dataset_final):
-        #    pass
-
-        #print(f'Number of elements: {num}')
-
         return dataset_final
 
     def encode_text(self, vocabulary):
@@ -168,30 +161,18 @@ class TweetDataset():
     def split_dataset(self, batch_size, validation_size, test_size, max_len):
         """Splits the dataset in training and validation."""
         print("Splitting dataset.")
+        # TRAIN
+        self.steps_per_epoch = (self.size - validation_size - test_size)//batch_size
         train_data = self.dataset.skip(validation_size + test_size).shuffle(self.buffer_size)
-        #for num, _ in enumerate(train_data):
-        #    pass
-
-        #print(f'Number of elements: {num}')
-        if self.do_padding:
-            train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+        if self.do_padding: train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+        # VALID
         validation_data = self.dataset.take(validation_size)
-        if self.do_padding:
-            validation_data = validation_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+        if self.do_padding: validation_data = validation_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+        # TEST
         test_data = self.dataset.skip(validation_size).take(test_size)
-        if self.do_padding:
-            test_data = test_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+        if self.do_padding: test_data = test_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
+
         return train_data.prefetch(self.buffer_size), \
                validation_data.prefetch(self.buffer_size), \
                test_data.prefetch(self.buffer_size)
 
-
-#cool_dataset = TweetDataset(input_files=[train_negative_location, train_positive_location], labels=[0, 1],
-#                          encode_text=False, do_padding=False)
-
-
-
-#for num, _ in enumerate(cool_dataset.train):
-#    pass
-
-#print(f'Number of elements: {num}')

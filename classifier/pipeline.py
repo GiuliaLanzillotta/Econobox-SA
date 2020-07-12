@@ -182,7 +182,9 @@ def get_HF_BERT_model(model_name,
     print("validation_data", train_data.validate)
     print("train_model", train_model)
     if train_model:
-        ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate, **train_params)
+        ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate,
+                         steps_per_epoch=train_data.steps_per_epoch,
+                         **train_params)
     if test_data is not None:
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
@@ -932,8 +934,9 @@ def run_train_pipeline(model_type,
     print("prediction mode", prediction_mode)
     print("text_data_mode", text_data_mode_on)
     if tensorflow_dataset_mode_on:
-        data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location, train_negative_location], labels=[0,1], encode_text=False, do_padding=False)
-
+        data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location,
+                                                            train_negative_location],
+                                               labels=[0,1], encode_text=False, do_padding=False)
 
     if text_data_mode_on:
         max_seq_len = model_specific_params.get("max_seq_len",128)
