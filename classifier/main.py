@@ -103,7 +103,7 @@ if __name__ == "__main__":
                     "use_categorical": True}
 
     run_train_pipeline("HF_BERT_NN",
-                       "HF_BERT_NN_T2",
+                       "HF_BERT_NN_T1",
                        load_model=False,
                        prediction_mode=False,
                        text_data_mode_on=False,

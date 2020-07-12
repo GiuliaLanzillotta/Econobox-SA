@@ -42,8 +42,8 @@ class TweetDataset():
                  buffer_size=1000,
                  vocabulary=None,
                  max_len=100,
-                 validation_size=10000,
-                 test_size=10000,
+                 validation_size=0.2,
+                 test_size=0.2,
                  encode_text=False,
                  do_padding=False,
                  caching=False,
@@ -78,19 +78,22 @@ class TweetDataset():
             if not vocabulary: vocabulary = standard_vocab_name
             self.vocab = get_vocabulary(vocabulary)
             self.encode_text(self.vocab)
+
         if self.labels:
             self.train, self.validate, self.test = self.split_dataset(batch_size, validation_size,
                                                                       test_size, max_len)
+            if caching:
+                print("Caching.")
+                abs_path = os.path.abspath(os.path.dirname(__file__))
+                paths = [os.path.join(abs_path, f) for f in
+                         ["../data/train_data", "../data/valid_data", "../data/test_data"]]
+                self.train = self.train.cache(paths[0])
+                self.validate = self.validate.cache(paths[1])
+                self.test = self.test.cache(paths[2])
         else:
-            self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
-        if caching:
-            print("Caching.")
-            abs_path = os.path.abspath(os.path.dirname(__file__))
-            paths = [os.path.join(abs_path, f) for f in
-                     ["../data/train_data", "../data/valid_data", "../data/test_data"]]
-            self.train = self.train.cache(paths[0])
-            self.validate = self.validate.cache(paths[1])
-            self.test = self.test.cache(paths[2])
+            if self.do_padding:
+                self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
+            self.pred_data = self.dataset.shuffle(self.buffer_size)
 
     def load_dataset(self, labels):
         """
@@ -111,10 +114,14 @@ class TweetDataset():
         if labels:
             assert len(labels) == len(self.input_files)
             for i in range(len(datasets)):
-                datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0), tf.expand_dims(tf.one_hot(labels[i], 2), axis=0)))
+                datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0),
+                                                            tf.expand_dims(tf.one_hot(labels[i], 2), axis=0)))
         ##MERGING the datasets
         dataset_final = datasets[0]
-        dataset_final = dataset_final.concatenate(datasets[1])
+        for i in range(len(datasets)-1):
+            dataset_final = dataset_final.concatenate(datasets[i+1])
+
+        if not labels: dataset_final = dataset_final.map(lambda line: (tf.expand_dims(line, axis=0)))
         ##SHUFFLE
         dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
         return dataset_final
@@ -161,18 +168,22 @@ class TweetDataset():
     def split_dataset(self, batch_size, validation_size, test_size, max_len):
         """Splits the dataset in training and validation."""
         print("Splitting dataset.")
+        # First calculating the splits
+        validation_split = int(validation_size*self.size)
+        test_split = int(test_size*self.size)
+        train_split = self.size - validation_split - test_split
+        print("Training on ",train_split,", validating on ",validation_split,", testing on ",test_split)
         # TRAIN
-        self.steps_per_epoch = (self.size - validation_size - test_size)//batch_size
-        train_data = self.dataset.skip(validation_size + test_size).shuffle(self.buffer_size)
+        self.steps_per_epoch = train_split//batch_size
+        train_data = self.dataset.skip(validation_split + test_split).shuffle(self.buffer_size).take(train_split)
         if self.do_padding: train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # VALID
-        validation_data = self.dataset.take(validation_size)
+        validation_data = self.dataset.take(validation_split)
         if self.do_padding: validation_data = validation_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # TEST
-        test_data = self.dataset.skip(validation_size).take(test_size)
+        test_data = self.dataset.skip(validation_split).take(test_split)
         if self.do_padding: test_data = test_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
 
         return train_data.prefetch(self.buffer_size), \
                validation_data.prefetch(self.buffer_size), \
                test_data.prefetch(self.buffer_size)
-

@@ -19,7 +19,7 @@ from data import replaced_train_negative_location, replaced_train_positive_locat
     full_dimension
 from data import train_positive_location, train_negative_location
 from data import replaced_train_full_negative_location, replaced_train_full_positive_location
-from data import tweetDF_location
+from data import test_location
 from data import tweets_data
 from preprocessing.tweetDF import load_predDF
 from preprocessing.tweetDF import get_tweet_df
@@ -32,7 +32,7 @@ from classifier import K_FOLD_SPLITS
 from classifier.BERT_NN import PP_BERT_Data
 from preprocessing.tweetDF import load_tweetDF
 #from preprocessing.tweetDF import load_testDF
-
+import data
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 
 exactly this signature and add the function to the 'model_pipeline_fun' dictionary in the 
@@ -177,10 +177,6 @@ def get_HF_BERT_model(model_name,
     ourHF_BERT.build(**build_params)
     print("finished building")
     if load_model: ourHF_BERT.load()
-    print("train model", train_model)
-    print("train_data", train_data)
-    print("validation_data", train_data.validate)
-    print("train_model", train_model)
     if train_model:
         ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate,
                          steps_per_epoch=train_data.steps_per_epoch,
@@ -931,19 +927,30 @@ def run_train_pipeline(model_type,
     # DATA LOADING
     data_matrix = None
     test_matrix = None
-    print("prediction mode", prediction_mode)
-    print("text_data_mode", text_data_mode_on)
     if tensorflow_dataset_mode_on:
-        data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location,
-                                                            train_negative_location],
-                                               labels=[0,1], encode_text=False, do_padding=False)
-
+        if prediction_mode:
+            data_matrix = tweets_data.TweetDataset(input_files=[test_location],
+                                                   labels=None,
+                                                   encode_text=False,
+                                                   do_padding=False,
+                                                   size=data.test_dimension)
+            data_matrix = data_matrix.pred_data
+        else:
+            data_matrix = tweets_data.TweetDataset(input_files=[replaced_train_full_negative_location,
+                                                                replaced_train_full_positive_location],
+                                                   labels=[0, 1],
+                                                   encode_text=False,
+                                                   do_padding=False)
     if text_data_mode_on:
+        "text_data_mode_on: loading text for the BERT_NN model into a pandas dataframe."
         max_seq_len = model_specific_params.get("max_seq_len",128)
-        data_matrix = PP_BERT_Data(get_tweet_df(inputfiles=[train_positive_location, train_negative_location], random_percentage=0.3), classes=[0,1], max_seq_len=max_seq_len,
+        data_matrix = PP_BERT_Data(get_tweet_df(inputfiles=[train_positive_location, train_negative_location],
+                                                random_percentage=0.3), classes=[0,1],
+                                   max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode)
         if prediction_mode:
-            data_matrix = PP_BERT_Data(load_predDF(),classes=[0,1], max_seq_len=max_seq_len,
+            data_matrix = PP_BERT_Data(load_predDF(),classes=[0,1],
+                                       max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode )
             data_matrix = data_matrix.pred_x
     if not text_data_mode_on and not generator_mode and not tensorflow_dataset_mode_on:

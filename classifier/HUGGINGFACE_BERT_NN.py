@@ -3,9 +3,7 @@ from typing import Any, Union
 from transformers import BertTokenizer, TFBertModel, AutoTokenizer, BertJapaneseTokenizer
 from base_NN import BaseNN
 import tensorflow as tf
-from data import tweets_data
-from data import train_negative_sample_location, train_positive_sample_location
-
+import numpy as np
 
 class Lambda_Bert_Layer(tf.keras.layers.Layer):
 
@@ -61,10 +59,10 @@ class HF_BERT_NN(BaseNN):
         inputs = tf.keras.layers.Input(shape=(None,), name='input', dtype=tf.string)  # This already gives shape None
         bert_layer = Lambda_Bert_Layer(trainable=False)
         bert_output = bert_layer(inputs)
-        reshape_lambda_layer = tf.reshape(bert_output, (-1,768))
-        dense_out_1 = tf.keras.layers.Dense(units=768, activation="tanh")(reshape_lambda_layer)  # reshape_lambda_layer
+        reshaped_bert = tf.reshape(bert_output, (-1,768))
+        dense_out_1 = tf.keras.layers.Dense(units=768, activation="relu")(reshaped_bert)  # reshape_lambda_layer
         dense_out_1 = tf.keras.layers.Dropout(dropout_rate)(dense_out_1)
-        dense_out_2 = tf.keras.layers.Dense(units=200, activation="softmax")(dense_out_1)
+        dense_out_2 = tf.keras.layers.Dense(units=200, activation="relu")(dense_out_1)
         dense_out_2 = tf.keras.layers.Dropout(dropout_rate)(dense_out_2)
         logits = tf.keras.layers.Dense(units=2, activation='softmax')(dense_out_2)
 
@@ -84,10 +82,17 @@ class HF_BERT_NN(BaseNN):
                                                               min_delta=0.0001,
                                                               patience=1)
 
-        self.history = self.model.fit(data_train,
+        self.history = self.model.fit(data_train.repeat(),
                                       epochs=epochs,
-                                      steps_per_epoch=int(2479999/2048),
-                                      validation_data=data_val,
+                                      steps_per_epoch=steps_per_epoch,
+                                      validation_data=data_val.repeat(),
+                                      validation_steps = 1,
                                       callbacks=[earlystop_callback] )
         self.plot_history()
 
+    def make_predictions(self, x, save=True, **kwargs):
+        print("Making predictions")
+        preds = self.model.predict(x, steps=10000)
+        preds_classes = np.argmax(preds, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
+        if save: self.save_predictions(preds_classes)
