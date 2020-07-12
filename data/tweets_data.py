@@ -32,6 +32,7 @@ from preprocessing.pipeline import get_vocabulary
 from data import input_files_location
 from data import train_negative_sample_location, train_positive_sample_location
 from data import train_positive_location, train_negative_location
+from data import test_location
 import numpy as np
 import os
 
@@ -87,7 +88,10 @@ class TweetDataset():
             self.validate = validate.cache(paths[1])
             self.test = test.cache(paths[2])
         else:
-            self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
+            if self.do_padding:
+                self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
+            else:
+                self.dataset =
 
     def load_dataset(self, labels):
         """
@@ -116,7 +120,8 @@ class TweetDataset():
         #    print(dataset)
         #    dataset_final = dataset_final.concatenate(dataset)
         #dataset_final = datasets[0]
-        dataset_final = dataset_final.concatenate(datasets[1])
+        if len(datasets) != 1:
+            dataset_final = dataset_final.concatenate(datasets[1])
         ##SHUFFLE
         dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
         #for num, _ in enumerate(dataset_final):
@@ -186,12 +191,10 @@ class TweetDataset():
                test_data.prefetch(self.buffer_size)
 
 
-#cool_dataset = TweetDataset(input_files=[train_negative_location, train_positive_location], labels=[0, 1],
-#                          encode_text=False, do_padding=False)
+cool_dataset = TweetDataset(input_files=[test_location], labels=None, encode_text=False, do_padding=False)
 
 
+for num, _ in enumerate(cool_dataset):
+    pass
 
-#for num, _ in enumerate(cool_dataset.train):
-#    pass
-
-#print(f'Number of elements: {num}')
+print(f'Number of elements: {num}')
