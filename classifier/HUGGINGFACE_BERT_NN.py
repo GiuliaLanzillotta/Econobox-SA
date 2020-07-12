@@ -1,6 +1,7 @@
 from transformers import BertTokenizer, TFBertModel, AutoTokenizer
 from base_NN import BaseNN
 import tensorflow as tf
+import numpy as np
 #tf.compat.v1.disable_eager_execution()
 from data import tweets_data
 from data import train_negative_sample_location, train_positive_sample_location
@@ -121,6 +122,13 @@ class HF_BERT_NN(BaseNN):
                                       )
         self.plot_history()
 
+    def make_predictions(self, x, save=True, **kwargs):
+        print("Making predictions")
+        preds = self.model.predict(x, steps=10000)
+        print(preds)
+        preds_classes = np.argmax(preds, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
+        if save: self.save_predictions(preds_classes)
 
 #ourHFBert = HF_BERT_NN(max_len=50)
 # output = ourHFBert.bert_autoencoding(sentences=["hello"])

@@ -79,7 +79,9 @@ class ClassifierBase(object):
         """
         print("Saving predictions")
         abs_path = os.path.abspath(os.path.dirname(__file__))
+        print(abs_path)
         path = predictions_folder + self.name + "_predictions.csv"
+        print(path)
         to_save_format = np.dstack((np.arange(1, predictions_array.size + 1), predictions_array))[0]
         np.savetxt(os.path.join(abs_path,path), to_save_format, "%d,%d",
                    delimiter=",", header="Id,Prediction", comments='')

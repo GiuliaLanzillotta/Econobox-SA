@@ -19,7 +19,7 @@ from data import replaced_train_negative_location, replaced_train_positive_locat
     full_dimension
 from data import train_positive_location, train_negative_location
 from data import replaced_train_full_negative_location, replaced_train_full_positive_location
-from data import tweetDF_location
+from data import test_location
 from data import tweets_data
 from preprocessing.tweetDF import load_predDF
 from preprocessing.tweetDF import get_tweet_df
@@ -177,10 +177,6 @@ def get_HF_BERT_model(model_name,
     ourHF_BERT.build(**build_params)
     print("finished building")
     if load_model: ourHF_BERT.load()
-    print("train model", train_model)
-    print("train_data", train_data)
-    print("validation_data", train_data.validate)
-    print("train_model", train_model)
     if train_model:
         ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate, **train_params)
     if test_data is not None:
@@ -933,7 +929,8 @@ def run_train_pipeline(model_type,
     print("text_data_mode", text_data_mode_on)
     if tensorflow_dataset_mode_on:
         if prediction_mode:
-            pass
+            data_matrix = tweets_data.TweetDataset(input_files=[test_location], labels=None, encode_text=False, do_padding=False)
+            data_matrix = data_matrix.pred_data
         else:
             data_matrix = tweets_data.TweetDataset(input_files=[train_positive_location, train_negative_location], labels=[0,1], encode_text=False, do_padding=False)
 
