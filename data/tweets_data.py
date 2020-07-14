@@ -68,12 +68,12 @@ class TweetDataset():
             if one is available).
         """
         self.input_files = input_files
-        self.buffer_size = buffer_size
         self.labels = labels
+        self.buffer_size = buffer_size
+        self.size = size
         self.dataset = self.load_dataset(labels)
         self.do_padding = do_padding
         self.steps_per_epoch = None
-        self.size = size
         if encode_text:
             if not vocabulary: vocabulary = standard_vocab_name
             self.vocab = get_vocabulary(vocabulary)
@@ -93,7 +93,7 @@ class TweetDataset():
         else:
             if self.do_padding:
                 self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
-            self.pred_data = self.dataset.shuffle(self.buffer_size)
+            self.pred_data = self.dataset.shuffle(self.size)
 
     def load_dataset(self, labels):
         """
@@ -123,7 +123,7 @@ class TweetDataset():
 
         if not labels: dataset_final = dataset_final.map(lambda line: (tf.expand_dims(line, axis=0)))
         ##SHUFFLE
-        dataset_final = dataset_final.shuffle(self.buffer_size, reshuffle_each_iteration=False)
+        dataset_final = dataset_final.shuffle(self.size, reshuffle_each_iteration=False)
         return dataset_final
 
     def encode_text(self, vocabulary):
@@ -175,7 +175,7 @@ class TweetDataset():
         print("Training on ",train_split,", validating on ",validation_split,", testing on ",test_split)
         # TRAIN
         self.steps_per_epoch = train_split//batch_size
-        train_data = self.dataset.skip(validation_split + test_split).shuffle(self.buffer_size).take(train_split)
+        train_data = self.dataset.skip(validation_split + test_split).shuffle(train_split).take(train_split)
         if self.do_padding: train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # VALID
         validation_data = self.dataset.take(validation_split)
