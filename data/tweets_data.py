@@ -115,7 +115,7 @@ class TweetDataset():
             assert len(labels) == len(self.input_files)
             for i in range(len(datasets)):
                 datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0),
-                                                            tf.expand_dims(tf.one_hot(labels[i], 2), axis=0)))
+                                                            tf.reshape(tf.one_hot(labels[i], 2), [1,2])))
         ##MERGING the datasets
         dataset_final = datasets[0]
         for i in range(len(datasets)-1):
@@ -175,7 +175,7 @@ class TweetDataset():
         print("Training on ",train_split,", validating on ",validation_split,", testing on ",test_split)
         # TRAIN
         self.steps_per_epoch = train_split//batch_size
-        train_data = self.dataset.skip(validation_split + test_split).shuffle(train_split).take(train_split)
+        train_data = self.dataset.skip(validation_split + test_split).take(train_split)
         if self.do_padding: train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # VALID
         validation_data = self.dataset.take(validation_split)

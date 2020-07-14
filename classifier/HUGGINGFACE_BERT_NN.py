@@ -68,7 +68,7 @@ class HF_BERT_NN(BaseNN):
 
         self.model = tf.keras.Model(inputs=inputs, outputs=logits)
         self.model.compile(optimizer=optimizer,
-                           loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+                           loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
                            metrics=metrics)
         self.model.summary()
 
