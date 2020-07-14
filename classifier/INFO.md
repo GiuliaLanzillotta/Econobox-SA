@@ -747,5 +747,24 @@ dense 768 -> dropout(0.5) -> dense 200 -> dropout(0.5) -> dense 2
 - **Trainable params** = 744,794
 - **Non-trainable params** = 108,310,272
 
+#### Experiment 11, baseline Random Forest sample data + stanford 
+
+- vocab used: vocab.pkl + stanford full
+- basic cooc.pkl matrix
+- glove embedding
+- 160000  indices to train on and  16000  indices to test on.
+
+- cross validation scores during training = [0.72225    0.71565625 0.72096875 0.72221875 0.718125  ]
+- kaggle prediction score: 0.57899
+
+#### Experiment 12, baseline Logistic Regression sample data + stanford
+
+- vocab used: vocab.pkl + stanford full
+- basic cooc.pkl matrix
+- glove embedding
+- 160000  indices to train on and  16000  indices to test on.
+- cross val scores during training: [0.72220425 0.72306571 0.72332794 0.72648497 0.72086276]
+
+- kaggle leaderboard score: 0.56780
 
                           
