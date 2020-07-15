@@ -102,8 +102,8 @@ if __name__ == "__main__":
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("HF_BERT_NN",
-                       "HF_BERT_NN_T1",
+    run_train_pipeline("NaiveBayes_classi",
+                       "NB_t1",
                        load_model=False,
                        prediction_mode=False,
                        text_data_mode_on=False,
