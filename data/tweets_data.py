@@ -25,6 +25,9 @@ USAGE:
     Note: by default the text is now encoded, i.e. each string token is transformed into a vocabulary index.
     To keep the data as text add a check to avoid using the encode_text function.
 """
+
+from transformers import BertTokenizer, TFBertModel, AutoTokenizer, BertJapaneseTokenizer, \
+    TFBertForSequenceClassification
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from preprocessing import standard_vocab_name
@@ -38,13 +41,14 @@ class TweetDataset():
 
     def __init__(self, input_files,
                  labels=None,
-                 batch_size=2048,
+                 batch_size=12,
                  buffer_size=1000,
                  vocabulary=None,
                  max_len=100,
                  validation_size=0.2,
                  test_size=0.2,
                  encode_text=False,
+                 bert_embed=True,
                  do_padding=False,
                  caching=False,
                  size = data.full_dimension):
@@ -71,10 +75,11 @@ class TweetDataset():
         self.labels = labels
         self.buffer_size = buffer_size
         self.size = size
-        self.dataset = self.load_dataset(labels)
+        self.dataset = self.load_dataset(labels, bert=bert_embed)
         self.do_padding = do_padding
         self.steps_per_epoch = None
-        if encode_text:
+        self.valid_steps_per_epoch = None
+        if encode_text and not bert_embed:
             if not vocabulary: vocabulary = standard_vocab_name
             self.vocab = get_vocabulary(vocabulary)
             self.encode_text(self.vocab)
@@ -95,8 +100,21 @@ class TweetDataset():
                 self.dataset = self.dataset.padded_batch(batch_size, padded_shapes=[max_len])
             self.pred_data = self.dataset.shuffle(self.size)
 
-    def load_dataset(self, labels):
+    @tf.function
+    def get_bert_encoding(self, sentence):
+        """Doing the real Bert job"""
+        encoded_input = self.tokenizer.encode_plus(str(sentence),
+                                                   max_length=50,
+                                                   return_tensors='tf',
+                                                   add_special_tokens=True,
+                                                   return_token_type_ids=False,
+                                                   pad_to_max_length=True,
+                                                   return_attention_mask=True)
+        return encoded_input["input_ids"], encoded_input["attention_mask"]
+
+    def load_dataset(self, labels, bert=True):
         """
+        :param bert: whether to encode the input using bert --> output shape = [1,768],[2]
         :param labels: list of labels.
             :type labels: list(int)
             If labels=None the dataset will be loaded in test mode.
@@ -109,22 +127,34 @@ class TweetDataset():
         paths = [os.path.join(abs_path, f) for f in self.input_files]
         datasets = []
         for path in paths:
-            datasets.append(tf.data.TextLineDataset(path))
+            print("Loading ",path)
+            datasets.append(tf.data.TextLineDataset(path).take(self.size//len(paths)))
+        ## EMBEDDING TO BERT (if requested)
+        if bert:
+            print("Applying Bert embedding to the dataset.")
+            self.tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
+            self.trans_model = TFBertModel.from_pretrained('bert-base-cased')
+            def tf_encode(sentence):
+                result_ids, result_masks = tf.py_function(func=self.get_bert_encoding,
+                                                          inp=[sentence], Tout=(tf.int32,tf.int32))
+                result_ids.set_shape([1,50])
+                result_masks.set_shape([1,50])
+                return (result_ids,result_masks)
+            for i in range(len(datasets)):
+               datasets[i] = datasets[i].map(tf_encode)
         ## ADDING LABELS (if requested)
         if labels:
             assert len(labels) == len(self.input_files)
             for i in range(len(datasets)):
-                datasets[i] = datasets[i].map(lambda line: (tf.expand_dims(line, axis=0),
-                                                            tf.reshape(tf.one_hot(labels[i], 2), [1,2])))
+                if bert: datasets[i] = datasets[i].map(lambda ids,mask: ((ids,mask),tf.one_hot(labels[i], 2)))
+                else: datasets[i] = datasets[i].map(lambda line: (line,tf.one_hot(labels[i], 2)))
         ##MERGING the datasets
         dataset_final = datasets[0]
         for i in range(len(datasets)-1):
             dataset_final = dataset_final.concatenate(datasets[i+1])
 
-        if not labels: dataset_final = dataset_final.map(lambda line: (tf.expand_dims(line, axis=0)))
-        ##SHUFFLE
-        dataset_final = dataset_final.shuffle(self.size, reshuffle_each_iteration=False)
-        return dataset_final
+        if not labels: dataset_final = dataset_final.map(lambda line: (line))
+        return dataset_final.shuffle(buffer_size=self.size)
 
     def encode_text(self, vocabulary):
         """Helper function to transform string tokens into integers."""
@@ -169,16 +199,20 @@ class TweetDataset():
         """Splits the dataset in training and validation."""
         print("Splitting dataset.")
         # First calculating the splits
-        validation_split = int(validation_size*self.size)
-        test_split = int(test_size*self.size)
-        train_split = self.size - validation_split - test_split
+        print("Batching and shuffling")
+        self.dataset = self.dataset.batch(batch_size)
+        validation_split = int(validation_size*self.size/batch_size) # number of batched in validation
+        test_split = int(test_size*self.size/batch_size) # number of batches in test
+        train_split = int(self.size/batch_size) - validation_split - test_split # number of batches in train
         print("Training on ",train_split,", validating on ",validation_split,", testing on ",test_split)
         # TRAIN
-        self.steps_per_epoch = train_split//batch_size
-        train_data = self.dataset.skip(validation_split + test_split).take(train_split)
+        # batching and shuffling
+        self.steps_per_epoch = train_split
+        train_data = self.dataset.skip(validation_split + test_split)
         if self.do_padding: train_data = train_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # VALID
         validation_data = self.dataset.take(validation_split)
+        self.valid_steps_per_epoch = validation_split
         if self.do_padding: validation_data = validation_data.padded_batch(batch_size, padded_shapes=([max_len], [1]))
         # TEST
         test_data = self.dataset.skip(validation_split).take(test_split)
@@ -187,3 +221,115 @@ class TweetDataset():
         return train_data.prefetch(self.buffer_size), \
                validation_data.prefetch(self.buffer_size), \
                test_data.prefetch(self.buffer_size)
+
+
+class TweetDatasetGenerator():
+    "Builds a generator for the tweet dataset"
+
+    def __init__(self,input_files,
+                 labels=None,
+                 batch_size=12,
+                 max_len=50,
+                 train_p=0.3,
+                 valid_p=0.1,
+                 test_p=0.05,
+                 size = data.full_dimension):
+        # --------- Parameters here
+        assert(size<data.full_dimension), "The size is too big"
+        self.size = size
+        self.max_len=max_len
+        # these are Bert parameters
+        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
+        self.trans_model = TFBertModel.from_pretrained('bert-base-cased')
+        # ---------------------------
+
+        ## load the dataset first
+        x,y = self.load_data_from_files(input_files, labels)
+        x,y = self.preprocess_xy(x,y)
+        train, val, test = \
+            self.split_data(x,y,train_p,valid_p,test_p, batch_size)
+        self.train = self.batch_and_prepare(train, is_training=True, batch_size=batch_size)
+        self.valid= self.batch_and_prepare(val, is_training=False, batch_size=batch_size)
+        self.test = self.batch_and_prepare(test, is_training=False, batch_size=batch_size)
+
+
+    def load_data_from_files(self,files,labels):
+        ## loading and merging the files ----------
+        print("Loading from files.")
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        paths = [os.path.join(abs_path, f) for f in files]
+        # 1. Loading the text
+        # 2. Building the labels
+        datasets = []
+        dataset_labels = []
+        length = self.size//len(paths)
+        for i,path in enumerate(paths):
+            print("Loading ", path)
+            datasets.append(tf.data.TextLineDataset(path))
+            dataset_labels.append(tf.data.Dataset.from_tensor_slices([labels[i]]*length))
+        # 3. MERGING the datasets
+        dataset_final = datasets[0]
+        dataset_final_labels = dataset_labels[0]
+        for i in range(len(datasets) - 1):
+            dataset_final = dataset_final.concatenate(datasets[i + 1])
+            dataset_final_labels = dataset_final_labels.concatenate(dataset_labels[i + 1])
+        # 4. shuffling
+        dataset_final = dataset_final.shuffle(buffer_size=length, seed=0).cache(os.path.join(abs_path,"../data/x"))
+        dataset_final_labels = dataset_final_labels.shuffle(buffer_size=length, seed=0).cache(os.path.join(abs_path,"../data/y"))
+        return dataset_final, dataset_final_labels
+        ## ----------------------
+
+    def get_bert_encoding(self, sentence):
+        """Doing the real Bert job"""
+        encoded_input = self.tokenizer.encode_plus(str(sentence),
+                                                   max_length=self.max_len,
+                                                   return_tensors='tf',
+                                                   add_special_tokens=True,
+                                                   return_token_type_ids=False,
+                                                   pad_to_max_length=True,
+                                                   return_attention_mask=True)
+        return encoded_input["input_ids"], encoded_input["attention_mask"]
+
+    def preprocess_xy(self, x,y):
+        print("Preprocessing text and labels.")
+        # helper function that hides the python logic to encode the labels
+        def tf_yencode(label):
+            y_encoded = tf.py_function(lambda lbl: tf.one_hot(lbl,2), inp=[label], Tout=tf.float32)
+            y_encoded.set_shape([2])
+            return y_encoded
+
+        y = y.map(tf_yencode, num_parallel_calls=4)
+
+        def tf_encode(sentence):
+            result_ids, result_masks = tf.py_function(func=self.get_bert_encoding,
+                                                      inp=[sentence], Tout=(tf.int32, tf.int32))
+            result_ids.set_shape([1, 50])
+            result_masks.set_shape([1, 50])
+            return (result_ids, result_masks)
+
+        x = x.map(tf_encode, num_parallel_calls=4)
+        return x,y
+
+    def split_data(self, x, y, train_p, valid_p, test_p, batch_size):
+        print("Splitting.")
+        train_size = int(self.size*train_p)
+        valid_size = int(self.size*valid_p)
+        test_size = int(self.size*test_p)
+        self.train_size, self.valid_size, self.test_size = train_size//batch_size, \
+                                                           valid_size//batch_size, \
+                                                           test_size//batch_size
+        print("Train: ",train_size,". Valid: ",valid_size,". Test: ",test_size)
+        dataset = tf.data.Dataset.zip((x,y))
+        train = dataset.take(train_size)
+        valid = dataset.skip(train_size).take(valid_size)
+        test = dataset.skip(train_size+valid_size).take(test_size)
+        return train,valid,test
+
+    @staticmethod
+    def batch_and_prepare(dataset,is_training,batch_size):
+        dataset = dataset.batch(batch_size, drop_remainder=is_training)
+        dataset = dataset.repeat()
+        return dataset
+
+
+

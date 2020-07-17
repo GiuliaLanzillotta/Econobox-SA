@@ -178,8 +178,10 @@ def get_HF_BERT_model(model_name,
     print("finished building")
     if load_model: ourHF_BERT.load()
     if train_model:
-        ourHF_BERT.train(data_train=train_data.train, data_val=train_data.validate,
-                         steps_per_epoch=train_data.steps_per_epoch,
+        ourHF_BERT.train(data_train=train_data.train,
+                         data_val=train_data.valid,
+                         steps_per_epoch=train_data.train_size,
+                         valid_steps=train_data.valid_size,
                          **train_params)
     if test_data is not None:
         x_test = test_data[:, 0:-1]
@@ -936,11 +938,11 @@ def run_train_pipeline(model_type,
                                                    size=data.test_dimension)
             data_matrix = data_matrix.pred_data
         else:
-            data_matrix = tweets_data.TweetDataset(input_files=[replaced_train_full_negative_location,
-                                                                replaced_train_full_positive_location],
-                                                   labels=[0, 1],
-                                                   encode_text=False,
-                                                   do_padding=False)
+            data_matrix = tweets_data.TweetDatasetGenerator(input_files=[replaced_train_full_negative_location,
+                                                                         replaced_train_full_positive_location],
+                                                            labels=[0, 1],
+                                                            batch_size=128,
+                                                            size=100000)
     if text_data_mode_on:
         "text_data_mode_on: loading text for the BERT_NN model into a pandas dataframe."
         max_seq_len = model_specific_params.get("max_seq_len",128)
