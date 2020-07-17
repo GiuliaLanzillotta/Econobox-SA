@@ -2,8 +2,8 @@ import sys
 import os
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
-from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline
-
+from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline, run_bert_torch_pipeline
+from data import train_positive_location, train_negative_location, test_location
 
 ## ----------------
 #Saving here the model specific parameters to pass to the
@@ -35,6 +35,19 @@ et_specific_params = {
     "vocabularies":["full_vocab_in_stanford.pkl"],
     "embedding_locations":["necessary_stanford.npz"],
 }
+def bert_torch_main():
+    run_bert_torch_pipeline(input_files_train=[train_positive_location, train_negative_location],
+                            input_files_test=test_location,
+                            random_percentage=0.01,
+                            max_len=50,
+                            epochs=4,
+                            evaluation=True,
+                            train_model=True,
+                            load_model=False,
+                            prediction_mode=False,
+                            save_model=False
+                            )
+
 
 
 #def ensemble_main():
@@ -86,7 +99,8 @@ et_specific_params = {
 
 if __name__ == "__main__":
     #ensemble_main()
-
+    bert_torch_main()
+    """
     build_params = {"train_embedding": False,
                     "use_pretrained_embedding": True,
                     "cell_type":"GRU",
@@ -102,8 +116,8 @@ if __name__ == "__main__":
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("NaiveBayes_classi",
-                       "NB_t1",
+    run_train_pipeline("HF_BERT_NN",
+                       "HF_BERT_NN",
                        load_model=False,
                        prediction_mode=False,
                        text_data_mode_on=False,
@@ -116,3 +130,6 @@ if __name__ == "__main__":
                        build_params=None,
                        train_params=None,
                        model_specific_params=HF_bert_specific_params)
+    """
+
+    

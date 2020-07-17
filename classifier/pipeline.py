@@ -10,8 +10,10 @@ from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
 from classifier.NaiveBayes_classi import NaiveBayes_classi
+from classifier.HF_BERT_TORCH2 import BERT_TORCH_NN
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension,load_inverse_vocab
+from preprocessing import bert_torch_preprocessing
 from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 from embedding import bert_matrix_train_location
@@ -38,6 +40,7 @@ from classifier.BERT_NN import PP_BERT_Data
 from preprocessing.tweetDF import load_tweetDF
 #from preprocessing.tweetDF import load_testDF
 import data
+import torch
 """
 When you implement a new model, you should also implement a new 'get_[name]_model' function with 
 exactly this signature and add the function to the 'model_pipeline_fun' dictionary in the 
@@ -89,6 +92,35 @@ def get_vanilla_model(model_name,
         vanilla.test(x_test,y_test, **train_params)
     if save_model: vanilla.save()
     return vanilla
+
+def get_BERT_TORCH_model(model_name,
+                         max_len,
+                         train_data=None,
+                         load_model=False,
+                         train_model=False,
+                         save_model=False,
+                         test_data=None,
+                         build_params=None,
+                         train_params=None,
+                         **kwargs):
+    """
+    Creates an new instance of a BERT_TORCH model.
+    """
+    our_BERT_TORCH =BERT_TORCH_NN(freeze_bert=True)
+    if load_model:
+        pass
+    if train_model:
+        our_BERT_TORCH.train_TORCH(train_dataloader=train_data[0],
+                                   val_dataloader=train_data[1],
+                                   model=our_BERT_TORCH,
+                                   epochs=4,
+                                   evaluation=True)
+    if test_data is not None:
+        pass
+    if save_model:
+        pass
+    return our_BERT_TORCH
+
 
 def get_BERT_model(model_name,
                    embedding_dim = embedding.embedding_dim,
@@ -892,8 +924,53 @@ model_pipeline_fun = {
         "convolutional_NN":get_convolutional_model,
         "ET_NN":get_ET_model,
         "HF_BERT_NN": get_HF_BERT_model,
+        "BERT_TORCH_NN": get_BERT_TORCH_model,
         "": lambda : None # empty function
     }
+
+
+def run_bert_torch_pipeline(input_files_train,
+                            input_files_test,
+                            random_percentage,
+                            max_len,
+                            epochs,
+                            evaluation,
+                            train_model,
+                            load_model,
+                            prediction_mode,
+                            save_model
+                            ):
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        print(f'There are {torch.cuda.device_count()} GPU(s) available.')
+        print('Device name:', torch.cuda.get_device_name(0))
+
+    else:
+        print('No GPU available, using the CPU instead.')
+        device = torch.device("cpu")
+    bert_model = BERT_TORCH_NN(freeze_bert=True)
+    bert_model.to(device)
+
+    train_dataloader, val_dataloader, y_train, y_val = bert_torch_preprocessing.get_train_data(input_files=input_files_train,
+                                                                            random_percentage=random_percentage, max_len=max_len)
+    test_dataloader = bert_torch_preprocessing.get_test_data(input_files=input_files_test, max_len=max_len)
+    if load_model:
+        bert_model.load(bert_model)
+    if train_model:
+        bert_model.train_TORCH(train_dataloader=train_dataloader,
+                               val_dataloader=val_dataloader,
+                               y_val=y_val,
+                               model=bert_model,
+                               epochs=epochs,
+                               evaluation=evaluation,
+                               save_model=save_model)
+
+    if prediction_mode:
+        bert_model.make_predictions(model=bert_model,
+                                    test_dataloader=test_dataloader)
+
+
+
 
 def run_ensemble_pipeline(models,
                           models_names,
@@ -931,7 +1008,7 @@ def run_train_pipeline(model_type,
                        load_model=False,
                        text_data_mode_on = False,
                        tensorflow_dataset_mode_on = False,
-                       tf_idf_mode = True,
+                       tf_idf_mode = False,
                        choose_randomly=False,
                        random_percentage=0.1,
                        data_location=None,
@@ -997,8 +1074,8 @@ def run_train_pipeline(model_type,
                                                    size=data.test_dimension)
             data_matrix = data_matrix.pred_data
         else:
-            data_matrix = tweets_data.TweetDatasetGenerator(input_files=[replaced_train_full_negative_location,
-                                                                         replaced_train_full_positive_location],
+            data_matrix = tweets_data.TweetDatasetGenerator(input_files=[train_positive_sample_location,
+                                                                         train_negative_sample_location],
                                                             labels=[0, 1],
                                                             batch_size=128,
                                                             size=100000)
