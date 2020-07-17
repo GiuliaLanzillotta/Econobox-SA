@@ -9,16 +9,21 @@ from classifier.ET_NN import etransformer_NN, metransformer_NN
 from classifier.LR_classi import LR_classi
 from classifier.RF_classi import RF_classi
 from classifier.Adaboost_classi import Adaboost_classi
+from classifier.NaiveBayes_classi import NaiveBayes_classi
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension,load_inverse_vocab
 from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 from embedding import bert_matrix_train_location
 from embedding.sentence_embedding import  no_embeddings
+from embedding.TFIDF import get_tweet_tf_idf_data
 from data import replaced_train_negative_location, replaced_train_positive_location, \
     full_dimension
 from data import train_positive_location, train_negative_location
+from data import tf_idf_data_location
 from data import replaced_train_full_negative_location, replaced_train_full_positive_location
+from data import replaced_train_full_negative_location_d, replaced_train_full_positive_location_d
+from data import train_negative_sample_location, train_positive_sample_location
 from data import test_location
 from data import tweets_data
 from preprocessing.tweetDF import load_predDF
@@ -461,7 +466,52 @@ def get_ET_model(model_name,
         my_transformer.test(x_test,y_test, idx2word=idx2word)
     return my_transformer
 
+def get_NaiveBayes_model(model_name,
+                 embedding_dim=embedding.embedding_dim,
+                 train_data=None,
+                 load_model=False,
+                 train_model=True,
+                 save_model=True,
+                 test_data=None,
+                 build_params=None,
+                 train_params=None,
+                 **kwargs):
+    """
+          Creates a new instance of NaiveBayes_classi
+          Parameters:
+          :param model_name: (str) the name of the model to create, or the name of the model to load.
+          :param embedding_dim: (int) dimension of the embedding space
+          :param train_data : (np.ndarray) the training data in a single matrix (like the one produced by
+                  the embedding.pipeline.build_embedding_matrix method
+          :param load_model: (bool) whether to load the model from file.
+          :param train_model: (bool) whether to train the model.
+          :param save_model: (bool) whether to save the model
+          :param test_data: (np.ndarray) if not None, the model will be tested against this test data.
+          :param build_params: (dict) dictionary of parameters to pass to build the model
+                  Example : {c:1,
+                            solver:'lbfgs',
+                            }
+          :param train_params: (dict) dictionary of parameters to pass to build the model
+                  Example : {validation_split:0.2}
+          :return: an instance of NaiveBayes_classi class
+          """
+    ourNB = NaiveBayes_classi(embedding_dim, model_name)
+    ourNB.build(**build_params)
+    if load_model: ourNB.load()
 
+    print(type(train_data[1].sent.to_numpy()))
+    print(type(train_data[0]))
+
+    if train_model:
+        x_train = train_data[0]
+        y_train = train_data[1].sent
+        ourNB.train(x_train, y_train)
+    if test_data is not None:
+        x_test = test_data[:, 0:-1]
+        y_test = test_data[:, -1]
+        ourNB.test(x_test, y_test)
+    if save_model: ourNB.save()
+    return ourNB
 
 def get_LR_model(model_name,
                  embedding_dim=embedding.embedding_dim,
@@ -837,6 +887,7 @@ model_pipeline_fun = {
         "LR_classi": get_LR_model,
         "Adaboost_classi":get_Adaboost_model,
         "RF_classi": get_RandomForest_model,
+        "NaiveBayes_classi": get_NaiveBayes_model,
         "BERT_NN": get_BERT_model,
         "convolutional_NN":get_convolutional_model,
         "ET_NN":get_ET_model,
@@ -879,7 +930,8 @@ def run_train_pipeline(model_type,
                        prediction_mode= False,
                        load_model=False,
                        text_data_mode_on = False,
-                       tensorflow_dataset_mode_on = True,
+                       tensorflow_dataset_mode_on = False,
+                       tf_idf_mode = True,
                        choose_randomly=False,
                        random_percentage=0.1,
                        data_location=None,
@@ -929,6 +981,13 @@ def run_train_pipeline(model_type,
     # DATA LOADING
     data_matrix = None
     test_matrix = None
+    if tf_idf_mode:
+        if prediction_mode:
+            pass
+        else:
+            dataframe = get_tweet_df(inputfiles= [train_negative_sample_location, train_positive_sample_location], random_percentage=1)
+            data_matrix = [get_tweet_tf_idf_data(dataframe), dataframe]
+
     if tensorflow_dataset_mode_on:
         if prediction_mode:
             data_matrix = tweets_data.TweetDataset(input_files=[test_location],
@@ -955,7 +1014,7 @@ def run_train_pipeline(model_type,
                                        max_seq_len=max_seq_len,
                                    prediction_mode=prediction_mode )
             data_matrix = data_matrix.pred_x
-    if not text_data_mode_on and not generator_mode and not tensorflow_dataset_mode_on:
+    if not text_data_mode_on and not generator_mode and not tensorflow_dataset_mode_on and not tf_idf_mode:
         print("Loading data")
         data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         if choose_randomly and not prediction_mode:
