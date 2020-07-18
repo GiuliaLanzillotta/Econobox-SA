@@ -5,6 +5,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils import _joblib
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
+from preprocessing import TFIDF_preprocessing
+from data import train_negative_sample_location, train_positive_sample_location
 
 class NaiveBayes_classi(ClassifierBase):
     """Naive Bayes classifier"""
@@ -22,7 +24,8 @@ class NaiveBayes_classi(ClassifierBase):
         self.model = MultinomialNB(alpha=1.8)
 
     def train(self, x,y, **kwargs):
-
+        print(x)
+        print(y)
         self.history = self.model.fit(x,y)
         crossvalscore = cross_val_score(self.model, x, y, cv=5, scoring='f1')
         print(crossvalscore)
@@ -51,3 +54,11 @@ class NaiveBayes_classi(ClassifierBase):
         print("Loading model")
         path = models_store_path+self.name
         self.model = _joblib.load('ourNB.pkl')
+
+
+ourNB = NaiveBayes_classi(embedding_dimension=-1)
+ourNB.build()
+data = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_sample_location, train_negative_sample_location], random_percentage=1)
+print(data[0])
+print(data[1])
+ourNB.train(x=data[0], y=data[1])
