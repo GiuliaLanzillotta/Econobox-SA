@@ -1066,7 +1066,6 @@ def run_train_pipeline(model_type,
             data_matrix = TFIDF_preprocessing.get_tfidf_test_data(input_files=test_data_location)
         else:
             data_matrix = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_sample_location, train_negative_sample_location], random_percentage=1)
-
     if tensorflow_dataset_mode_on:
         if prediction_mode:
             data_matrix = tweets_data.TweetDataset(input_files=[test_location],

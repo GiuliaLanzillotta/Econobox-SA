@@ -6,6 +6,7 @@ replaced_train_positive_location = '../data/twitter-datasets/replaced_train_pos.
 replaced_train_negative_location = '../data/twitter-datasets/replaced_train_neg.txt'
 replaced_train_full_positive_location = '../data/twitter-datasets/replaced_train_pos_full_no_duplicates.txt'
 replaced_train_full_negative_location = '../data/twitter-datasets/replaced_train_neg_full_no_duplicates.txt'
+train_matrices_folder = "../data/training_matrices/"
 
 replaced_train_full_positive_location_d = '../data/twitter-datasets/replaced_train_pos_full.txt'
 replaced_train_full_negative_location_d = '../data/twitter-datasets/replaced_train_neg_full.txt'

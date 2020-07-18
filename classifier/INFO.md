@@ -660,17 +660,17 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                             "max_len":50} # maximum length in the sequece
 
 -**Training performance**: 
-        600000/600000 [==============================] - 158s 263us/sample - loss: 0.3871 - accuracy: 0.8104 - val_loss: 0.3247 - val_accuracy: 0.8407
-        Epoch 2/10
-        600000/600000 [==============================] - 153s 255us/sample - loss: 0.3166 - accuracy: 0.8452 - val_loss: 0.3087 - val_accuracy: 0.8483
-        Epoch 3/10
-        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2994 - accuracy: 0.8554 - val_loss: 0.3032 - val_accuracy: 0.8541
-        Epoch 4/10
-        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2859 - accuracy: 0.8635 - val_loss: 0.2994 - val_accuracy: 0.8558
-        Epoch 5/10
-        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2727 - accuracy: 0.8710 - val_loss: 0.3015 - val_accuracy: 0.8568
-        Epoch 6/10
-        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2594 - accuracy: 0.8785 - val_loss: 0.3093 - val_accuracy: 0.8538                         
+        600000/600000 [==============================] - 158s 263us/sample - loss: 0.3871 - accuracy: 0.8104 - val_loss: 0.3247 - val_accuracy: 0.8407 <br>
+        Epoch 2/10<br>
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.3166 - accuracy: 0.8452 - val_loss: 0.3087 - val_accuracy: 0.8483<br>
+        Epoch 3/10<br>
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2994 - accuracy: 0.8554 - val_loss: 0.3032 - val_accuracy: 0.8541<br>
+        Epoch 4/10<br>
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2859 - accuracy: 0.8635 - val_loss: 0.2994 - val_accuracy: 0.8558<br>
+        Epoch 5/10<br>
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2727 - accuracy: 0.8710 - val_loss: 0.3015 - val_accuracy: 0.8568<br>
+        Epoch 6/10<br>
+        600000/600000 [==============================] - 153s 255us/sample - loss: 0.2594 - accuracy: 0.8785 - val_loss: 0.3093 - val_accuracy: 0.8538<br>                     
 
 
 - **Test results** : 
@@ -687,6 +687,9 @@ Trained on 600000 samples, validated against 150000 samples and tested against 7
                                                
 -**Total params**: 41,207,642
 -**Trainable params**: 6,600,442
+-**TODO**: 
+    - [ ] Try mixing glove+stanford and negative sampling
+    - [ ] Try mixing glove+stanford with 2 different windows
 
 
 

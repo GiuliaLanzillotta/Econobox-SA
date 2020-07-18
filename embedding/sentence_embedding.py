@@ -53,12 +53,14 @@ def no_embeddings(sentence, embedding, **kwargs):
         sentence_emb[i] = vocabulary.get(word) + 1
     return sentence_emb
 
-def sum_embeddings(sentence, embedding, **kwargs):
+def sum_embeddings(sentence, embedding, weights=None, **kwargs):
     """
     Computes the embedding for a sentence given the single words
     embeddings by summing.
     @:param sentence: list(str)
         A sentence is represented as a list of words.
+    @:param weights: a vectort with lenght equal to the sentence length.
+        If weights are given than a weighted sum will be performed.
     @:param embedding: implements EmbeddingBase class
     @:return np.array
         The embedding for the sentence.
@@ -66,16 +68,17 @@ def sum_embeddings(sentence, embedding, **kwargs):
     assert issubclass(embedding.__class__, EmbeddingBase), "embedding should be an instance of EmbeddingBase"
     embedding_matrix, vocabulary = embedding.embedding_matrix, embedding.vocabulary
 
-
     # Here we filter out the words that are not in the vocabulary
     sentence = tokenize_text(sentence)
     sentence_filtered = [t for t in sentence if t in vocabulary.keys()]
-
+    # assigning equal weight to each word if the weights are not given
+    if weights is not None: weights=[1]*len(sentence_filtered)
+    else: assert len(weights)==len(sentence_filtered), "The weights should have the same length as the sentence"
     # simply summing the words in the sentence
     emb_dim = embedding_matrix.shape[1]
     sentence_emb = np.zeros(emb_dim)
-    for word in sentence_filtered:
-        sentence_emb += embedding_matrix[vocabulary.get(word) + 1]
+    for i,word in enumerate(sentence_filtered):
+        sentence_emb += embedding_matrix[vocabulary.get(word) + 1]*weights[i]
     return sentence_emb
 
 #def embedize(sentence, embedding):

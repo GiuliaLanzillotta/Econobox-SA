@@ -3,6 +3,8 @@ from embedding import embedding_dim, matrix_train_location, matrix_test_location
 from embedding.glove import GloVeEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
+from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.tokenize.casual import TweetTokenizer
 from data import sample_dimension, \
     train_negative_sample_location, train_positive_sample_location, test_location, test_dimension
 import tensorflow as tf
@@ -153,10 +155,12 @@ def build_training_matrix(label,
                           label_values=None,
                           aggregation_fun=sentence_embedding.sum_embeddings,
                           input_entries=sample_dimension,
+                          use_tf_idf=False,
                           sentence_dimesion = 200,
                           output_location = matrix_train_location):
     """
     Builds a matrix that associates each tweet to its embedding representation.
+    :param use_tf_idf: whether to use tf_idf weighting in the embedding
     :param input_entries: total size (in number of lines) of the input
     :param label: bool. Whether to insert a label column into the matrix.
     :param embedding: EmbeddingBase. The embedding class to use.
@@ -178,15 +182,25 @@ def build_training_matrix(label,
 
     if label: out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
+    output = np.zeros((input_entries, out_dim1))
     # PROCESS THE FILES ----------
     counter = 0
+    if use_tf_idf:
+        # Preparing the TF-IDF vectorizer
+        vocabulary = embedding.vocabulary
+        tokenizer = TweetTokenizer()
+        vectorizer = TfidfVectorizer(vocabulary=vocabulary,
+                                     tokenizer=tokenizer.tokenize)
     for i, file in enumerate(input_files):
         label_value = label_values[i]
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # INITIALIZE ----------
-            with open(file, encoding="utf8") as f2: num_lines = sum(1 for _ in f2)
-            output = np.zeros((num_lines, out_dim1))
+
+            if use_tf_idf:
+                with open(file, encoding="utf8") as f2:
+                    print("TF-IDF vectorization of the file.")
+                    tf_idf = vectorizer.fit_transform(f2)
             # look at each line (=tweet)
             for l, line in enumerate(f):
                 # Get the tweet embedding from an helper function
@@ -196,19 +210,20 @@ def build_training_matrix(label,
                 if not label: line = line[3:] #cutting the first 3 characters if we're making
                 # predictions since the test data has enumerated lines.
 
-                sentence_emb = aggregation_fun(line,embedding)
+                #getting the tfidf weights if requested
+                weights = None
+                if use_tf_idf: weights=tf_idf[l,:].data
+                sentence_emb = aggregation_fun(line,embedding,weights=weights)
                 # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
                 if not label:output[counter, :] = sentence_emb
                 else: output[counter, :] = np.append(sentence_emb, np.array(label_value))
-                # Save the output
-                output_name = output_location+"_{0}.{1}".format(i,label_value)
-                print("Saving ",output_name)
-                np.savez(output_name, output)
                 if l % 10000 == 0:
                     print(l)
                 counter += 1
     print("Number of lines read:",counter)
+    print("Saving ", output_location)
+    np.savez(output_location, output)
 
 def get_glove_embedding(vocabulary_file="vocab.pkl",
                         cooc_file="cooc.pkl",
@@ -260,6 +275,7 @@ def run_embedding_pipeline(embedding_fun,
                            input_entries=sample_dimension,
                            output_location=matrix_test_location,
                            prediction_mode=True,
+                           use_tf_idf=True,
                            glove=True,
                            **kwargs):
     """
@@ -282,15 +298,15 @@ def run_embedding_pipeline(embedding_fun,
     if input_labels is None:
         input_labels = [0, 1]
     print("Embedding pipeline")
-    max_len = kwargs.get("max_len")
+    max_len = kwargs.get("max_len",200)
     embedding_function = embedding_funcs[embedding_fun]
     ## 1. extracting the embedding to use
     print(embedding_fun)
     if embedding_fun!="transformer_emb":
-        embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+        embedding = get_glove_embedding(vocabulary_file="vocab.pkl",
                                         load_from_file=True,
                                         load_Stanford=False,
-                                        file_name="necessary_stanford.npz",
+                                        file_name="glove+stanford.npz",
                                         train=False,
                                         save=True)
     else: embedding=kwargs.get("embedding", "roberta-base")
@@ -305,6 +321,7 @@ def run_embedding_pipeline(embedding_fun,
     build_training_matrix(label=not prediction_mode,
                           label_values=input_labels,
                           embedding=embedding,
+                          use_tf_idf=use_tf_idf,
                           aggregation_fun=embedding_function,
                           sentence_dimesion=max_len,
                           output_location=output_path,

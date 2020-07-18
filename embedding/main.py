@@ -10,15 +10,13 @@ import embedding
 import data
 
 if __name__ == "__main__":
-    input_files = [data.replaced_train_full_negative_location[:-4]+"_split{0}".format(s)+".txt" for s in range(6)] +\
-                  [data.replaced_train_full_positive_location[:-4]+"_split{0}".format(s)+".txt" for s in range(5)]
+    input_files = [data.train_negative_sample_location,data.train_negative_sample_location]
 
-    run_embedding_pipeline(embedding_fun="transformer_emb",
+    run_embedding_pipeline(embedding_fun="sum_embeddings",
                            prediction_mode=False,
-                           input_entries=data.full_dimension,
+                           input_entries=data.sample_dimension,
                            input_files=input_files,
-                           input_labels=[0 for i in range(6)] + [1 for i in range(5)],
-                           output_location=embedding.roberta_full_matrix_train_location,
-                           embedding="roberta-base",
-                           max_len=200) # 768 for roberta, 50 for the no embedding function, 200 Glove
+                           input_labels=[0,1],
+                           output_location=data.train_matrices_folder+"tfidf_sample_matrix")
+    # 768 for roberta, 50 for the no embedding function, 200 Glove
     exit(0)
