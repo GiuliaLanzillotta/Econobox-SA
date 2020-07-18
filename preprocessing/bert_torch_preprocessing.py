@@ -34,8 +34,8 @@ def get_tweet_df(input_files, random_percentage):
     df_data = pd.concat([df_pos_1_s, df_neg_1_s], ignore_index=True, sort=False)
     df_data = shuffle(df_data)
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    with open(os.path.join(abs_path,"../data/tweetDF.pkl"), 'wb') as f:
-        pickle.dump(df_data,f, pickle.HIGHEST_PROTOCOL)
+    #with open(os.path.join(abs_path,"../data/tweetDF.pkl"), 'wb') as f:
+    #    pickle.dump(df_data,f, pickle.HIGHEST_PROTOCOL)
 
     return df_data
 
@@ -45,8 +45,8 @@ def get_tweet_df_pred(input_files):
         'tweet':df_pred['tweet']
     })
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    with open(os.path.join(abs_path, "../data/predDF.pkl"), 'wb') as f:
-        pickle.dump(df_pred, f, pickle.HIGHEST_PROTOCOL)
+    #with open(os.path.join(abs_path, "../data/predDF.pkl"), 'wb') as f:
+    #    pickle.dump(df_pred, f, pickle.HIGHEST_PROTOCOL)
     return df_pred
 
 
