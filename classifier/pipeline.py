@@ -1,7 +1,7 @@
 # training and prediction pipeline should be implemented here
 from classifier.vanilla_NN import vanilla_NN
 #from classifier.BERT_NN import BERT_NN
-from classifier.HUGGINGFACE_BERT_NN import HF_BERT_NN
+#from classifier.HUGGINGFACE_BERT_NN import HF_BERT_NN
 from classifier.recurrent_NN import recurrent_NN, attention_NN
 from classifier.convolutional_NN import convolutional_NN
 from classifier.SVM_classi import SVM_classi
@@ -14,6 +14,7 @@ from classifier.HF_BERT_TORCH2 import BERT_TORCH_NN
 from preprocessing import standard_vocab_name
 from preprocessing.tokenizer import get_vocab_dimension,load_inverse_vocab
 from preprocessing import bert_torch_preprocessing
+from preprocessing import TFIDF_preprocessing
 from embedding.pipeline import get_glove_embedding, generate_training_matrix, get_validation_data
 from embedding import matrix_train_location, embeddings_folder, matrix_test_location
 from embedding import bert_matrix_train_location
@@ -36,7 +37,7 @@ import os
 np.random.seed(42)
 from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
-from classifier.BERT_NN import PP_BERT_Data
+#from classifier.BERT_NN import PP_BERT_Data
 from preprocessing.tweetDF import load_tweetDF
 #from preprocessing.tweetDF import load_testDF
 import data
@@ -531,13 +532,15 @@ def get_NaiveBayes_model(model_name,
     ourNB.build(**build_params)
     if load_model: ourNB.load()
 
-    print(type(train_data[1].sent.to_numpy()))
-    print(type(train_data[0]))
-
     if train_model:
+        print("in train model")
         x_train = train_data[0]
-        y_train = train_data[1].sent
-        ourNB.train(x_train, y_train)
+        y_train = train_data[1]
+        #print(x_train)
+        #print(type(x_train))
+        #print(y_train)
+        #print(type(y_train))
+        ourNB.train(x=x_train, y=y_train)
     if test_data is not None:
         x_test = test_data[:, 0:-1]
         y_test = test_data[:, -1]
@@ -1008,9 +1011,9 @@ def run_train_pipeline(model_type,
                        load_model=False,
                        text_data_mode_on = False,
                        tensorflow_dataset_mode_on = False,
-                       tf_idf_mode = False,
+                       tf_idf_mode = True,
                        choose_randomly=False,
-                       random_percentage=0.1,
+                       random_percentage=1,
                        data_location=None,
                        generator_mode=False,
                        cv_on=False,
@@ -1060,10 +1063,9 @@ def run_train_pipeline(model_type,
     test_matrix = None
     if tf_idf_mode:
         if prediction_mode:
-            pass
+            data_matrix = TFIDF_preprocessing.get_tfidf_test_data(input_files=test_data_location)
         else:
-            dataframe = get_tweet_df(inputfiles= [train_negative_sample_location, train_positive_sample_location], random_percentage=1)
-            data_matrix = [get_tweet_tf_idf_data(dataframe), dataframe]
+            data_matrix = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_sample_location, train_negative_sample_location], random_percentage=1)
 
     if tensorflow_dataset_mode_on:
         if prediction_mode:
