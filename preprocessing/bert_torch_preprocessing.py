@@ -9,45 +9,35 @@ import pandas as pd
 import os
 import numpy as np
 from data import train_positive_location, train_negative_location
-from data import replaced_train_full_positive_location, replaced_train_full_negative_location
-from data import test_location
+from data import replaced_train_full_positive_location_d, replaced_train_full_negative_location_d
+from data import test_location, replaced_test_location
 import pickle
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 
-
 def get_tweet_df(input_files, random_percentage):
-    df_pos = pd.read_table(input_files[0], names=('tweet', 'id'))
-    df_neg = pd.read_table(input_files[1], names=('tweet', 'id'))
-    df_pos_1 = pd.DataFrame({
-        'tweet': df_pos['tweet'],
-        'label': 0
-    })
-    df_pos_1_s = df_pos_1.sample(n=int(df_pos_1.shape[0]*random_percentage))
-
-    df_neg_1 = pd.DataFrame({
-        'tweet': df_neg['tweet'],
-        'label': 1
-    })
-    df_neg_1_s = df_neg_1.sample(n=int(df_neg_1.shape[0]*random_percentage))
-    df_data = pd.concat([df_pos_1_s, df_neg_1_s], ignore_index=True, sort=False)
-    df_data = shuffle(df_data)
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    #with open(os.path.join(abs_path,"../data/tweetDF.pkl"), 'wb') as f:
-    #    pickle.dump(df_data,f, pickle.HIGHEST_PROTOCOL)
+    df_pos = pd.read_fwf(os.path.join(abs_path, input_files[0]), names=['tweet','label'])
+    df_neg = pd.read_fwf(os.path.join(abs_path, input_files[1]), names=['tweet', 'label'])
+    df_pos['label'] = 0
+    df_neg['label'] = 1
+
+    df_pos_s = df_pos.sample(n=int(df_pos.shape[0]*random_percentage))
+    df_neg_s = df_neg.sample(n=int(df_neg.shape[0]*random_percentage))
+
+    df_data = pd.concat([df_pos_s, df_neg_s], ignore_index=True, sort=False)
+    df_data = shuffle(df_data)
 
     return df_data
 
 def get_tweet_df_pred(input_files):
-    df_pred = pd.read_table(input_files,names=('tweet', 'id'))
-    df_pred = pd.DataFrame({
-        'tweet':df_pred['tweet']
-    })
     abs_path = os.path.abspath(os.path.dirname(__file__))
-    #with open(os.path.join(abs_path, "../data/predDF.pkl"), 'wb') as f:
-    #    pickle.dump(df_pred, f, pickle.HIGHEST_PROTOCOL)
+    df_pred = pd.read_fwf(os.path.join(abs_path, input_files), names=['tweet'])
+    print(df_pred)
     return df_pred
+
+
 
 
 def text_preprocessing(text):
@@ -148,13 +138,12 @@ def get_train_data(input_files, random_percentage, max_len):
 def get_test_data(input_files, max_len):
     test_data = get_tweet_df_pred(input_files=input_files)
 
-    test_inputs, test_masks = preprocessing_for_bert(data=test_data, max_len=max_len)
+    test_inputs, test_masks = preprocessing_for_bert(data=test_data.tweet, max_len=max_len)
 
     test_dataset = TensorDataset(test_inputs, test_masks)
     test_sampler = SequentialSampler(test_dataset)
     test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=32)
 
     return test_dataloader
-
 
 
