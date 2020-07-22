@@ -770,4 +770,10 @@ dense 768 -> dropout(0.5) -> dense 200 -> dropout(0.5) -> dense 2
 
 - kaggle leaderboard score: 0.56780
 
+#### Experiment 13, BERT + 2 dense layers
+- input files used: replaced_full_positive_30, replaced_full_negative_30
+- test file used: replaced_test
+
+- trained on random pre selected subset of 
+
                           

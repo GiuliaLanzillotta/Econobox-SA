@@ -107,7 +107,7 @@ def get_BERT_TORCH_model(model_name,
     """
     Creates an new instance of a BERT_TORCH model.
     """
-    our_BERT_TORCH =BERT_TORCH_NN(freeze_bert=True)
+    our_BERT_TORCH =BERT_TORCH_NN(name=model_name, freeze_bert=True)
     if load_model:
         pass
     if train_model:
@@ -628,7 +628,7 @@ def get_RandomForest_model(model_name,
 
     load_embedding = kwargs.get("load_embedding",True)
     embedding_name = kwargs.get("embedding_location", "glove_emb.npz")
-    generator_mode = kwargs.get("generator_mode", True)
+    generator_mode = kwargs.get("generator_mode", False)
     max_len = kwargs.get("max_len", 100)
     if load_embedding:
         glove_embedding = get_glove_embedding(vocabulary_file=vocabulary,
@@ -935,6 +935,7 @@ model_pipeline_fun = {
 def run_bert_torch_pipeline(input_files_train,
                             input_files_test,
                             random_percentage,
+                            name,
                             max_len,
                             epochs,
                             evaluation,
@@ -951,7 +952,7 @@ def run_bert_torch_pipeline(input_files_train,
     else:
         print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
-    bert_model = BERT_TORCH_NN(freeze_bert=True)
+    bert_model = BERT_TORCH_NN(name=name, freeze_bert=True)
     bert_model.to(device)
 
     train_dataloader, val_dataloader, y_train, y_val = bert_torch_preprocessing.get_train_data(input_files=input_files_train,
@@ -1011,7 +1012,7 @@ def run_train_pipeline(model_type,
                        load_model=False,
                        text_data_mode_on = False,
                        tensorflow_dataset_mode_on = False,
-                       tf_idf_mode = True,
+                       tf_idf_mode = False,
                        choose_randomly=False,
                        random_percentage=1,
                        data_location=None,

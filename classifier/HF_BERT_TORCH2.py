@@ -11,6 +11,9 @@ from data import train_positive_location, train_negative_location
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, roc_curve, auc
 from matplotlib import pyplot as plt
+import os
+from classifier import predictions_folder
+
 
 
 class BERT_TORCH_NN(nn.Module):
@@ -18,8 +21,9 @@ class BERT_TORCH_NN(nn.Module):
     Bert torch model for classification tasks
     """
     def __init__(self,
-                 freeze_bert=True,
-                 name="ourBERTtorch"):
+                 name,
+                 freeze_bert=False,
+                 ):
         super(BERT_TORCH_NN, self).__init__()
         #specify hidden size of BERT, hidden size classifier and labels
         D_in, H, D_out = 768, 50,2
@@ -131,8 +135,8 @@ class BERT_TORCH_NN(nn.Module):
                     time_elapsed = time.time() - t0_batch
 
                     # Print training results
-                    print(
-                        f"{epoch_i + 1:^7} | {step:^7} | {batch_loss / batch_counts:^12.6f} | {'-':^10} | {'-':^9} | {time_elapsed:^9.2f}")
+                    #print(
+                    #    f"{epoch_i + 1:^7} | {step:^7} | {batch_loss / batch_counts:^12.6f} | {'-':^10} | {'-':^9} | {time_elapsed:^9.2f}")
 
                     # Reset batch tracking variables
                     batch_loss, batch_counts = 0, 0
@@ -160,10 +164,12 @@ class BERT_TORCH_NN(nn.Module):
 
         print("Training complete!")
 
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        print(abs_path)
+        path = models_store_path + self.name
 
-        path = models_store_path+self.name+"/"
         if save_model:
-            torch.save(model.state_dict(), path)
+            torch.save(model.state_dict(), os.path.join(abs_path, path))
 
     def evaluate(self, model, val_dataloader, y_val):
         """After the completion of each training epoch, measure the model's performance
@@ -202,41 +208,57 @@ class BERT_TORCH_NN(nn.Module):
         val_loss = np.mean(val_loss)
         val_accuracy = np.mean(val_accuracy)
 
-        self.evaluate_roc(preds, y_val)
+
 
         return val_loss, val_accuracy
 
-    def make_predictions(self, model, test_dataloader):
+    def make_predictions(self, model, test_dataloader, save=True):
+
+        """Perform a forward pass on the trained BERT model to predict probabilities
+        on the test set.
         """
-        Perform a forward pass on the trained BERT model to predict
-        probabilities on the test set
-        """
-        #put the model into the evaluation mode
-        #the dropout layers are disabled during the test time
+        # Put the model into the evaluation mode. The dropout layers are disabled during
+        # the test time.
         model.eval()
 
         all_logits = []
 
+        # For each batch in our test set...
         for batch in test_dataloader:
+            # Load batch to GPU
             b_input_ids, b_attn_mask = tuple(t.to(self.device) for t in batch)[:2]
 
+            # Compute logits
             with torch.no_grad():
                 logits = model(b_input_ids, b_attn_mask)
             all_logits.append(logits)
 
+        # Concatenate logits from each batch
         all_logits = torch.cat(all_logits, dim=0)
 
+        # Apply softmax to calculate probabilities
         probs = F.softmax(all_logits, dim=1).cpu().numpy()
+        preds_classes = np.argmax(probs, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
 
-        return probs
+
+
+        if save: self.save_predictions(preds_classes)
+
+        return preds_classes
+
+
+
+
 
 
     def load(self, model, **kwargs):
         """
         Loads the model from file.
         """
-        path = models_store_path+self.name+"/"
-        model.load_state_dict(torch.load(path, map_location=self.device))
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = models_store_path + self.name
+        model.load_state_dict(torch.load(os.path.join(abs_path, path), map_location=self.device))
         model.to(self.device)
         return model
 
@@ -267,6 +289,21 @@ class BERT_TORCH_NN(nn.Module):
         plt.ylabel('True Positive Rate')
         plt.xlabel('False Positive Rate')
         plt.show()
+
+    def save_predictions(self, predictions_array):
+        """
+        Saves the predictions in the desired format
+        :param predictions_array: (numpy array)
+        :return: None
+        """
+        print("Saving predictions")
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        print(abs_path)
+        path = predictions_folder + self.name + "_predictions.csv"
+        print(path)
+        to_save_format = np.dstack((np.arange(1, predictions_array.size + 1), predictions_array))[0]
+        np.savetxt(os.path.join(abs_path,path), to_save_format, "%d,%d",
+                   delimiter=",", header="Id,Prediction", comments='')
 
 
 

@@ -52,7 +52,7 @@ class RF_classi(ClassifierBase):
         """
         Training the model and saving the history of training
         """
-        generator_mode = kwargs.get("generator_mode")
+        generator_mode = kwargs.get("generator_mode",False)
         print("Training model")
 
         if generator_mode:

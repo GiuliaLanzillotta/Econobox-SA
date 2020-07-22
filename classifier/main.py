@@ -3,8 +3,13 @@ import os
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ROOT_DIR)
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline, run_bert_torch_pipeline
-from data import train_positive_location, train_negative_location, test_location
-import embedding
+#from data import train_positive_location, train_negative_location, test_location
+from data import replaced_train_full_negative_location_30, replaced_train_full_positive_location_30, replaced_test_location
+#from embedding import glove_30_matrix_train_location
+from embedding import matrix_train_location
+#from embedding import matrix_test_location
+from data import replaced_train_full_positive_location_d, replaced_train_full_negative_location_d
+from embedding import replaced_test_matrix_location
 
 ## ----------------
 #Saving here the model specific parameters to pass to the
@@ -37,16 +42,17 @@ et_specific_params = {
     "embedding_locations":["necessary_stanford.npz","glove_emb.npz"],
 }
 def bert_torch_main():
-    run_bert_torch_pipeline(input_files_train=[train_positive_location, train_negative_location],
-                            input_files_test=test_location,
-                            random_percentage=0.01,
+    run_bert_torch_pipeline(input_files_train=[replaced_train_full_negative_location_d, replaced_train_full_positive_location_d],
+                            input_files_test=replaced_test_location,
+                            name='BERT_torch_2_randsample',
+                            random_percentage=0.3,
                             max_len=50,
-                            epochs=4,
+                            epochs=6,
                             evaluation=True,
                             train_model=True,
                             load_model=False,
-                            prediction_mode=False,
-                            save_model=False
+                            prediction_mode=True,
+                            save_model=True
                             )
 
 def ensemble_main():
@@ -98,8 +104,10 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-    #bert_torch_main()
+    bert_torch_main()
 
+
+    """
     build_params = {"optimizer": 'adam',
                     "metrics": ['accuracy'],
                     "adapter_size": 1,
@@ -113,19 +121,28 @@ if __name__ == "__main__":
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("ET_NN",
-                       "ET_NN_2_embs",
-                       load_model=False,
-                       prediction_mode=False,
+    run_train_pipeline("LR_classi",
+                       "LR_baseline_sample_different_train",
+                       load_model=True,
+                       prediction_mode=True,
                        text_data_mode_on=False,
-                       data_location=embedding.replaced_zero_matrix_full_train_location,
+                       data_location=replaced_test_matrix_location,
                        cv_on=False,
-                       choose_randomly=True,
-                       random_percentage=0.3,
+                       choose_randomly=False,
+                       random_percentage=1,
                        test_data_location=None,
                        generator_mode=False,
                        build_params=None,
                        train_params=None,
                        model_specific_params={})
+                       
+    """
+                       
+
+                       
+                       
+
+                       
+
 
     
