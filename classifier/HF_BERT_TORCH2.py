@@ -14,6 +14,56 @@ from matplotlib import pyplot as plt
 import os
 from classifier import predictions_folder
 
+import numpy as np
+import torch
+
+#code taken from github
+class EarlyStopping:
+    """Early stops the training if validation loss doesn't improve after a given patience."""
+    def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pt'):
+        """
+        Args:
+            patience (int): How long to wait after last time validation loss improved.
+                            Default: 7
+            verbose (bool): If True, prints a message for each validation loss improvement.
+                            Default: False
+            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+                            Default: 0
+            path (str): Path for the checkpoint to be saved to.
+                            Default: 'checkpoint.pt'
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+        self.path = path
+
+    def __call__(self, val_loss, model):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model):
+        '''Saves model when validation loss decrease.'''
+        if self.verbose:
+            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model.state_dict(), self.path)
+        self.val_loss_min = val_loss
 
 
 class BERT_TORCH_NN(nn.Module):
@@ -46,7 +96,11 @@ class BERT_TORCH_NN(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(D_in, H),
             nn.ReLU(),
-            nn.Linear(H, D_out)
+            nn.Linear(H,200),
+            nn.ReLU(),
+            nn.Linear(200,200),
+            nn.ReLU(),
+            nn.Linear(200, D_out)
         )
 
         #Freeze the BERT model
@@ -88,6 +142,7 @@ class BERT_TORCH_NN(nn.Module):
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=0,
                                                     num_training_steps=total_steps)
+        early_stopping = EarlyStopping(patience=3, verbose=True)
 
         for epoch_i in range(epochs):
             print(
@@ -102,6 +157,8 @@ class BERT_TORCH_NN(nn.Module):
 
             # Put the model into the training mode
             model.train()
+            val_loss_prev = 0
+            val_count = 0
             for step, batch in enumerate(train_dataloader):
                 batch_counts += 1
                 # Load batch to GPU
@@ -123,7 +180,7 @@ class BERT_TORCH_NN(nn.Module):
                 loss.backward()
 
                 # Clip the norm of the gradients to 1.0 to prevent "exploding gradients"
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 20)
 
                 # Update parameters and the learning rate
                 optimizer.step()
@@ -154,6 +211,13 @@ class BERT_TORCH_NN(nn.Module):
                 # on our validation set.
                 val_loss, val_accuracy = self.evaluate(model, val_dataloader, y_val)
 
+                early_stopping(val_loss, model)
+
+                if early_stopping.early_stop:
+                    print("Early stopping")
+                    break
+
+
                 # Print performance over the entire training data
                 time_elapsed = time.time() - t0_epoch
 
@@ -161,6 +225,7 @@ class BERT_TORCH_NN(nn.Module):
                     f"{epoch_i + 1:^7} | {'-':^7} | {avg_train_loss:^12.6f} | {val_loss:^10.6f} | {val_accuracy:^9.2f} | {time_elapsed:^9.2f}")
                 print("-" * 70)
             print("\n")
+
 
         print("Training complete!")
 

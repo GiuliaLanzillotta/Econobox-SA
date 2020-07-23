@@ -44,10 +44,10 @@ et_specific_params = {
 def bert_torch_main():
     run_bert_torch_pipeline(input_files_train=[replaced_train_full_negative_location_d, replaced_train_full_positive_location_d],
                             input_files_test=replaced_test_location,
-                            name='BERT_torch_2_randsample',
+                            name='BERT_torch_2_randsample_3dense_clipgrad20_earlystopping',
                             random_percentage=0.3,
-                            max_len=50,
-                            epochs=6,
+                            max_len=100,
+                            epochs=50,
                             evaluation=True,
                             train_model=True,
                             load_model=False,
