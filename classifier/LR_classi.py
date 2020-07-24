@@ -57,6 +57,7 @@ class LR_classi(ClassifierBase):
         preds = self.model.predict(x)
         preds[preds == 0] = -1
         if save: self.save_predictions(preds)
+        return preds
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")

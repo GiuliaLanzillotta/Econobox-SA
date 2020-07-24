@@ -37,9 +37,7 @@ import os
 np.random.seed(42)
 from sklearn.model_selection import KFold
 from classifier import K_FOLD_SPLITS
-#from classifier.BERT_NN import PP_BERT_Data
-from preprocessing.tweetDF import load_tweetDF
-#from preprocessing.tweetDF import load_testDF
+from preprocessing.bert_torch_preprocessing import get_test_data
 import data
 import torch
 """
@@ -768,10 +766,10 @@ def get_ensemble(models, data, models_names,
                  prediction_mode=False,
                  ensemble_name="ensemble"):
     """
-    #TODO allow ensemble with same classifier but trained on different data
     Builds ensemble model of other sub-models.
     Note: the sub-models need to be already trained and saved, as
     we'll only load them here.
+    NOTA BENE: the first
     :param models: List of the sub-models' pipeline functions.
         :type models: list
     :param data: the data matrices to use to test the ensemble or to
@@ -801,16 +799,32 @@ def get_ensemble(models, data, models_names,
     print("Loading the models to put in the ensemble.")
     _models = []
     for i in range(n_models):
-        model_fun = models[i]
-        model = model_fun(models_names[i],
-                          train_data=None,
-                          load_model=True,
-                          train_model=False,
-                          save_model=False,
-                          test_data=None,
-                          build_params=models_build_params[i],
-                          train_params=None,
-                          **models_fun_params[i])
+        if(n_models[i]=="BERT_TORCH_NN"):
+            build_params = models_build_params[i]
+            max_len = build_params.get("max_len",100)
+            run_bert_torch_pipeline(input_files_train=None,
+                                    input_files_test=None,
+                                    random_percentage=1,
+                                    name=models_names[i],
+                                    max_len=max_len,
+                                    epochs=0,
+                                    evaluation=False,
+                                    train_model=False,
+                                    load_model=True,
+                                    prediction_mode=False,
+                                    save_model=False)
+        else:
+            model_fun = models[i]
+            model = model_fun(models_names[i],
+                              train_data=None,
+                              load_model=True,
+                              train_model=False,
+                              save_model=False,
+                              test_data=None,
+                              build_params=models_build_params[i],
+                              train_params=None,
+                              **models_fun_params[i])
+
         _models.append(model)
     ## ----------
     # Extracting the data
@@ -830,12 +844,14 @@ def get_ensemble(models, data, models_names,
         # extracting the data
         matrix = data[i]
         x = matrix
-        if not prediction_mode:
-            x = matrix[random_indices, 0:-1]
-            y = matrix[random_indices, -1]
         model = _models[i]
-        # making predictions
-        y_pred = model.model.predict(x)
+        if n_models[i] == "BERT_TORCH_NN":
+            y_pred = model.make_predictions(model, x, save=False)
+        else:
+            if not prediction_mode:
+                x = matrix[random_indices, 0:-1]
+                y = matrix[random_indices, -1]
+            y_pred = model.make_predictions(x, save=False)
         y_pred = np.reshape(y_pred, (x.shape[0],-1))
         if y_pred.shape[1]==2:
             # in this case we have probabilities for each class
@@ -915,22 +931,6 @@ def random_split(data, train_p, test_p):
     return data_matrix, test_matrix
 
 
-model_pipeline_fun = {
-        "vanilla_NN": get_vanilla_model,
-        "recurrent_NN":get_recurrent_model,
-        "SVM_classi": get_SVM_model,
-        "LR_classi": get_LR_model,
-        "Adaboost_classi":get_Adaboost_model,
-        "RF_classi": get_RandomForest_model,
-        "NaiveBayes_classi": get_NaiveBayes_model,
-        "BERT_NN": get_BERT_model,
-        "convolutional_NN":get_convolutional_model,
-        "ET_NN":get_ET_model,
-        "HF_BERT_NN": get_HF_BERT_model,
-        "BERT_TORCH_NN": get_BERT_TORCH_model,
-        "": lambda : None # empty function
-    }
-
 
 def run_bert_torch_pipeline(input_files_train,
                             input_files_test,
@@ -942,8 +942,7 @@ def run_bert_torch_pipeline(input_files_train,
                             train_model,
                             load_model,
                             prediction_mode,
-                            save_model
-                            ):
+                            save_model):
     if torch.cuda.is_available():
         device = torch.device("cuda")
         print(f'There are {torch.cuda.device_count()} GPU(s) available.')
@@ -954,10 +953,12 @@ def run_bert_torch_pipeline(input_files_train,
         device = torch.device("cpu")
     bert_model = BERT_TORCH_NN(name=name, freeze_bert=True)
     bert_model.to(device)
-
-    train_dataloader, val_dataloader, y_train, y_val = bert_torch_preprocessing.get_train_data(input_files=input_files_train,
-                                                                            random_percentage=random_percentage, max_len=max_len)
-    test_dataloader = bert_torch_preprocessing.get_test_data(input_files=input_files_test, max_len=max_len)
+    if not train_model and not prediction_mode:
+        train_dataloader, val_dataloader, \
+        y_train, y_val = bert_torch_preprocessing.get_train_data(input_files=input_files_train,
+                                                                 random_percentage=random_percentage,
+                                                                 max_len=max_len)
+        test_dataloader = bert_torch_preprocessing.get_test_data(input_files=input_files_test, max_len=max_len)
     if load_model:
         bert_model.load(bert_model)
     if train_model:
@@ -973,7 +974,25 @@ def run_bert_torch_pipeline(input_files_train,
         bert_model.make_predictions(model=bert_model,
                                     test_dataloader=test_dataloader)
 
+    return bert_model
 
+
+
+model_pipeline_fun = {
+        "vanilla_NN": get_vanilla_model,
+        "recurrent_NN":get_recurrent_model,
+        "SVM_classi": get_SVM_model,
+        "LR_classi": get_LR_model,
+        "Adaboost_classi":get_Adaboost_model,
+        "RF_classi": get_RandomForest_model,
+        "NaiveBayes_classi": get_NaiveBayes_model,
+        "BERT_NN": get_BERT_model,
+        "convolutional_NN":get_convolutional_model,
+        "ET_NN":get_ET_model,
+        "HF_BERT_NN": get_HF_BERT_model,
+        "BERT_TORCH_NN": run_bert_torch_pipeline,
+        "": lambda : None # empty function
+    }
 
 
 def run_ensemble_pipeline(models,
@@ -991,8 +1010,13 @@ def run_ensemble_pipeline(models,
     abs_path = os.path.abspath(os.path.dirname(__file__))
     print("Loading data")
     data = []
-    for data_location in data_locations:
-        data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
+    for i,data_location in enumerate(data_locations):
+        if(models_names[i]=="BERT_TORCH_NN"):
+            build_params = models_build_params[i]
+            max_len = build_params.get("max_len",100)
+            data_matrix = get_test_data(data_location, max_len)
+        else:
+            data_matrix = np.load(os.path.join(abs_path, data_location))['arr_0']
         data.append(data_matrix)
     #loading model functions
     models_funcs = [model_pipeline_fun[model] for model in models]

@@ -140,6 +140,7 @@ class BaseNN(ClassifierBase):
         preds_classes = np.argmax(preds, axis=-1).astype("int")
         preds_classes[preds_classes == 0] = -1
         if save: self.save_predictions(preds_classes)
+        return preds_classes
 
     @staticmethod
     def analyse_worst_predictions(x, y, pred_probs, idx2word, n=10):

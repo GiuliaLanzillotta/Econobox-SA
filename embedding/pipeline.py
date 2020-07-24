@@ -196,7 +196,6 @@ def build_training_matrix(label,
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # INITIALIZE ----------
-
             if use_tf_idf:
                 with open(file, encoding="utf8") as f2:
                     print("TF-IDF vectorization of the file.")
