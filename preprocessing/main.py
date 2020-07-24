@@ -15,11 +15,25 @@ if __name__ == "__main__":
                              "../data/twitter-datasets/replaced_train_pos_full.txt"],
                 use_base_vocabulary=True,
                 base_vocabulary_name="stanford_vocab.pkl")
-    """
+    
     getTxtLemmatization(input_files=["test_data_no_numbers.txt"],
                         stopwords=False,
                         replace=True,
                         lemmatize=False,
                         replace_stanford=True)
+    """
+    neg_cooc_params={'window_size':10, 'weighting':None, 'num_samples':5},  
+
+    vocab, neg_cooc = run_preprocessing(vocab_name="vocab.pkl",
+                      cooc_name="cooc.pkl",
+                      neg_cooc_name="neg_cooc.pkl",  
+                      to_build_vocab=False,
+                      to_build_cooc=False,
+                      use_neg_sampling=True,  
+                      to_lemmatize_input=False, #if True we would lemmatize with stopwords = 0 and replacement = 1
+                      vocab_build_params={},
+                      cooc_build_params={},
+                      neg_cooc__params=neg_cooc_params,  
+                      input_files=None)    
 
     exit(0)

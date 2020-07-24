@@ -17,6 +17,7 @@ import numpy as np
 import pickle
 import json
 import os
+import math
 
 
 class NegSamplingEmbedding(EmbeddingBase):
@@ -37,9 +38,17 @@ class NegSamplingEmbedding(EmbeddingBase):
                                              load)
         self.neg_cooc = neg_cooc
 
+    def eval_opt_function(self, cooc, neg_cooc, xs):
+        L = 0
+        for ix, jy, a, b in zip(cooc.row, cooc.col, cooc.data, neg_cooc.data):
+            x, y = xs[ix, :].copy(), xs[jy, :].copy()
+            L += a * math.log(expit(np.dot(x, y))) + b * math.log(expit(-np.dot(x, y)))
+
+        return L
+
     def train_embedding(self, epochs, eta):
         """
-        Training GloVe embedding.
+        Training NegSampling embedding.
         This method uses SGD.
         :param epochs: number of epochs to train for
         :param eta: learning rate
@@ -54,20 +63,41 @@ class NegSamplingEmbedding(EmbeddingBase):
             neg_cooc = pickle.load(f)
         # start glove training
         xs = self.embedding_matrix
-        print("Started GloVe training")
+        print("Started NegSampling training")
         print(epochs)
+        counter = 0
+        b = True
+
+        L = self.eval_opt_function(cooc, neg_cooc, xs)
+        print(L)
+
         for epoch in range(epochs):
+            #xs_n = xs.copy()
             print("epoch {}".format(epoch))
             for ix, jy, a, b in zip(cooc.row, cooc.col, cooc.data, neg_cooc.data):
+                #print(ix, jy)
                 # the indices in the embedding matrix equal the
                 # indices in the vocabulary + 1
                 # because we want to leave the 0 position free
                 ix +=1
                 jy +=1
-                x, y = xs[ix, :], xs[jy, :]
+                
+                x, y = xs[ix, :].copy(), xs[jy, :].copy()
+                
                 cooc_scale = a * expit(-np.dot(x, y))
                 neg_cooc_scale = b * expit(np.dot(x, y))
-                xs[ix, :] += (cooc_scale - neg_cooc_scale) * y 
-                xs[jy, :] += (cooc_scale - neg_cooc_scale) * x
+        
+                xs[ix, :] += eta * (cooc_scale - neg_cooc_scale) * y 
+                xs[jy, :] += eta * (cooc_scale - neg_cooc_scale) * x
+
+
+                L -= a * math.log(expit(np.dot(x, y))) + b * math.log(expit(-np.dot(x, y)))
+                x_n, y_n = xs[ix, :].copy(), xs[jy, :].copy()
+                L += a * math.log(expit(np.dot(x_n, y_n))) + b * math.log(expit(-np.dot(x_n, y_n)))
+               
+
+            print(L)          
+    
+              
         self.embedding_matrix = xs
 

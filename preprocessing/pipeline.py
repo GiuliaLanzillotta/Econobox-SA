@@ -1,5 +1,6 @@
 #pipeline methods for preprocessing
 from preprocessing.cooc import build_cooc, load_cooc
+from preprocessing.neg_cooc import build_neg_cooc, load_neg_cooc
 from preprocessing.tokenizer import build_vocab, load_vocab
 from preprocessing import cooc_folder
 from preprocessing import lemmatizer as lemma
@@ -123,7 +124,42 @@ def getTxtLemmatization(input_files,
 
         
 
+def get_neg_cooc_matrix(matrix_name,
+                    vocab_name,
+                    load_from_file=True,
+                    input_files=None,
+                    neg_cooc_params=None):
+    """
+    Builds or loads a co-occurrence matriz from file. By default the matrix
+    will be loaded from file.
+    :param matrix_name: (str) the name of the cooc matrix file.
+            If `load_from_file` is False then this will be the name of the output
+            file where the cooc matrix will be stored.
+            If `load_from_file` is True this should be the name of the file to load.
+    :param vocab_name: (str) the name of the vocabulary to use to build the co-occurrence matrix
+    :param load_from_file: (bool) Whether to load the cooc matrix from file or build a new one.
+    :param input_files: (list (str) ) Paths to the original files from which to extract
+            the new cooc matrix.
+    :param cooc_params: (dict) dictionary of parameters to use in the `build_cooc` function
+    :return: (np.ndarray)> the loaded co/occurrence matrix
+    """
 
+    # cooc_build parameters checking
+    if neg_cooc_params is None: neg_cooc_params = {}
+    window_size = neg_cooc_params.get("window_size")
+    weighting = neg_cooc_params.get("weighting")
+    num_samples = neg_cooc_params.get("num_samples")    
+    if not weighting: weighting = "None"
+
+    if load_from_file: neg_cooc = load_neg_cooc(cooc_folder+matrix_name)
+    else: neg_cooc = build_neg_cooc(vocab_name=vocab_name,
+                            num_samples=num_samples,
+                            window_size=window_size,
+                            weighting=weighting,
+                            output_name=matrix_name,
+                            input_files=input_files)
+
+    return neg_cooc
 
 
 def get_cooc_matrix(matrix_name,
@@ -164,11 +200,14 @@ def get_cooc_matrix(matrix_name,
 
 def run_preprocessing(vocab_name,
                       cooc_name,
+                      neg_cooc_name,  
                       to_build_vocab=True,
                       to_build_cooc=True,
+                      use_neg_sampling=False,  
                       to_lemmatize_input=False, #if True we would lemmatize with stopwords = 0 and replacement = 1
                       vocab_build_params=None,
                       cooc_build_params=None,
+                      neg_cooc__params=None,  
                       input_files=None):
     """
     Runs the preprocessing steps using the pipeline functions
@@ -202,4 +241,11 @@ def run_preprocessing(vocab_name,
                            load_from_file= not to_build_cooc,
                            input_files = input_files,
                            cooc_params=cooc_build_params)
+    if use_neg_sampling:
+        cooc = get_neg_cooc_matrix(neg_cooc_name,
+                    vocab_name,
+                    load_from_file=not to_build_cooc,
+                    input_files=None,
+                    neg_cooc_params=None)
+
     return vocab, cooc
