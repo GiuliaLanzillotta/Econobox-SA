@@ -12,11 +12,25 @@ import data
 if __name__ == "__main__":
     input_files = [data.train_negative_sample_location,data.train_negative_sample_location]
 
+    
     run_embedding_pipeline(embedding_fun="sum_embeddings",
                            prediction_mode=False,
                            input_entries=data.sample_dimension,
                            input_files=input_files,
                            input_labels=[0,1],
                            output_location=data.train_matrices_folder+"tfidf_sample_matrix")
+    
+    """
+    run_embedding_pipeline(embedding_fun="sum_embeddings",
+                           prediction_mode=False,
+                           input_entries=data.sample_dimension,
+                           input_files=input_files,
+                           input_labels=None,
+                           output_location=embedding.neg_sampling_matrix_train_location,
+                           glove=False,
+                           use_tf_idf=False, 
+                           embedding="negative_sampling",
+                           max_len=200)
+    """
     # 768 for roberta, 50 for the no embedding function, 200 Glove
     exit(0)
