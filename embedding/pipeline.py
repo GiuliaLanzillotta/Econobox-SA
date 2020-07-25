@@ -5,9 +5,9 @@ from embedding.negative_sampling import NegSamplingEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
 from sklearn.feature_extraction.text import TfidfVectorizer
-from nltk.tokenize.casual import TweetTokenizer
 from data import sample_dimension, \
     train_negative_sample_location, train_positive_sample_location, test_location, test_dimension
+from preprocessing.tokenizer import tokenize_text
 import tensorflow as tf
 import numpy as np
 import random
@@ -189,9 +189,8 @@ def build_training_matrix(label,
     if use_tf_idf:
         # Preparing the TF-IDF vectorizer
         vocabulary = embedding.vocabulary
-        tokenizer = TweetTokenizer()
         vectorizer = TfidfVectorizer(vocabulary=vocabulary,
-                                     tokenizer=tokenizer.tokenize)
+                                     tokenizer=tokenize_text)
     for i, file in enumerate(input_files):
         label_value = label_values[i]
         with open(file, encoding="utf8") as f:
@@ -212,7 +211,7 @@ def build_training_matrix(label,
 
                 #getting the tfidf weights if requested
                 weights = None
-                if use_tf_idf: weights=tf_idf[l,:].data
+                if use_tf_idf: weights=tf_idf[l,:].todense()
                 sentence_emb = aggregation_fun(line,embedding,weights=weights)
                 # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix

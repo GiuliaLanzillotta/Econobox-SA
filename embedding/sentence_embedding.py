@@ -73,7 +73,8 @@ def sum_embeddings(sentence, embedding, weights=None, **kwargs):
     sentence_filtered = [t for t in sentence if t in vocabulary.keys()]
     # assigning equal weight to each word if the weights are not given
     if weights is None: weights=[1]*len(sentence_filtered)
-    else: assert len(weights)==len(sentence_filtered), "The weights should have the same length as the sentence"
+    else: weights = [weights[0,vocabulary.get(word)] for word in sentence_filtered]
+    assert len(weights)==len(sentence_filtered), "The weights should have the same length as the sentence"
     # simply summing the words in the sentence
     emb_dim = embedding_matrix.shape[1]
     sentence_emb = np.zeros(emb_dim)
