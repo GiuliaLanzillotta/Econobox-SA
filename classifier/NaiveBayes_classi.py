@@ -6,7 +6,8 @@ from sklearn.utils import _joblib
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
 from preprocessing import TFIDF_preprocessing
-from data import train_negative_sample_location, train_positive_sample_location
+from data import train_negative_location, train_positive_location, test_location
+import numpy as np
 
 class NaiveBayes_classi(ClassifierBase):
     """Naive Bayes classifier"""
@@ -24,6 +25,7 @@ class NaiveBayes_classi(ClassifierBase):
         self.model = MultinomialNB(alpha=1.8)
 
     def train(self, x,y, **kwargs):
+        print("in naive bayes train")
         print(x)
         print(y)
         self.history = self.model.fit(x,y)
@@ -38,28 +40,30 @@ class NaiveBayes_classi(ClassifierBase):
 
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
-        preds = self.model.predict(x)
-        preds[preds==0] = -1
-        if save: self.save_predictions(preds)
+        print(x.shape)
+        preds = self.model.predict_proba(x)
+        print(preds)
+        preds_classes = np.argmax(preds, axis=-1).astype("int")
+        preds_classes[preds_classes == 0] = -1
+        if save: self.save_predictions(preds_classes)
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
         path = models_store_path+self.name
         pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self.model, 'ourNB.pkl')
-
+        _joblib.dump(self.model, self.name)
 
 
     def load(self, **kwargs):
         print("Loading model")
         path = models_store_path+self.name
-        self.model = _joblib.load('ourNB.pkl')
+        self.model = _joblib.load(self.name)
 
 """
 ourNB = NaiveBayes_classi(embedding_dimension=-1)
 ourNB.build()
-data = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_sample_location, train_negative_sample_location], random_percentage=1)
-print(data[0])
-print(data[1])
+data = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_location, train_negative_location], random_percentage=0.3)
+test_data = TFIDF_preprocessing.get_tfidf_test_data(input_file=test_location, input_files=[train_positive_location, train_negative_location], random_percentage=0.3)
 ourNB.train(x=data[0], y=data[1])
+ourNB.make_predictions(x=test_data)
 """

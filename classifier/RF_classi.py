@@ -8,6 +8,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
 from embedding.pipeline import generate_training_matrix
 from embedding.pipeline import get_glove_embedding
+import os
 
 class RF_classi(ClassifierBase):
     """Random Forest classifier"""
@@ -85,12 +86,13 @@ class RF_classi(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+self.name
-        pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self.model, 'ourRF.pkl')
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = models_store_path + self.name
+        #pickle.dump(self.model, open(path, 'wb'))
+        _joblib.dump(self.model, os.path.join(abs_path, path))
 
     def load(self, **kwargs):
+        abs_path = os.path.abspath(os.path.dirname(__file__))
         print("Loading model")
-        path = models_store_path+self.name
-        self.model = _joblib.load('ourRF.pkl')
-        print(type(self.model))
+        path = models_store_path + self.name
+        self.model = _joblib.load(os.path.join(abs_path, path))

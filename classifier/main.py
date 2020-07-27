@@ -5,7 +5,7 @@ sys.path.append(ROOT_DIR)
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline, run_bert_torch_pipeline
 #from data import train_positive_location, train_negative_location, test_location
 from data import replaced_train_full_negative_location_30, replaced_train_full_positive_location_30, replaced_test_location
-#from embedding import glove_30_matrix_train_location
+from embedding import glove_30_matrix_train_location, glove_30_matrix_test_location
 from embedding import matrix_train_location
 #from embedding import matrix_test_location
 from data import replaced_train_full_positive_location_d, replaced_train_full_negative_location_d
@@ -47,7 +47,7 @@ def bert_torch_main():
                             name='BERT_torch_2_randsample_3dense_clipgrad20_earlystopping',
                             random_percentage=0.3,
                             max_len=100,
-                            epochs=50,
+                            epochs=25,
                             evaluation=True,
                             train_model=True,
                             load_model=False,
@@ -104,10 +104,10 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-    bert_torch_main()
+    #bert_torch_main()
 
 
-    """
+
     build_params = {"optimizer": 'adam',
                     "metrics": ['accuracy'],
                     "adapter_size": 1,
@@ -121,12 +121,12 @@ if __name__ == "__main__":
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("LR_classi",
-                       "LR_baseline_sample_different_train",
+    run_train_pipeline("NaiveBayes_classi",
+                       "NaiveBayes_tfidf_2_30percentfulldata",
                        load_model=True,
                        prediction_mode=True,
                        text_data_mode_on=False,
-                       data_location=replaced_test_matrix_location,
+                       data_location=glove_30_matrix_train_location,
                        cv_on=False,
                        choose_randomly=False,
                        random_percentage=1,
@@ -136,7 +136,9 @@ if __name__ == "__main__":
                        train_params=None,
                        model_specific_params={})
                        
-    """
+
+                       
+
                        
 
                        
