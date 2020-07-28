@@ -1,4 +1,10 @@
 # training and prediction pipeline should be implemented here
+import sys
+import os
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ROOT_DIR)
+from BERT_NN import BERT_NN, PP_BERT_Data
+from HUGGINGFACE_BERT_NN import HF_BERT_NN
 from classifier.vanilla_NN import vanilla_NN
 #from classifier.BERT_NN import BERT_NN
 #from classifier.HUGGINGFACE_BERT_NN import HF_BERT_NN

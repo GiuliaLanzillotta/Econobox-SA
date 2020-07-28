@@ -5,11 +5,8 @@ sys.path.append(ROOT_DIR)
 from classifier.pipeline import run_train_pipeline, run_ensemble_pipeline, run_bert_torch_pipeline
 #from data import train_positive_location, train_negative_location, test_location
 from data import replaced_train_full_negative_location_30, replaced_train_full_positive_location_30, replaced_test_location
-#from embedding import glove_30_matrix_train_location
-from embedding import matrix_train_location
-#from embedding import matrix_test_location
+import embedding
 from data import replaced_train_full_positive_location_d, replaced_train_full_negative_location_d
-from embedding import replaced_test_matrix_location
 
 ## ----------------
 #Saving here the model specific parameters to pass to the
@@ -19,7 +16,6 @@ recurrent_specific_params = {
     "vocabulary":"full_vocab_in_stanford.pkl",
     "load_embedding":True,
     "embedding_location":"necessary_stanford.npz",
-    "generator_mode":True,
     "max_len":100
 }
 
@@ -59,8 +55,6 @@ def ensemble_main():
 
    models = ["convolutional_NN","recurrent_NN"]
    models_names = ["convolution_3_pool","Attention_GRU_5heads_full"]
-   data_locations = [replaced_zero_matrix_full_train_location,
-                     replaced_zero_matrix_full_train_location]
    models_build_params = [
         # CONVOLUTIONAL PARAMETERS
        {
@@ -104,39 +98,40 @@ def ensemble_main():
 
 if __name__ == "__main__":
     #ensemble_main()
-    bert_torch_main()
+    #bert_torch_main()
 
-
-    """
-    build_params = {"optimizer": 'adam',
-                    "metrics": ['accuracy'],
-                    "adapter_size": 1,
-                    "train_embedding": False,
-                    "use_pretrained_embedding": True,
-                    "num_et_blocks": 1,
-                    "max_len": 50}  # maximum length in the sequece
+    build_params = {
+        "cell_type": "GRU",
+        "num_layers": 1,
+        "hidden_size": 64,
+        "optimizer": "adam",
+        "dropout_rate": 0.4,
+        "use_normalization": True,
+        "train_embedding": False,
+        "use_pretrained_embedding": True,
+        "use_attention":False
+    }
 
     train_params = {"epochs": 10,
                     "batch_size": 1024,
                     "validation_split": 0.2,
                     "use_categorical": True}
 
-    run_train_pipeline("LR_classi",
-                       "LR_baseline_sample_different_train",
-                       load_model=True,
-                       prediction_mode=True,
+    run_train_pipeline("recurrent_NN",
+                       "GRU641L",
+                       load_model=False,
+                       prediction_mode=False,
                        text_data_mode_on=False,
-                       data_location=replaced_test_matrix_location,
+                       data_location=embedding.replaced_zero_matrix_full_train_location,
                        cv_on=False,
-                       choose_randomly=False,
-                       random_percentage=1,
+                       choose_randomly=True,
+                       random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
-                       build_params=None,
-                       train_params=None,
-                       model_specific_params={})
-                       
-    """
+                       build_params=build_params,
+                       train_params=train_params,
+                       model_specific_params=recurrent_specific_params)
+
                        
 
                        

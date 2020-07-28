@@ -10,12 +10,13 @@ import embedding
 import data
 
 if __name__ == "__main__":
-    input_files = [data.train_negative_sample_location,data.train_negative_sample_location]
+    input_files = [data.replaced_train_full_negative_location_30,
+                   data.replaced_train_full_positive_location_30]
 
     
     run_embedding_pipeline(embedding_fun="sum_embeddings",
                            prediction_mode=False,
-                           input_entries=data.sample_dimension,
+                           input_entries=data.subset_thirty_percent_dimension,
                            input_files=input_files,
                            input_labels=[0,1],
                            output_location=data.train_matrices_folder+"tfidf_sample_matrix")

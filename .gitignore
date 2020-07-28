@@ -15,6 +15,7 @@ data/training_matrices/replaced_zero_embedding_test_matrix.npz
 data/training_matrices/replaced_zero_embedding_train_matrix.npz
 data/training_matrices/zero_embedding_full_train_matrix.npz
 data/training_matrices/replaced_zero_embedding_full_train_matrix.npz
+data/training_matrices/tfidf_sample_matrix.npz
 data/twitter-datasets/
 ## ------------------------------
 ## EMBEDDINGS
@@ -43,3 +44,8 @@ classifiers/Attention_GRU_penalised_convolution/
 classifiers/
 
 
+.floydexpt
+.floydignore
+classifier/.floydexpt
+classifier/.floydignore
+classifier/floyd.yml
