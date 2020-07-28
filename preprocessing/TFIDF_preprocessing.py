@@ -1,12 +1,13 @@
 from preprocessing import tweetDF
 import nltk
-nltk.download("stopwords")
+#nltk.download("stopwords")
 from nltk.corpus import stopwords
 import re
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from data import train_positive_sample_location, train_negative_sample_location
-
+import pickle
+import os
 
 def text_preprocessing(s):
     """
@@ -38,28 +39,40 @@ def text_preprocessing(s):
     return s
 
 
-def get_tfidf_train_data(input_files, random_percentage):
-    data_df = tweetDF.get_tweet_df(input_files=input_files,
-                                   random_percentage=random_percentage)
 
-    data_df_preprocessed = np.array([text_preprocessing(text) for text in data_df.tweet.values])
-    tf_idf = TfidfVectorizer(ngram_range=(1, 3),
-                         binary=True,
-                         smooth_idf=False)
-    X_train_tfidf = tf_idf.fit_transform(data_df_preprocessed)
-    return [X_train_tfidf, data_df.label.values]
+def TFIDF_VEC_train(input_files_train,random_percentage):
+    print("in tfidf_vec_train")
+    data_train = tweetDF.get_tweet_df(input_files=input_files_train, random_percentage=random_percentage)
+    X_train= data_train.tweet.values
+    y_train = data_train.label.values
+    print("y_train",y_train)
+    X_train_preprocessed = np.array([text_preprocessing(text) for text in X_train])
+    print("done with text preprocessing")
+    vectorizer = TfidfVectorizer(ngram_range=(1, 1),
+                             binary=True,
+                             smooth_idf=False)
+    print("fit transofrm data")
+    tfidf = vectorizer.fit(X_train_preprocessed)
+    X_train_tfidf = vectorizer.transform(X_train_preprocessed)
+
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    pickle.dump(tfidf, open(os.path.join(abs_path, "../data/tfidf.pkl"), 'wb'))
+    return [X_train_tfidf, y_train]
+
+def TFIDF_VEC_pred(input_files):
+    data_test = tweetDF.get_tweet_df_pred(input_files=input_files)
+    X_test = data_test.tweet.values
+    print(X_test)
+    X_test_preprocessed = np.array([text_preprocessing(text) for text in X_test])
+
+    abs_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(abs_path, "../data/tfidf.pkl"), 'rb') as f:
+        vectorizer = pickle.load(f)
+    X_test_tfidf = vectorizer.transform(X_test_preprocessed)
+    print(X_test_tfidf)
+
+    return X_test_tfidf
 
 
-def get_tfidf_test_data(input_files):
-    data_pred_df = tweetDF.get_tweet_df_pred(input_files=input_files)
-    data_df_pred_preprocessed = np.array([text_preprocessing(text) for text in data_pred_df.tweet.values])
-    tf_idf = TfidfVectorizer(ngram_range=(1, 3),
-                         binary=True,
-                         smooth_idf=False)
-    X_pred_tfidf = tf_idf.fit_transform(data_df_pred_preprocessed)
-    return X_pred_tfidf
 
-
-
-
-
+#data = TFIDF_VEC_train(input_files=[replaced_train_full_positive_location_d, replaced_train_full_negative_location_d], random_percentage=0.02)

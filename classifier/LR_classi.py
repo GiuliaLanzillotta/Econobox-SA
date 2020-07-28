@@ -9,6 +9,7 @@ from sklearn.utils import _joblib
 import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
+import os
 
 class LR_classi(ClassifierBase):
     """Logistic Regression classifier"""
@@ -55,22 +56,22 @@ class LR_classi(ClassifierBase):
     def make_predictions(self, x, save=True, **kwargs):
         print("Making predictions")
         preds = self.model.predict(x)
+        print(preds)
         preds[preds == 0] = -1
         if save: self.save_predictions(preds)
-        return preds
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+self.name
-        pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self.model, 'ourLR.pkl')
-
-
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = models_store_path + self.name
+        #pickle.dump(self.model, open(path, 'wb'))
+        _joblib.dump(self.model, os.path.join(abs_path, path))
 
     def load(self, **kwargs):
+        abs_path = os.path.abspath(os.path.dirname(__file__))
         print("Loading model")
-        path = models_store_path+self.name
-        self.model = _joblib.load('ourLR.pkl')
+        path = models_store_path + self.name
+        self.model = _joblib.load(os.path.join(abs_path, path))
 
 
 

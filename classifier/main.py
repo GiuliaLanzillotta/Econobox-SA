@@ -43,7 +43,7 @@ def bert_torch_main():
                             name='BERT_torch_2_randsample_3dense_clipgrad20_earlystopping',
                             random_percentage=0.3,
                             max_len=100,
-                            epochs=50,
+                            epochs=25,
                             evaluation=True,
                             train_model=True,
                             load_model=False,
@@ -100,17 +100,14 @@ if __name__ == "__main__":
     #ensemble_main()
     #bert_torch_main()
 
-    build_params = {
-        "cell_type": "GRU",
-        "num_layers": 1,
-        "hidden_size": 64,
-        "optimizer": "adam",
-        "dropout_rate": 0.4,
-        "use_normalization": True,
-        "train_embedding": False,
-        "use_pretrained_embedding": True,
-        "use_attention":False
-    }
+
+    build_params = {"optimizer": 'adam',
+                    "metrics": ['accuracy'],
+                    "adapter_size": 1,
+                    "train_embedding": False,
+                    "use_pretrained_embedding": True,
+                    "num_et_blocks": 1,
+                    "max_len": 50}  # maximum length in the sequece
 
     train_params = {"epochs": 10,
                     "batch_size": 1024,
@@ -128,16 +125,17 @@ if __name__ == "__main__":
                        random_percentage=0.3,
                        test_data_location=None,
                        generator_mode=False,
-                       build_params=build_params,
-                       train_params=train_params,
-                       model_specific_params=recurrent_specific_params)
-
-                       
-
-                       
-                       
-
-                       
+                       build_params=None,
+                       train_params=None,
+                       model_specific_params={})
 
 
-    
+
+
+
+
+
+
+
+
+

@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
+import os
 
 class Adaboost_classi(ClassifierBase):
     """Random Forest classifier"""
@@ -60,11 +61,13 @@ class Adaboost_classi(ClassifierBase):
 
     def save(self, overwrite=True, **kwargs):
         print("Saving model")
-        path = models_store_path+self.name
-        pickle.dump(self, open(path, 'wb'))
-        _joblib.dump(self.model, 'ourADA.pkl')
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        path = models_store_path + self.name
+        #pickle.dump(self.model, open(path, 'wb'))
+        _joblib.dump(self.model, os.path.join(abs_path, path))
 
     def load(self, **kwargs):
+        abs_path = os.path.abspath(os.path.dirname(__file__))
         print("Loading model")
-        path = models_store_path+self.name
-        self.model = _joblib.load('ourADA.pkl')
+        path = models_store_path + self.name
+        self.model = _joblib.load(os.path.join(abs_path, path))

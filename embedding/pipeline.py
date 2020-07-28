@@ -1,13 +1,12 @@
 # Offers the embedding pipeline methods
-from embedding import embedding_dim, matrix_train_location, matrix_test_location
+from embedding import embedding_dim, matrix_train_location, glove_30_matrix_train_location_tfidf, glove_30_matrix_test_location
 from embedding.glove import GloVeEmbedding
-from embedding.negative_sampling import NegSamplingEmbedding
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
 from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.tokenize.casual import TweetTokenizer
 from data import sample_dimension, \
     train_negative_sample_location, train_positive_sample_location, test_location, test_dimension
-from preprocessing.tokenizer import tokenize_text
 import tensorflow as tf
 import numpy as np
 import random
@@ -156,9 +155,9 @@ def build_training_matrix(label,
                           label_values=None,
                           aggregation_fun=sentence_embedding.sum_embeddings,
                           input_entries=sample_dimension,
-                          use_tf_idf=False,
+                          use_tf_idf=True,
                           sentence_dimesion = 200,
-                          output_location = matrix_train_location):
+                          output_location= glove_30_matrix_train_location_tfidf):
     """
     Builds a matrix that associates each tweet to its embedding representation.
     :param use_tf_idf: whether to use tf_idf weighting in the embedding
@@ -180,22 +179,25 @@ def build_training_matrix(label,
     if input_files is None:
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
-
+    print(label)
     if label: out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
+    print(out_dim1)
     output = np.zeros((input_entries, out_dim1))
     # PROCESS THE FILES ----------
     counter = 0
     if use_tf_idf:
         # Preparing the TF-IDF vectorizer
         vocabulary = embedding.vocabulary
+        tokenizer = TweetTokenizer()
         vectorizer = TfidfVectorizer(vocabulary=vocabulary,
-                                     tokenizer=tokenize_text)
+                                     tokenizer=tokenizer.tokenize)
     for i, file in enumerate(input_files):
         label_value = label_values[i]
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # INITIALIZE ----------
+
             if use_tf_idf:
                 with open(file, encoding="utf8") as f2:
                     print("TF-IDF vectorization of the file.")
@@ -206,12 +208,10 @@ def build_training_matrix(label,
                 # Note: you can safely ignore the max_len parameter
                 # if you're not using the no-embedding aggregation function
 
-                if not label: line = line[3:] #cutting the first 3 characters if we're making
-                # predictions since the test data has enumerated lines.
 
                 #getting the tfidf weights if requested
                 weights = None
-                if use_tf_idf: weights=tf_idf[l,:].todense()
+                if use_tf_idf: weights=tf_idf[l,:].data
                 sentence_emb = aggregation_fun(line,embedding,weights=weights)
                 # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
@@ -224,13 +224,13 @@ def build_training_matrix(label,
     print("Saving ", output_location)
     np.savez(output_location, output)
 
-def get_glove_embedding(vocabulary_file="vocab.pkl",
-                        cooc_file="cooc.pkl",
+def get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+                        cooc_file="cooc_full_data_30.pkl",
                         load_from_file=False,
                         file_name = None,
-                        load_Stanford=False,
-                        train=False,
-                        save=False,
+                        load_Stanford=True,
+                        train=True,
+                        save=True,
                         train_epochs=10,
                         train_eta=1e-3):
     """
@@ -267,51 +267,14 @@ embedding_funcs = {
     #"transformer_emb":sentence_embedding.embedize
 }
 
-def get_neg_sampling_embedding(vocabulary_file="vocab.pkl",
-                        cooc_file="cooc.pkl",
-                        neg_cooc_file="neg_cooc.pkl",
-                        load_from_file=False,
-                        file_name = None,
-                        train=False,
-                        save=False,
-                        train_epochs=10,
-                        train_eta=1e-3):
-    """
-    Creates a NegSampling class.
-    By default it will leave the embedding matrix randomly initialized.
-    :param vocabulary_file: the name of the vocavulary in use
-    :param cooc_file: (str) the name of the cooc matrix to use
-    :param neg_cooc_file: (str) the name of the neg_cooc matrix to use    
-    :param load_from_file: whether to load the embedding from file
-    :param file_name: file from which to load the embedding
-    :param train: whether to train the embedding
-    :param save: whether to save the embedding to file
-    :param train_epochs: number of training epochs
-    :param train_eta: training learning rate
-    :return:
-    """
-    print("In get neg sampling embedding")
-    vocab = load_vocab(vocabulary_file)
-    if file_name is None: file_name = "neg_sampling_emb.npz"
-    neg_sampling_emb = NegSamplingEmbedding(file_name,
-                                     embedding_dim,
-                                     vocab,
-                                     cooc_file,
-                                     neg_cooc_file,   
-                                     load=load_from_file)
-    if train: neg_sampling_emb.train_embedding(epochs=train_epochs,
-                                              eta=train_eta)
-    if save: neg_sampling_emb.save_embedding()
-    return neg_sampling_emb
-
 
 def run_embedding_pipeline(embedding_fun,
                            input_files=None,
                            input_labels=None,
                            input_entries=sample_dimension,
-                           output_location=matrix_test_location,
+                           output_location=glove_30_matrix_test_location,
                            prediction_mode=True,
-                           use_tf_idf=True,
+                           use_tf_idf=False,
                            glove=True,
                            **kwargs):
     """
@@ -338,23 +301,13 @@ def run_embedding_pipeline(embedding_fun,
     embedding_function = embedding_funcs[embedding_fun]
     ## 1. extracting the embedding to use
     print(embedding_fun)
-
     if embedding_fun!="transformer_emb":
-        if glove:
-            embedding = get_glove_embedding(vocabulary_file="vocab.pkl",
+        embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
                                         load_from_file=True,
-                                        load_Stanford=False,
-                                        file_name="glove+stanford.npz",
+                                        load_Stanford=True,
+                                        file_name="glove+stanford_subset30.npz",
                                         train=False,
                                         save=True)
-        else:
-            embedding = get_neg_sampling_embedding(vocabulary_file="vocab.pkl",
-                        cooc_file="cooc.pkl",
-                        neg_cooc_file="neg_cooc.pkl",
-                        load_from_file=False,
-                        file_name = None,
-                        train=False,
-                        save=False)
     else: embedding=kwargs.get("embedding", "roberta-base")
     ## 2. resolving paths
     if prediction_mode:
@@ -363,8 +316,6 @@ def run_embedding_pipeline(embedding_fun,
     abs_path = os.path.abspath(os.path.dirname(__file__))
     output_path = os.path.join(abs_path,output_location)
     input_paths = [os.path.join(abs_path,f) for f in input_files]
-
-    
 
     build_training_matrix(label=not prediction_mode,
                           label_values=input_labels,
