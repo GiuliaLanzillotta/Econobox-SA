@@ -1,6 +1,7 @@
 # Offers the embedding pipeline methods
 from embedding import embedding_dim, matrix_train_location, glove_30_matrix_train_location_tfidf, glove_30_matrix_test_location
 from embedding.glove import GloVeEmbedding
+from preprocessing.tokenizer import tokenize_text
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -155,9 +156,9 @@ def build_training_matrix(label,
                           label_values=None,
                           aggregation_fun=sentence_embedding.sum_embeddings,
                           input_entries=sample_dimension,
-                          use_tf_idf=True,
+                          use_tf_idf=False,
                           sentence_dimesion = 200,
-                          output_location= glove_30_matrix_train_location_tfidf):
+                          output_location = matrix_train_location):
     """
     Builds a matrix that associates each tweet to its embedding representation.
     :param use_tf_idf: whether to use tf_idf weighting in the embedding
@@ -179,25 +180,22 @@ def build_training_matrix(label,
     if input_files is None:
         input_files = [train_negative_sample_location,
                        train_positive_sample_location]
-    print(label)
+
     if label: out_dim1 = sentence_dimesion + 1
     else: out_dim1 = sentence_dimesion
-    print(out_dim1)
     output = np.zeros((input_entries, out_dim1))
     # PROCESS THE FILES ----------
     counter = 0
     if use_tf_idf:
         # Preparing the TF-IDF vectorizer
         vocabulary = embedding.vocabulary
-        tokenizer = TweetTokenizer()
         vectorizer = TfidfVectorizer(vocabulary=vocabulary,
-                                     tokenizer=tokenizer.tokenize)
+                                     tokenizer=tokenize_text)
     for i, file in enumerate(input_files):
         label_value = label_values[i]
         with open(file, encoding="utf8") as f:
             print("Working on ", file)
             # INITIALIZE ----------
-
             if use_tf_idf:
                 with open(file, encoding="utf8") as f2:
                     print("TF-IDF vectorization of the file.")
@@ -208,10 +206,12 @@ def build_training_matrix(label,
                 # Note: you can safely ignore the max_len parameter
                 # if you're not using the no-embedding aggregation function
 
+                if not label: line = line[3:] #cutting the first 3 characters if we're making
+                # predictions since the test data has enumerated lines.
 
                 #getting the tfidf weights if requested
                 weights = None
-                if use_tf_idf: weights=tf_idf[l,:].data
+                if use_tf_idf: weights=tf_idf[l,:].todense()
                 sentence_emb = aggregation_fun(line,embedding,weights=weights)
                 # we reshape to make sure it is a row vector
                 # Save the tweet in the output matrix
@@ -223,6 +223,7 @@ def build_training_matrix(label,
     print("Number of lines read:",counter)
     print("Saving ", output_location)
     np.savez(output_location, output)
+
 
 def get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
                         cooc_file="cooc_full_data_30.pkl",
