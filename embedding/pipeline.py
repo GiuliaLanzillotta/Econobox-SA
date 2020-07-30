@@ -1,6 +1,7 @@
 # Offers the embedding pipeline methods
-from embedding import embedding_dim, matrix_train_location, glove_30_matrix_train_location_tfidf, glove_30_matrix_test_location
+from embedding import embedding_dim, matrix_train_location #, glove_30_matrix_train_location_tfidf, glove_30_matrix_test_location
 from embedding.glove import GloVeEmbedding
+from embedding.negative_sampling import NegSamplingEmbedding
 from preprocessing.tokenizer import tokenize_text
 from embedding import sentence_embedding
 from preprocessing.tokenizer import load_vocab
@@ -262,6 +263,43 @@ def get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
     if save: gloVe_embedding.save_embedding()
     return gloVe_embedding
 
+def get_neg_sampling_embedding(vocabulary_file="vocab.pkl",
+                        cooc_file="cooc.pkl",
+                        neg_cooc_file="neg_cooc.pkl",
+                        load_from_file=False,
+                        file_name = None,
+                        train=False,
+                        save=False,
+                        train_epochs=20,
+                        train_eta=1e-5):
+    """
+    Creates a NegSampling class.
+    By default it will leave the embedding matrix randomly initialized.
+    :param vocabulary_file: the name of the vocavulary in use
+    :param cooc_file: (str) the name of the cooc matrix to use
+    :param neg_cooc_file: (str) the name of the neg_cooc matrix to use    
+    :param load_from_file: whether to load the embedding from file
+    :param file_name: file from which to load the embedding
+    :param train: whether to train the embedding
+    :param save: whether to save the embedding to file
+    :param train_epochs: number of training epochs
+    :param train_eta: training learning rate
+    :return:
+    """
+    print("In get neg sampling embedding")
+    vocab = load_vocab(vocabulary_file)
+    if file_name is None: file_name = "neg_sampling_emb.npz"
+    neg_sampling_emb = NegSamplingEmbedding(file_name,
+                                     embedding_dim,
+                                     vocab,
+                                     cooc_file,
+                                     neg_cooc_file,   
+                                     load=load_from_file)
+    if train: neg_sampling_emb.train_embedding(epochs=train_epochs,
+                                              eta=train_eta)
+    if save: neg_sampling_emb.save_embedding()
+    return neg_sampling_emb
+
 embedding_funcs = {
     "no_embedding":sentence_embedding.no_embeddings,
     "sum_embeddings":sentence_embedding.sum_embeddings
@@ -273,7 +311,7 @@ def run_embedding_pipeline(embedding_fun,
                            input_files=None,
                            input_labels=None,
                            input_entries=sample_dimension,
-                           output_location=glove_30_matrix_test_location,
+                           output_location=matrix_train_location,
                            prediction_mode=True,
                            use_tf_idf=False,
                            glove=True,
@@ -303,12 +341,21 @@ def run_embedding_pipeline(embedding_fun,
     ## 1. extracting the embedding to use
     print(embedding_fun)
     if embedding_fun!="transformer_emb":
-        embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
-                                        load_from_file=True,
+         if glove:
+            embedding = get_glove_embedding(vocabulary_file="full_vocab_in_stanford.pkl",
+                                        load_from_file=False,
                                         load_Stanford=True,
-                                        file_name="glove+stanford_subset30.npz",
+                                        file_name="tf_idf_glove.npz",
                                         train=False,
                                         save=True)
+         else:
+            embedding = get_neg_sampling_embedding(vocabulary_file="vocabulary_10_full_12656.pkl",
+                        cooc_file="cooc.pkl",
+                        neg_cooc_file="neg_cooc.pkl",
+                        load_from_file=False,
+                        file_name = None,
+                        train=True,
+                        save=True)
     else: embedding=kwargs.get("embedding", "roberta-base")
     ## 2. resolving paths
     if prediction_mode:
