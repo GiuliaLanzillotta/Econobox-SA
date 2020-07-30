@@ -59,11 +59,3 @@ class NaiveBayes_classi(ClassifierBase):
         path = models_store_path+self.name
         self.model = _joblib.load(self.name)
 
-"""
-ourNB = NaiveBayes_classi(embedding_dimension=-1)
-ourNB.build()
-data = TFIDF_preprocessing.get_tfidf_train_data(input_files=[train_positive_location, train_negative_location], random_percentage=0.3)
-test_data = TFIDF_preprocessing.get_tfidf_test_data(input_file=test_location, input_files=[train_positive_location, train_negative_location], random_percentage=0.3)
-ourNB.train(x=data[0], y=data[1])
-ourNB.make_predictions(x=test_data)
-"""
