@@ -88,7 +88,6 @@ class RF_classi(ClassifierBase):
         print("Saving model")
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = models_store_path + self.name
-        #pickle.dump(self.model, open(path, 'wb'))
         _joblib.dump(self.model, os.path.join(abs_path, path))
 
     def load(self, **kwargs):
