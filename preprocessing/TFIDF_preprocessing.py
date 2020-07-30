@@ -9,6 +9,8 @@ from data import train_positive_sample_location, train_negative_sample_location
 import pickle
 import os
 
+#preprocessing function taken from #preprocessing function taken from 
+#https://skimai.com/fine-tuning-bert-for-sentiment-analysis/
 def text_preprocessing(s):
     """
     - Lowercase the sentence
@@ -72,7 +74,3 @@ def TFIDF_VEC_pred(input_files):
     print(X_test_tfidf)
 
     return X_test_tfidf
-
-
-
-#data = TFIDF_VEC_train(input_files=[replaced_train_full_positive_location_d, replaced_train_full_negative_location_d], random_percentage=0.02)
