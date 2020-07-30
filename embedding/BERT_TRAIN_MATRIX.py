@@ -29,7 +29,7 @@ class BERT_TM_PP():
     BERT neural network classifier"""
 
     def __init__(self, datalist, max_seq_length):
-        self.max_seq_len = max_seq_len
+        self.max_seq_len = max_seq_length
         self.bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1", trainable=False)
         self.vocab_file = self.bert_layer.resolved_object.vocab_file.asset_path.numpy()
         self.do_lower_case = self.bert_layer.resolved_object.do_lower_case.numpy()
@@ -126,11 +126,3 @@ def get_BERT_TM(data, output_location, batch_size, max_seq_length=128):
 
 
 
-
-
-
-
-
-#data = load_tweetDF()
-
-#get_BERT_TM(data, bert_matrix_train_location2, batch_size=100, max_seq_length=128)
