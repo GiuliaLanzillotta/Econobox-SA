@@ -8,9 +8,6 @@ import torch
 import pandas as pd
 import os
 import numpy as np
-from data import train_positive_location, train_negative_location
-from data import replaced_train_full_positive_location_d, replaced_train_full_negative_location_d
-from data import test_location, replaced_test_location
 import pickle
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
@@ -26,7 +23,7 @@ def get_tweet_df(input_files, random_percentage):
     df_pos_s = df_pos.sample(n=int(df_pos.shape[0]*random_percentage))
     df_neg_s = df_neg.sample(n=int(df_neg.shape[0]*random_percentage))
 
-    df_data = pd.concat([df_pos_s, df_neg_s], ignore_index=True, sort=False)
+    df_data = pd.concat([df_neg_s, df_pos_s], ignore_index=True, sort=False)
     df_data = shuffle(df_data)
 
     return df_data
@@ -38,10 +35,10 @@ def get_tweet_df_pred(input_files):
     return df_pred
 
 
-
-
 def text_preprocessing(text):
     """
+    Specific pre-processing for BERT as suggested by:
+    https://skimai.com/fine-tuning-bert-for-sentiment-analysis/
     - Remove entity mentions (eg. '@united')
     - Correct errors (eg. '&amp;' to '&')
     @param    text (str): a string to be processed.
@@ -64,6 +61,7 @@ def text_preprocessing(text):
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
 
 # Create a function to tokenize a set of texts
+# code taken from https://skimai.com/fine-tuning-bert-for-sentiment-analysis/
 def preprocessing_for_bert(data, max_len):
     """Perform required preprocessing steps for pretrained BERT.
     @param    data (np.array): Array of texts to be processed.
