@@ -5,9 +5,6 @@ FullTokenizer = bert.bert_tokenization.FullTokenizer
 from tensorflow.keras.models import Model       # Keras is the new high level API for TensorFlow
 import math
 import numpy as np
-from data import sample_dimension, \
-    train_negative_sample_location, train_positive_sample_location, test_location
-from embedding import bert_matrix_train_location
 
 
 def get_masks(tokens, max_seq_length):
