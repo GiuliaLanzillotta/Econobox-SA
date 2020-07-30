@@ -63,11 +63,11 @@ class Adaboost_classi(ClassifierBase):
         print("Saving model")
         abs_path = os.path.abspath(os.path.dirname(__file__))
         path = models_store_path + self.name
-        #pickle.dump(self.model, open(path, 'wb'))
-        _joblib.dump(self.model, os.path.join(abs_path, path))
+        pickle.dump(self.model, open(os.path.join(abs_path, path), 'wb'))
 
     def load(self, **kwargs):
         abs_path = os.path.abspath(os.path.dirname(__file__))
         print("Loading model")
         path = models_store_path + self.name
-        self.model = _joblib.load(os.path.join(abs_path, path))
+        with open(os.path.join(abs_path, path), 'rb') as f:
+            self.model = pickle.load(f)
