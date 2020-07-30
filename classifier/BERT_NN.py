@@ -22,8 +22,8 @@ abs_path = os.path.abspath(os.path.dirname(__file__))
 import math
 
 
-#HELPER FUNCTIONS FOR ADAPTER BERT
 
+#code inspired on https://medium.com/analytics-vidhya/bert-in-keras-tensorflow-2-0-using-tfhub-huggingface-81c08c5f81d8
 def flatten_layers(root_layer):
     if isinstance(root_layer, tf.keras.layers.Layer):
         yield root_layer
@@ -43,7 +43,7 @@ def freeze_bert_layers(l_bert):
             layer.trainable = False
         l_bert.embeddings_layer.trainable = False
 
-
+#code inspired on https://medium.com/analytics-vidhya/bert-in-keras-tensorflow-2-0-using-tfhub-huggingface-81c08c5f81d8
 class PP_BERT_Data():
     DATA_COLUMN = "text"
     LABEL_COLUMN = "sent"
@@ -161,27 +161,5 @@ class BERT_NN(BaseNN):
         self.model.summary()
 
 
-
-
-
-
-
-#BERT1 = BERT_NN(max_seq_length=128, adapter_size=64, embedding_dimension=200,name="BERT_NN")
-
-#BERT1.build(max_seq_length=128, bert_ckpt_file=bert_ckpt_file_location)
-
-#data = load_tweetDF()
-#dataset_train = data[:5]
-#dataset_test = data[6:8]
-#data = PP_BERT_Data(dataset_train, max_seq_length=128, classes=[0,1])
-#x = data.train_x
-#y = data.train_y
-
-#print(data.train_x.shape)
-#print(data.train_y.shape)
-#print(data.max_seq_length)
-
-#BERT1.train(x,y)
-#BERT1.make_predictions(x=x, save=False)
 
 
