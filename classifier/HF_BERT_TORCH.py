@@ -17,7 +17,7 @@ from classifier import predictions_folder
 import numpy as np
 import torch
 
-#code taken from github
+
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pt'):
@@ -66,6 +66,7 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
+#code based on https://skimai.com/fine-tuning-bert-for-sentiment-analysis/
 class BERT_TORCH_NN(nn.Module):
     """
     Bert torch model for classification tasks
@@ -306,15 +307,9 @@ class BERT_TORCH_NN(nn.Module):
         preds_classes = np.argmax(probs, axis=-1).astype("int")
         preds_classes[preds_classes == 0] = -1
 
-
-
         if save: self.save_predictions(preds_classes)
 
         return preds_classes
-
-
-
-
 
 
     def load(self, model, **kwargs):
@@ -327,34 +322,7 @@ class BERT_TORCH_NN(nn.Module):
         model.to(self.device)
         return model
 
-    def evaluate_roc(self,probs, y_true):
-        """
-        - Print AUC and accuracy on the test set
-        - Plot ROC
-        @params    probs (np.array): an array of predicted probabilities with shape (len(y_true), 2)
-        @params    y_true (np.array): an array of the true values with shape (len(y_true),)
-        """
-        preds = probs[:, 1]
-        fpr, tpr, threshold = roc_curve(y_true, preds)
-        roc_auc = auc(fpr, tpr)
-        print(f'AUC: {roc_auc:.4f}')
-
-        # Get accuracy over the test set
-        y_pred = np.where(preds >= 0.5, 1, 0)
-        accuracy = accuracy_score(y_true, y_pred)
-        print(f'Accuracy: {accuracy * 100:.2f}%')
-
-        # Plot ROC AUC
-        plt.title('Receiver Operating Characteristic')
-        plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
-        plt.legend(loc='lower right')
-        plt.plot([0, 1], [0, 1], 'r--')
-        plt.xlim([0, 1])
-        plt.ylim([0, 1])
-        plt.ylabel('True Positive Rate')
-        plt.xlabel('False Positive Rate')
-        plt.show()
-
+    
     def save_predictions(self, predictions_array):
         """
         Saves the predictions in the desired format
